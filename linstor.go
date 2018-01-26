@@ -37,6 +37,7 @@ type Resource struct {
 	NodeList    []string
 	ClientList  []string
 	StoragePool string
+	SizeKiB     uint64
 }
 
 type resList []struct {
@@ -134,11 +135,15 @@ func (r Resource) CreateAndAssign() error {
 
 // Only use this for things that return the normal returnStatuses json.
 func linstor(args ...string) error {
-	args = append([]string{"-m"}, args...)
-	out, _ := exec.Command("linstor", args...).CombinedOutput()
+	args = append([]string{"-m", "--controllers", "192.168.6.180:3376"}, args...)
+	out, err := exec.Command("linstor", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%v : %s", err, out)
+	}
+
 	s := returnStatuses{}
 	if err := json.Unmarshal(out, &s); err != nil {
-		return err
+		return fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
 	}
 
 	if err := s.validate(); err != nil {
@@ -151,6 +156,12 @@ func linstor(args ...string) error {
 // Create reserves the resource name in Linstor.
 func (r Resource) Create() error {
 	if err := linstor("create-resource-definition", r.Name); err != nil {
+		return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
+	}
+
+	time.Sleep(time.Second * 2)
+
+	if err := linstor("create-volume-definition", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)); err != nil {
 		return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
 	}
 
@@ -187,7 +198,7 @@ func (r Resource) Assign() error {
 			return fmt.Errorf("unable to assign resource %s failed to check if it was already present on node %s: %v", r.Name, node, err)
 		}
 		if !present {
-			if err = linstor("create-resource", r.Name, node, "-s", r.StoragePool, "--diskless"); err != nil {
+			if err = linstor("create-resource", r.Name, node, "--diskless"); err != nil {
 				return err
 			}
 		}
@@ -214,7 +225,10 @@ func (r Resource) Delete() error {
 
 // Exists checks to see if a resource is defined in DRBD Manage.
 func (r Resource) Exists() (bool, error) {
-	out, _ := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+	if err != nil {
+		return false, err
+	}
 
 	// Inject real implementations here, test through the internal function.
 	return doResExists(r.Name, out)
@@ -225,7 +239,7 @@ func doResExists(resourceName string, resInfo []byte) (bool, error) {
 
 	err := json.Unmarshal(resInfo, &resources)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("couldn't Unmarshal %s :%v", resInfo, err)
 	}
 
 	for _, r := range resources[0].Resources {
@@ -239,10 +253,14 @@ func doResExists(resourceName string, resInfo []byte) (bool, error) {
 
 //OnNode determines if a resource is present on a particular node.
 func (r Resource) OnNode(nodeName string) (bool, error) {
-	out, _ := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+	if err != nil {
+		return false, err
+	}
+
 	l := resList{}
 	if err := json.Unmarshal(out, &l); err != nil {
-		return false, err
+		return false, fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
 	}
 
 	return doResOnNode(l, r.Name, nodeName), nil
@@ -259,7 +277,8 @@ func doResOnNode(list resList, resName, nodeName string) bool {
 
 // IsClient determines if resource is running as a client on nodeName.
 func (r Resource) IsClient(nodeName string) bool {
-	out, _ := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, _ := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+
 	list := resList{}
 	if err := json.Unmarshal(out, &list); err != nil {
 		return false
@@ -419,7 +438,11 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 }
 
 func getDevPath(r Resource) (string, error) {
-	out, _ := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
 	list := resList{}
 	if err := json.Unmarshal(out, &list); err != nil {
 		return "", err
