@@ -135,7 +135,7 @@ func (r Resource) CreateAndAssign() error {
 
 // Only use this for things that return the normal returnStatuses json.
 func linstor(args ...string) error {
-	args = append([]string{"-m", "--controllers", "192.168.6.180:3376"}, args...)
+	args = append([]string{"-m"}, args...)
 	out, err := exec.Command("linstor", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%v : %s", err, out)
@@ -225,7 +225,7 @@ func (r Resource) Delete() error {
 
 // Exists checks to see if a resource is defined in DRBD Manage.
 func (r Resource) Exists() (bool, error) {
-	out, err := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
 	if err != nil {
 		return false, err
 	}
@@ -253,7 +253,7 @@ func doResExists(resourceName string, resInfo []byte) (bool, error) {
 
 //OnNode determines if a resource is present on a particular node.
 func (r Resource) OnNode(nodeName string) (bool, error) {
-	out, err := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
 	if err != nil {
 		return false, err
 	}
@@ -277,7 +277,7 @@ func doResOnNode(list resList, resName, nodeName string) bool {
 
 // IsClient determines if resource is running as a client on nodeName.
 func (r Resource) IsClient(nodeName string) bool {
-	out, _ := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+	out, _ := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
 
 	list := resList{}
 	if err := json.Unmarshal(out, &list); err != nil {
@@ -438,7 +438,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 }
 
 func getDevPath(r Resource) (string, error) {
-	out, err := exec.Command("linstor", "-m", "--controllers", "192.168.6.180:3376", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
 	if err != nil {
 		return "", err
 	}
