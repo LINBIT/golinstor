@@ -99,6 +99,25 @@ type returnStatuses []struct {
 	RetCode uint64 `json:"ret_code"`
 }
 
+type resDefInfo []struct {
+	RscDfns []struct {
+		VlmDfns []struct {
+			VlmDfnUUID string `json:"vlm_dfn_uuid"`
+			VlmMinor   int    `json:"vlm_minor"`
+			VlmNr      int    `json:"vlm_nr"`
+			VlmSize    int    `json:"vlm_size"`
+		} `json:"vlm_dfns,omitempty"`
+		RscDfnSecret string `json:"rsc_dfn_secret"`
+		RscDfnUUID   string `json:"rsc_dfn_uuid"`
+		RscName      string `json:"rsc_name"`
+		RscDfnPort   int    `json:"rsc_dfn_port"`
+		RscDfnProps  []struct {
+			Value string `json:"value"`
+			Key   string `json:"key"`
+		} `json:"rsc_dfn_props,omitempty"`
+	} `json:"rsc_dfns"`
+}
+
 func (s returnStatuses) validate() error {
 	for _, message := range s {
 		if !linstorSuccess(message.RetCode) {
@@ -155,14 +174,39 @@ func linstor(args ...string) error {
 
 // Create reserves the resource name in Linstor.
 func (r Resource) Create() error {
-	if err := linstor("create-resource-definition", r.Name); err != nil {
-		return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
+	out, err := exec.Command("linstor", "-m", "list-resource-definition").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%v: %s", err, out)
+	}
+	s := resDefInfo{}
+	if err := json.Unmarshal(out, &s); err != nil {
+		return fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
 	}
 
-	time.Sleep(time.Second * 2)
+	var defPresent bool
+	var volZeroPresent bool
 
-	if err := linstor("create-volume-definition", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)); err != nil {
-		return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
+	for _, def := range s[0].RscDfns {
+		if def.RscName == r.Name {
+			defPresent = true
+			for _, vol := range def.VlmDfns {
+				if vol.VlmNr == 0 {
+					volZeroPresent = true
+				}
+			}
+		}
+	}
+
+	if !defPresent {
+		if err := linstor("create-resource-definition", r.Name); err != nil {
+			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
+		}
+	}
+
+	if defPresent && !volZeroPresent {
+		if err := linstor("create-volume-definition", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)); err != nil {
+			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
+		}
 	}
 
 	return nil
