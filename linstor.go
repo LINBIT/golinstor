@@ -216,14 +216,14 @@ func (r Resource) Create() error {
 // then attaches the resource disklessly to all nodes in its ClientList.
 func (r Resource) Assign() error {
 	// Make sure the resource is defined before trying to assign it.
-	ok, err := r.Exists()
-	if err != nil {
-		return fmt.Errorf("Unable to determine if resource %s is defined %v", r.Name, err)
-	}
-	if !ok {
-		return fmt.Errorf("No resource definition for resource %s", r.Name)
-	}
-
+	//	ok, err := r.Exists()
+	//	if err != nil {
+	//		return fmt.Errorf("Unable to determine if resource %s is defined %v", r.Name, err)
+	//	}
+	//	if !ok {
+	//		return fmt.Errorf("No resource definition for resource %s", r.Name)
+	//	}
+	//
 	for _, node := range r.NodeList {
 		present, err := r.OnNode(node)
 		if err != nil {
