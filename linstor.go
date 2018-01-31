@@ -203,7 +203,7 @@ func (r Resource) Create() error {
 		}
 	}
 
-	if defPresent && !volZeroPresent {
+	if !volZeroPresent {
 		if err := linstor("create-volume-definition", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)); err != nil {
 			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
 		}
