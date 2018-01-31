@@ -1,4 +1,4 @@
-# godrbdmanage
+# golinstor
 
 This library aims to be a simple go interface for
 [Linstor](https://github.com/LINBIT/linstor-server)
