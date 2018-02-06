@@ -141,11 +141,7 @@ func (r Resource) CreateAndAssign() error {
 	if err := r.Create(); err != nil {
 		return err
 	}
-	if err := r.Assign(); err != nil {
-		return err
-	}
-
-	return nil
+	return r.Assign()
 }
 
 // Only use this for things that return the normal returnStatuses json.
@@ -164,11 +160,7 @@ func linstor(args ...string) error {
 		return fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
 	}
 
-	if err := s.validate(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.validate()
 }
 
 // Create reserves the resource name in Linstor.
