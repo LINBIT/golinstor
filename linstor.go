@@ -188,8 +188,10 @@ func (r Resource) Create() error {
 			for _, vol := range def.VlmDfns {
 				if vol.VlmNr == 0 {
 					volZeroPresent = true
+					break
 				}
 			}
+			break
 		}
 	}
 
