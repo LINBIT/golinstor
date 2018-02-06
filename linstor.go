@@ -156,6 +156,9 @@ func linstor(args ...string) error {
 		return fmt.Errorf("%v : %s", err, out)
 	}
 
+	if !json.Valid(out) {
+		return fmt.Errorf("not a valid json input: %s", out)
+	}
 	s := returnStatuses{}
 	if err := json.Unmarshal(out, &s); err != nil {
 		return fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
@@ -173,6 +176,10 @@ func (r Resource) Create() error {
 	out, err := exec.Command("linstor", "-m", "list-resource-definition").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%v: %s", err, out)
+	}
+
+	if !json.Valid(out) {
+		return fmt.Errorf("not a valid json input: %s", out)
 	}
 	s := resDefInfo{}
 	if err := json.Unmarshal(out, &s); err != nil {
@@ -279,6 +286,9 @@ func (r Resource) Exists() (bool, error) {
 func doResExists(resourceName string, resInfo []byte) (bool, error) {
 	resources := resList{}
 
+	if !json.Valid(resInfo) {
+		return false, fmt.Errorf("not a valid json input: %s", resInfo)
+	}
 	err := json.Unmarshal(resInfo, &resources)
 	if err != nil {
 		return false, fmt.Errorf("couldn't Unmarshal %s :%v", resInfo, err)
@@ -300,6 +310,9 @@ func (r Resource) OnNode(nodeName string) (bool, error) {
 		return false, err
 	}
 
+	if !json.Valid(out) {
+		return false, fmt.Errorf("not a valid json input: %s", out)
+	}
 	l := resList{}
 	if err := json.Unmarshal(out, &l); err != nil {
 		return false, fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
@@ -321,6 +334,9 @@ func doResOnNode(list resList, resName, nodeName string) bool {
 func (r Resource) IsClient(nodeName string) bool {
 	out, _ := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
 
+	if !json.Valid(out) {
+		return false
+	}
 	list := resList{}
 	if err := json.Unmarshal(out, &list); err != nil {
 		return false
@@ -485,6 +501,9 @@ func getDevPath(r Resource) (string, error) {
 		return "", err
 	}
 
+	if !json.Valid(out) {
+		return "", fmt.Errorf("not a valid json input: %s", out)
+	}
 	list := resList{}
 	if err := json.Unmarshal(out, &list); err != nil {
 		return "", err
