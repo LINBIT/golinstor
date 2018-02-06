@@ -132,12 +132,8 @@ func (s returnStatuses) validate() error {
 }
 
 func linstorSuccess(retcode uint64) bool {
-	const (
-		maskError = 0xC000000000000000
-		maskWarn  = 0x8000000000000000
-		maskInfo  = 0x4000000000000000
-	)
-	return (retcode & (maskError | maskWarn | maskInfo)) == 0
+	const maskError = 0xC000000000000000 // includes warnings and info (i.e., everything != SUCCESS)
+	return (retcode & maskError) == 0
 }
 
 // CreateAndAssign deploys the resource, created a new one if it doesn't exist.
