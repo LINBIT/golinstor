@@ -165,7 +165,7 @@ func linstor(args ...string) error {
 
 // Create reserves the resource name in Linstor.
 func (r Resource) Create() error {
-	out, err := exec.Command("linstor", "-m", "list-resource-definition").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "list-resource-definitions").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%v: %s", err, out)
 	}
@@ -266,7 +266,7 @@ func (r Resource) Delete() error {
 
 // Exists checks to see if a resource is defined in DRBD Manage.
 func (r Resource) Exists() (bool, error) {
-	out, err := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
 	if err != nil {
 		return false, err
 	}
@@ -297,7 +297,7 @@ func doResExists(resourceName string, resInfo []byte) (bool, error) {
 
 //OnNode determines if a resource is present on a particular node.
 func (r Resource) OnNode(nodeName string) (bool, error) {
-	out, err := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
 	if err != nil {
 		return false, err
 	}
@@ -324,7 +324,7 @@ func doResOnNode(list resList, resName, nodeName string) bool {
 
 // IsClient determines if resource is running as a client on nodeName.
 func (r Resource) IsClient(nodeName string) bool {
-	out, _ := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, _ := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
 
 	if !json.Valid(out) {
 		return false
@@ -488,7 +488,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 }
 
 func getDevPath(r Resource) (string, error) {
-	out, err := exec.Command("linstor", "-m", "ls-rsc").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
 	if err != nil {
 		return "", err
 	}
