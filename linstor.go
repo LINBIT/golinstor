@@ -31,13 +31,15 @@ import (
 // a resource. If you're deploying a resource, Redundancy is required. If you're
 // assigning a resource to a particular node, NodeName is required.
 type Resource struct {
-	Name        string
-	NodeName    string
-	Redundancy  string
-	NodeList    []string
-	ClientList  []string
-	StoragePool string
-	SizeKiB     uint64
+	Name                string
+	NodeName            string
+	Redundancy          string
+	NodeList            []string
+	ClientList          []string
+	AutoPlace           string
+	DoNotPlaceWithRegex string
+	SizeKiB             uint64
+	StoragePool         string
 }
 
 type resList []struct {
@@ -242,6 +244,17 @@ func (r Resource) Assign() error {
 			if err = linstor("create-resource", r.Name, node, "--diskless"); err != nil {
 				return err
 			}
+		}
+	}
+
+	if r.AutoPlace != "" {
+		args := []string{"create-resource", r.Name, "--auto-place", r.AutoPlace}
+		if r.DoNotPlaceWithRegex != "" {
+			args = append(args, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
+		}
+
+		if err := linstor(args...); err != nil {
+			return err
 		}
 	}
 
