@@ -442,7 +442,11 @@ func (f FSUtil) safeFormat(path string) error {
 		return fmt.Errorf("device %q already formatted with %q filesystem, refusing to overwrite with %q filesystem", path, deviceFS, f.FSType)
 	}
 
-	out, err := exec.Command("mkfs", "-t", f.FSType, path).CombinedOutput()
+	args := []string{"-t", f.FSType}
+	args = append(args, f.args...)
+	args = append(args, path)
+
+	out, err := exec.Command("mkfs", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("couldn't create %s filesystem %v: %q", f.FSType, err, out)
 	}
