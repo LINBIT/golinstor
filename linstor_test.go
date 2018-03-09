@@ -18,7 +18,10 @@
 
 package linstor
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestDoResExists(t *testing.T) {
 
@@ -56,4 +59,35 @@ func TestDoCheckFSType(t *testing.T) {
 			t.Errorf("Called: doCheckFSType(%q), Expected: %q, Got: %q", tt.in, tt.out, FSType)
 		}
 	}
+}
+
+func TestPopulateArgs(t *testing.T) {
+	var populateArgsTests = []struct {
+		in  FSUtil
+		out []string
+	}{
+		{FSUtil{
+			FSType:    "xfs",
+			BlockSize: 4096,
+		}, []string{"-b", "size=4096"}},
+		{FSUtil{
+			FSType:    "xfs",
+			BlockSize: 2048,
+		}, []string{"-b", "size=2048"}},
+		{FSUtil{
+			FSType:    "ext4",
+			BlockSize: 2048,
+		}, []string{"-b", "2048"}},
+	}
+
+	for _, tt := range populateArgsTests {
+
+		tt.in.populateArgs()
+
+		if !reflect.DeepEqual(tt.in.args, tt.out) {
+			t.Errorf("Expected: %v Got: %v", tt.out, tt.in.args)
+		}
+
+	}
+
 }

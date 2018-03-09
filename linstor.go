@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -374,7 +375,9 @@ func EnoughFreeSpace(requestedKiB, replicas string) error {
 // FSUtil handles creating a filesystem and mounting resources.
 type FSUtil struct {
 	*Resource
-	FSType string
+	FSType    string
+	BlockSize int64
+	args      []string
 }
 
 // Mount the FSUtil's resource on the path.
@@ -442,6 +445,21 @@ func (f FSUtil) safeFormat(path string) error {
 	out, err := exec.Command("mkfs", "-t", f.FSType, path).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("couldn't create %s filesystem %v: %q", f.FSType, err, out)
+	}
+
+	return nil
+}
+
+func (f *FSUtil) populateArgs() error {
+
+	if f.BlockSize != 0 {
+		b := strconv.FormatInt(f.BlockSize, 10)
+
+		if f.FSType == "xfs" {
+			b = fmt.Sprintf("size=%s", b)
+		}
+
+		f.args = []string{"-b", b}
 	}
 
 	return nil
