@@ -442,6 +442,8 @@ func (f FSUtil) safeFormat(path string) error {
 		return fmt.Errorf("device %q already formatted with %q filesystem, refusing to overwrite with %q filesystem", path, deviceFS, f.FSType)
 	}
 
+	f.populateArgs()
+
 	args := []string{"-t", f.FSType}
 	args = append(args, f.args...)
 	args = append(args, path)
