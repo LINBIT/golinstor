@@ -280,6 +280,17 @@ func (r Resource) Unassign(nodeName string) error {
 
 // Delete removes a resource entirely from all nodes.
 func (r Resource) Delete() error {
+	defPresent, _, err := r.checkDefined()
+	if err != nil {
+		return fmt.Errorf("failed to delete resource %s: %v", r.Name, err)
+	}
+
+	// If the resource definition doesn't exist, then the resource is as deleted
+	// as we can possibly make it.
+	if !defPresent {
+		return nil
+	}
+
 	if err := linstor("delete-resource-definition", r.Name); err != nil {
 		return fmt.Errorf("failed to delete resource %s: %v", r.Name, err)
 	}
