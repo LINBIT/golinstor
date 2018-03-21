@@ -313,7 +313,7 @@ func doResExists(resourceName string, resInfo []byte) (bool, error) {
 func (r Resource) OnNode(nodeName string) (bool, error) {
 	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%v: %s", err, out)
 	}
 
 	if !json.Valid(out) {
