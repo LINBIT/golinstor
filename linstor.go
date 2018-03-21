@@ -168,33 +168,9 @@ func linstor(args ...string) error {
 
 // Create reserves the resource name in Linstor.
 func (r Resource) Create() error {
-	out, err := exec.Command("linstor", "-m", "list-resource-definitions").CombinedOutput()
+	defPresent, volZeroPresent, err := r.checkDefined()
 	if err != nil {
-		return fmt.Errorf("%v: %s", err, out)
-	}
-
-	if !json.Valid(out) {
-		return fmt.Errorf("not a valid json input: %s", out)
-	}
-	s := resDefInfo{}
-	if err := json.Unmarshal(out, &s); err != nil {
-		return fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
-	}
-
-	var defPresent bool
-	var volZeroPresent bool
-
-	for _, def := range s[0].RscDfns {
-		if def.RscName == r.Name {
-			defPresent = true
-			for _, vol := range def.VlmDfns {
-				if vol.VlmNr == 0 {
-					volZeroPresent = true
-					break
-				}
-			}
-			break
-		}
+		return err
 	}
 
 	if !defPresent {
@@ -210,6 +186,38 @@ func (r Resource) Create() error {
 	}
 
 	return nil
+}
+
+func (r Resource) checkDefined() (bool, bool, error) {
+	out, err := exec.Command("linstor", "-m", "list-resource-definitions").CombinedOutput()
+	if err != nil {
+		return false, false, fmt.Errorf("%v: %s", err, out)
+	}
+
+	if !json.Valid(out) {
+		return false, false, fmt.Errorf("not a valid json input: %s", out)
+	}
+	s := resDefInfo{}
+	if err := json.Unmarshal(out, &s); err != nil {
+		return false, false, fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
+	}
+
+	var defPresent, volZeroPresent bool
+
+	for _, def := range s[0].RscDfns {
+		if def.RscName == r.Name {
+			defPresent = true
+			for _, vol := range def.VlmDfns {
+				if vol.VlmNr == 0 {
+					volZeroPresent = true
+					break
+				}
+			}
+			break
+		}
+	}
+
+	return defPresent, volZeroPresent, nil
 }
 
 // Assign assigns a resource with diskfull storage to all nodes in its NodeList,
