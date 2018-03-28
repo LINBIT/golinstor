@@ -41,6 +41,7 @@ type Resource struct {
 	DoNotPlaceWithRegex string
 	SizeKiB             uint64
 	StoragePool         string
+	Encryption          bool
 }
 
 type resList []struct {
@@ -180,7 +181,13 @@ func (r Resource) Create() error {
 	}
 
 	if !volZeroPresent {
-		if err := linstor("create-volume-definition", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)); err != nil {
+
+		args := []string{"create-volume-definition", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)}
+		if r.Encryption {
+			args = append(args, "--encrypt")
+		}
+
+		if err := linstor(args...); err != nil {
 			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
 		}
 	}
