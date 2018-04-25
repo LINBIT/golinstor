@@ -589,7 +589,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 	var err error
 
 	for i := 0; i < maxRetries; i++ {
-		path, err = getDevPath(r)
+		path, err = GetDevPath(r)
 		if path != "" {
 			return path, err
 		}
@@ -598,7 +598,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 	return path, err
 }
 
-func getDevPath(r Resource) (string, error) {
+func GetDevPath(r Resource) (string, error) {
 	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
 	if err != nil {
 		return "", err
