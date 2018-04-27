@@ -42,6 +42,7 @@ type Resource struct {
 	DoNotPlaceWithRegex string
 	SizeKiB             uint64
 	StoragePool         string
+	DisklessStoragePool string
 	Encryption          bool
 }
 
@@ -231,15 +232,7 @@ func (r Resource) checkDefined() (bool, bool, error) {
 // Assign assigns a resource with diskfull storage to all nodes in its NodeList,
 // then attaches the resource disklessly to all nodes in its ClientList.
 func (r Resource) Assign() error {
-	// Make sure the resource is defined before trying to assign it.
-	//	ok, err := r.Exists()
-	//	if err != nil {
-	//		return fmt.Errorf("Unable to determine if resource %s is defined %v", r.Name, err)
-	//	}
-	//	if !ok {
-	//		return fmt.Errorf("No resource definition for resource %s", r.Name)
-	//	}
-	//
+
 	for _, node := range r.NodeList {
 		present, err := r.OnNode(node)
 		if err != nil {
@@ -257,8 +250,13 @@ func (r Resource) Assign() error {
 		if err != nil {
 			return fmt.Errorf("unable to assign resource %s failed to check if it was already present on node %s: %v", r.Name, node, err)
 		}
+
+		if r.DisklessStoragePool == "" {
+			r.DisklessStoragePool = "DfltDisklessStorPool"
+		}
+
 		if !present {
-			if err = linstor("create-resource", r.Name, node, "--diskless"); err != nil {
+			if err = linstor("create-resource", r.Name, node, "-s", r.DisklessStoragePool); err != nil {
 				return err
 			}
 		}
@@ -589,7 +587,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 	var err error
 
 	for i := 0; i < maxRetries; i++ {
-		path, err = GetDevPath(r)
+		path, err = GetDevPath(r, true)
 		if path != "" {
 			return path, err
 		}
@@ -598,7 +596,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 	return path, err
 }
 
-func GetDevPath(r Resource) (string, error) {
+func GetDevPath(r Resource, stat bool) (string, error) {
 	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
 	if err != nil {
 		return "", err
@@ -627,8 +625,10 @@ func GetDevPath(r Resource) (string, error) {
 
 	devicePath := doGetDevPath(vol)
 
-	if _, err := os.Lstat(devicePath); err != nil {
-		return "", fmt.Errorf("Couldn't stat %s: %v", devicePath, err)
+	if stat {
+		if _, err := os.Lstat(devicePath); err != nil {
+			return "", fmt.Errorf("Couldn't stat %s: %v", devicePath, err)
+		}
 	}
 
 	return devicePath, nil
