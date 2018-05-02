@@ -156,3 +156,35 @@ func TestDoIsClient(t *testing.T) {
 	}
 
 }
+
+func TestDoResOnNode(t *testing.T) {
+
+	out, err := ioutil.ReadFile("test_json/mixed_diskless.json")
+	if err != nil {
+		t.Error(err)
+	}
+
+	list := resList{}
+	if err := json.Unmarshal(out, &list); err != nil {
+	}
+
+	var isClientTests = []struct {
+		resource string
+		node     string
+		l        resList
+		out      bool
+	}{
+		{"default-william", "kubelet-a", list, true},
+		{"default-william", "kubelet-x", list, false},
+		{"default-william", "kubelet-c", list, true},
+	}
+
+	for _, tt := range isClientTests {
+
+		ok := doResOnNode(tt.l, tt.resource, tt.node)
+		if tt.out != ok {
+			t.Errorf("Expected: %v on %s Got: %v", tt.out, tt.node, ok)
+		}
+	}
+
+}
