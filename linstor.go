@@ -79,15 +79,16 @@ type resInfo struct {
 }
 
 type volInfo struct {
-	HasDisk       bool `json:"has_disk"`
-	CheckMetaData bool `json:"check_meta_data"`
-	HasMetaData   bool `json:"has_meta_data"`
-	IsPresent     bool `json:"is_present"`
-	DiskFailed    bool `json:"disk_failed"`
-	NetSize       int  `json:"net_size"`
-	VlmMinorNr    *int `json:"vlm_minor_nr"` // Allow nil checking.
-	GrossSize     int  `json:"gross_size"`
-	VlmNr         int  `json:"vlm_nr"`
+	HasDisk       bool   `json:"has_disk"`
+	CheckMetaData bool   `json:"check_meta_data"`
+	HasMetaData   bool   `json:"has_meta_data"`
+	IsPresent     bool   `json:"is_present"`
+	DiskState     string `json:"disk_state"`
+	DiskFailed    bool   `json:"disk_failed"`
+	NetSize       int    `json:"net_size"`
+	VlmMinorNr    *int   `json:"vlm_minor_nr"` // Allow nil checking.
+	GrossSize     int    `json:"gross_size"`
+	VlmNr         int    `json:"vlm_nr"`
 }
 
 type returnStatuses []struct {
@@ -383,7 +384,10 @@ func (r Resource) doIsClient(list resList, nodeName string) bool {
 		if r.Name == res.RscName && nodeName == res.NodeName {
 			for _, v := range res.VlmStates {
 				if v.VlmNr == 0 {
-					return !v.HasDisk
+					if v.DiskState == "Diskless" {
+						return true
+					}
+					return false
 				}
 			}
 		}
