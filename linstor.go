@@ -178,14 +178,14 @@ func (r Resource) Create() error {
 	}
 
 	if !defPresent {
-		if err := linstor("create-resource-definition", r.Name); err != nil {
+		if err := linstor("resource-definition", "create", r.Name); err != nil {
 			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
 		}
 	}
 
 	if !volZeroPresent {
 
-		args := []string{"create-volume-definition", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)}
+		args := []string{"volume-definition", "create", r.Name, fmt.Sprintf("%dkib", r.SizeKiB)}
 		if r.Encryption {
 			args = append(args, "--encrypt")
 		}
@@ -199,7 +199,7 @@ func (r Resource) Create() error {
 }
 
 func (r Resource) checkDefined() (bool, bool, error) {
-	out, err := exec.Command("linstor", "-m", "list-resource-definitions").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "resource-definition", "list").CombinedOutput()
 	if err != nil {
 		return false, false, fmt.Errorf("%v: %s", err, out)
 	}
@@ -240,7 +240,7 @@ func (r Resource) Assign() error {
 			return fmt.Errorf("unable to assign resource %s failed to check if it was already present on node %s: %v", r.Name, node, err)
 		}
 		if !present {
-			if err = linstor("create-resource", r.Name, node, "-s", r.StoragePool); err != nil {
+			if err = linstor("resource", "create", node, r.Name, "-s", r.StoragePool); err != nil {
 				return err
 			}
 		}
@@ -257,14 +257,14 @@ func (r Resource) Assign() error {
 		}
 
 		if !present {
-			if err = linstor("create-resource", r.Name, node, "-s", r.DisklessStoragePool); err != nil {
+			if err = linstor("resource", "create", node, r.Name, "-s", r.DisklessStoragePool); err != nil {
 				return err
 			}
 		}
 	}
 
 	if r.AutoPlace != "" {
-		args := []string{"create-resource", r.Name, "--auto-place", r.AutoPlace}
+		args := []string{"resource", "create", r.Name, "--auto-place", r.AutoPlace}
 		if r.DoNotPlaceWithRegex != "" {
 			args = append(args, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
 		}
@@ -279,7 +279,7 @@ func (r Resource) Assign() error {
 
 // Unassign unassigns a resource from a particular node.
 func (r Resource) Unassign(nodeName string) error {
-	if err := linstor("delete-resource", r.Name, nodeName); err != nil {
+	if err := linstor("resource", "delete", nodeName, r.Name); err != nil {
 		return fmt.Errorf("failed to unassign resource %s from node %s: %v", r.Name, nodeName, err)
 	}
 	return nil
@@ -298,7 +298,7 @@ func (r Resource) Delete() error {
 		return nil
 	}
 
-	if err := linstor("delete-resource-definition", r.Name); err != nil {
+	if err := linstor("resource-definition", "delete", r.Name); err != nil {
 		return fmt.Errorf("failed to delete resource %s: %v", r.Name, err)
 	}
 	return nil
@@ -306,7 +306,7 @@ func (r Resource) Delete() error {
 
 // Exists checks to see if a resource is defined in DRBD Manage.
 func (r Resource) Exists() (bool, error) {
-	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
 	if err != nil {
 		return false, err
 	}
@@ -337,7 +337,7 @@ func doResExists(resourceName string, resInfo []byte) (bool, error) {
 
 //OnNode determines if a resource is present on a particular node.
 func (r Resource) OnNode(nodeName string) (bool, error) {
-	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
 	if err != nil {
 		return false, fmt.Errorf("%v: %s", err, out)
 	}
@@ -364,7 +364,7 @@ func doResOnNode(list resList, resName, nodeName string) bool {
 
 // IsClient determines if resource is running as a client on nodeName.
 func (r Resource) IsClient(nodeName string) bool {
-	out, _ := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
+	out, _ := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
 
 	if !json.Valid(out) {
 		return false
@@ -601,7 +601,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 }
 
 func GetDevPath(r Resource, stat bool) (string, error) {
-	out, err := exec.Command("linstor", "-m", "list-resources").CombinedOutput()
+	out, err := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
 	if err != nil {
 		return "", err
 	}
