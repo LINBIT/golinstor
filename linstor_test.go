@@ -99,7 +99,7 @@ func TestPopulateArgs(t *testing.T) {
 		{FSUtil{
 			FSType:    "xfs",
 			XFSDataSU: "128k",
-		}, []string{"-d", "su=128k"}},
+		}, []string{"-d", "'su=128k'"}},
 		{FSUtil{
 			FSType:    "xfs",
 			XFSDataSW: 1,
@@ -112,11 +112,11 @@ func TestPopulateArgs(t *testing.T) {
 			// Sadly, the order here matters based on how this []string is built in
 			// function. It's a little bit fragile, but probably not worth messing
 			// with right now.
-		}, []string{"-f", "-d", "su=128k", "-d", "sw=1"}},
+		}, []string{"-f", "-d", "'su=128k'", "-d", "sw=1"}},
 		{FSUtil{
 			FSType:    "xfs",
 			XFSLogDev: "/dev/example",
-		}, []string{"-l", "logdev=/dev/example"}},
+		}, []string{"-l", "'logdev=/dev/example'"}},
 	}
 
 	for _, tt := range populateArgsTests {

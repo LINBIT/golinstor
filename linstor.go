@@ -527,7 +527,7 @@ func (f *FSUtil) populateArgs() error {
 				return err
 			}
 
-			f.args = append(f.args, "-d", fmt.Sprintf("su=%s", f.XFSDataSU))
+			f.args = append(f.args, "-d", fmt.Sprintf("'su=%s'", f.XFSDataSU))
 		}
 
 		if f.XFSDataSW != 0 {
@@ -535,7 +535,7 @@ func (f *FSUtil) populateArgs() error {
 		}
 
 		if f.XFSLogDev != "" {
-			f.args = append(f.args, "-l", fmt.Sprintf("logdev=%s", f.XFSLogDev))
+			f.args = append(f.args, "-l", fmt.Sprintf("'logdev=%s'", f.XFSLogDev))
 		}
 	}
 
