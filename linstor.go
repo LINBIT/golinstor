@@ -83,8 +83,8 @@ type volInfo struct {
 	CheckMetaData bool   `json:"check_meta_data"`
 	HasMetaData   bool   `json:"has_meta_data"`
 	IsPresent     bool   `json:"is_present"`
-	DiskState     string `json:"disk_state"`
 	DiskFailed    bool   `json:"disk_failed"`
+	DiskState     string `json:"disk_state"`
 	NetSize       int    `json:"net_size"`
 	VlmMinorNr    *int   `json:"vlm_minor_nr"` // Allow nil checking.
 	GrossSize     int    `json:"gross_size"`
