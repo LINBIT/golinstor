@@ -170,6 +170,24 @@ func linstor(args ...string) error {
 	return s.validate()
 }
 
+func listResources() (resList, error) {
+	list := resList{}
+
+	out, err := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
+	if err != nil {
+		return list, err
+	}
+
+	if !json.Valid(out) {
+		return list, fmt.Errorf("invalid json from 'linstor -m resource list'")
+	}
+	if err := json.Unmarshal(out, &list); err != nil {
+		return list, fmt.Errorf("couldn't Unmarshal '%s' :%v", out, err)
+	}
+
+	return list, nil
+}
+
 // Create reserves the resource name in Linstor.
 func (r Resource) Create() error {
 	defPresent, volZeroPresent, err := r.checkDefined()
@@ -306,26 +324,16 @@ func (r Resource) Delete() error {
 
 // Exists checks to see if a resource is defined in DRBD Manage.
 func (r Resource) Exists() (bool, error) {
-	out, err := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
+	l, err := listResources()
 	if err != nil {
 		return false, err
 	}
 
 	// Inject real implementations here, test through the internal function.
-	return doResExists(r.Name, out)
+	return doResExists(r.Name, l)
 }
 
-func doResExists(resourceName string, resInfo []byte) (bool, error) {
-	resources := resList{}
-
-	if !json.Valid(resInfo) {
-		return false, fmt.Errorf("not a valid json input: %s", resInfo)
-	}
-	err := json.Unmarshal(resInfo, &resources)
-	if err != nil {
-		return false, fmt.Errorf("couldn't Unmarshal %s :%v", resInfo, err)
-	}
-
+func doResExists(resourceName string, resources resList) (bool, error) {
 	for _, r := range resources[0].Resources {
 		if r.Name == resourceName {
 			return true, nil
@@ -337,17 +345,9 @@ func doResExists(resourceName string, resInfo []byte) (bool, error) {
 
 //OnNode determines if a resource is present on a particular node.
 func (r Resource) OnNode(nodeName string) (bool, error) {
-	out, err := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
+	l, err := listResources()
 	if err != nil {
-		return false, fmt.Errorf("%v: %s", err, out)
-	}
-
-	if !json.Valid(out) {
-		return false, fmt.Errorf("not a valid json input: %s", out)
-	}
-	l := resList{}
-	if err := json.Unmarshal(out, &l); err != nil {
-		return false, fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
+		return false, err
 	}
 
 	return doResOnNode(l, r.Name, nodeName), nil
@@ -364,17 +364,12 @@ func doResOnNode(list resList, resName, nodeName string) bool {
 
 // IsClient determines if resource is running as a client on nodeName.
 func (r Resource) IsClient(nodeName string) bool {
-	out, _ := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
-
-	if !json.Valid(out) {
-		return false
-	}
-	list := resList{}
-	if err := json.Unmarshal(out, &list); err != nil {
+	l, err := listResources()
+	if err != nil {
 		return false
 	}
 
-	return r.doIsClient(list, nodeName)
+	return r.doIsClient(l, nodeName)
 }
 
 func (r Resource) doIsClient(list resList, nodeName string) bool {
@@ -601,16 +596,8 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 }
 
 func GetDevPath(r Resource, stat bool) (string, error) {
-	out, err := exec.Command("linstor", "-m", "resource", "list").CombinedOutput()
+	list, err := listResources()
 	if err != nil {
-		return "", err
-	}
-
-	if !json.Valid(out) {
-		return "", fmt.Errorf("not a valid json input: %s", out)
-	}
-	list := resList{}
-	if err := json.Unmarshal(out, &list); err != nil {
 		return "", err
 	}
 
