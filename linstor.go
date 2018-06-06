@@ -27,23 +27,108 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/satori/go.uuid"
 )
 
 // ResourceDeployment contains all the information needed to query and assign/deploy
-// a resource. If you're deploying a resource, Redundancy is required. If you're
-// assigning a resource to a particular node, NodeName is required.
+// a resource.
 type ResourceDeployment struct {
+	ResourceDeploymentConfig
+	autoPlaced bool
+}
+
+// ResourceDeploymentConfig is a configuration object for ResourceDeployment.
+// If you're deploying a resource, AutoPlace is required. If you're
+// assigning a resource to particular nodes, NodeList is required.
+type ResourceDeploymentConfig struct {
 	Name                string
-	NodeName            string
-	Redundancy          string
 	NodeList            []string
 	ClientList          []string
-	AutoPlace           string
+	AutoPlace           uint64
 	DoNotPlaceWithRegex string
 	SizeKiB             uint64
 	StoragePool         string
 	DisklessStoragePool string
 	Encryption          bool
+}
+
+// NewResourceDeployment creates a new ResourceDeployment object. This tolerates
+// some pretty janky ResourceDeploymentConfigs here is the breakdown of how
+// that is handled:
+// If no Name is given, a UUID is generated and used.
+// If no NodeList is given, assignment will be automatically placed.
+// If no ClientList is given, no client assignments will be made.
+// If there are duplicates within ClientList or NodeList, they will be removed.
+// If there are duplicates between ClientList and NodeList, duplicates in the ClientList will be removed.
+// If no AutoPlace Value is given AND there is no NodeList and no ClientList, it will default to 1.
+// If no DoNotPlaceWithRegex is provided resource assignment will occur without it.
+// If no SizeKiB is provided, it will be given a size of 4096kb.
+// If no StoragePool is provided, the default storage pool will be used.
+// If no DisklessStoragePool is provided, the default diskless storage pool will be used.
+// If no Encryption is specified, none will be used.
+func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
+	r := ResourceDeployment{c, false}
+
+	if r.Name == "" {
+		r.Name = fmt.Sprintf("%s", uuid.NewV4())
+	}
+
+	if len(r.NodeList) == 0 && r.AutoPlace == 0 {
+		if len(r.NodeList) == 0 && len(r.ClientList) == 0 && r.AutoPlace == 0 {
+			r.AutoPlace = 1
+		}
+	}
+	if r.AutoPlace > 0 {
+		r.autoPlaced = true
+	}
+
+	r.NodeList = uniq(r.NodeList)
+	r.ClientList = uniq(r.ClientList)
+	r.ClientList = subtract(r.NodeList, r.ClientList)
+
+	if r.SizeKiB == 0 {
+		r.SizeKiB = 4096
+	}
+
+	if r.StoragePool == "" {
+		r.StoragePool = "DfltStorPool"
+	}
+
+	if r.DisklessStoragePool == "" {
+		r.DisklessStoragePool = "DfltDisklessStorPool"
+	}
+
+	return r
+}
+
+// uniq removes duplicates from a []string.
+func uniq(strs []string) []string {
+	seen := map[string]bool{}
+
+	return unSeen(seen, strs)
+}
+
+// subtracts removes elements in s1 from s2.
+func subtract(s1, s2 []string) []string {
+	seen := map[string]bool{}
+	for _, s := range s1 {
+		seen[s] = true
+	}
+
+	return unSeen(seen, s2)
+}
+
+// unSeen returns a []string containing elements not present in seen.
+func unSeen(seen map[string]bool, strs []string) []string {
+	result := []string{}
+	for _, s := range strs {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+	return result
 }
 
 type resList []struct {
@@ -156,7 +241,7 @@ func linstor(args ...string) error {
 	args = append([]string{"-m"}, args...)
 	out, err := exec.Command("linstor", args...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%v : %s", err, out)
+		return fmt.Errorf("%s: %v", err, out)
 	}
 
 	if !json.Valid(out) {
@@ -270,10 +355,6 @@ func (r ResourceDeployment) Assign() error {
 			return fmt.Errorf("unable to assign resource %s failed to check if it was already present on node %s: %v", r.Name, node, err)
 		}
 
-		if r.DisklessStoragePool == "" {
-			r.DisklessStoragePool = "DfltDisklessStorPool"
-		}
-
 		if !present {
 			if err = linstor("resource", "create", node, r.Name, "-s", r.DisklessStoragePool); err != nil {
 				return err
@@ -281,8 +362,8 @@ func (r ResourceDeployment) Assign() error {
 		}
 	}
 
-	if r.AutoPlace != "" {
-		args := []string{"resource", "create", r.Name, "--auto-place", r.AutoPlace}
+	if r.autoPlaced {
+		args := []string{"resource", "create", r.Name, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
 		if r.DoNotPlaceWithRegex != "" {
 			args = append(args, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
 		}
