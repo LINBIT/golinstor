@@ -154,7 +154,7 @@ func TestDoIsClient(t *testing.T) {
 	}
 
 	for _, tt := range isClientTests {
-		r := Resource{Name: tt.resource}
+		r := ResourceDeployment{Name: tt.resource}
 
 		ok := r.doIsClient(tt.l, tt.node)
 

@@ -29,10 +29,10 @@ import (
 	"time"
 )
 
-// Resource contains all the information needed to query and assign/deploy
+// ResourceDeployment contains all the information needed to query and assign/deploy
 // a resource. If you're deploying a resource, Redundancy is required. If you're
 // assigning a resource to a particular node, NodeName is required.
-type Resource struct {
+type ResourceDeployment struct {
 	Name                string
 	NodeName            string
 	Redundancy          string
@@ -144,7 +144,7 @@ func linstorSuccess(retcode uint64) bool {
 }
 
 // CreateAndAssign deploys the resource, created a new one if it doesn't exist.
-func (r Resource) CreateAndAssign() error {
+func (r ResourceDeployment) CreateAndAssign() error {
 	if err := r.Create(); err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func listResources() (resList, error) {
 }
 
 // Create reserves the resource name in Linstor.
-func (r Resource) Create() error {
+func (r ResourceDeployment) Create() error {
 	defPresent, volZeroPresent, err := r.checkDefined()
 	if err != nil {
 		return err
@@ -216,7 +216,7 @@ func (r Resource) Create() error {
 	return nil
 }
 
-func (r Resource) checkDefined() (bool, bool, error) {
+func (r ResourceDeployment) checkDefined() (bool, bool, error) {
 	out, err := exec.Command("linstor", "-m", "resource-definition", "list").CombinedOutput()
 	if err != nil {
 		return false, false, fmt.Errorf("%v: %s", err, out)
@@ -250,7 +250,7 @@ func (r Resource) checkDefined() (bool, bool, error) {
 
 // Assign assigns a resource with diskfull storage to all nodes in its NodeList,
 // then attaches the resource disklessly to all nodes in its ClientList.
-func (r Resource) Assign() error {
+func (r ResourceDeployment) Assign() error {
 
 	for _, node := range r.NodeList {
 		present, err := r.OnNode(node)
@@ -296,7 +296,7 @@ func (r Resource) Assign() error {
 }
 
 // Unassign unassigns a resource from a particular node.
-func (r Resource) Unassign(nodeName string) error {
+func (r ResourceDeployment) Unassign(nodeName string) error {
 	if err := linstor("resource", "delete", nodeName, r.Name); err != nil {
 		return fmt.Errorf("failed to unassign resource %s from node %s: %v", r.Name, nodeName, err)
 	}
@@ -304,7 +304,7 @@ func (r Resource) Unassign(nodeName string) error {
 }
 
 // Delete removes a resource entirely from all nodes.
-func (r Resource) Delete() error {
+func (r ResourceDeployment) Delete() error {
 	defPresent, _, err := r.checkDefined()
 	if err != nil {
 		return fmt.Errorf("failed to delete resource %s: %v", r.Name, err)
@@ -323,7 +323,7 @@ func (r Resource) Delete() error {
 }
 
 // Exists checks to see if a resource is defined in DRBD Manage.
-func (r Resource) Exists() (bool, error) {
+func (r ResourceDeployment) Exists() (bool, error) {
 	l, err := listResources()
 	if err != nil {
 		return false, err
@@ -344,7 +344,7 @@ func doResExists(resourceName string, resources resList) (bool, error) {
 }
 
 //OnNode determines if a resource is present on a particular node.
-func (r Resource) OnNode(nodeName string) (bool, error) {
+func (r ResourceDeployment) OnNode(nodeName string) (bool, error) {
 	l, err := listResources()
 	if err != nil {
 		return false, err
@@ -363,7 +363,7 @@ func doResOnNode(list resList, resName, nodeName string) bool {
 }
 
 // IsClient determines if resource is running as a client on nodeName.
-func (r Resource) IsClient(nodeName string) bool {
+func (r ResourceDeployment) IsClient(nodeName string) bool {
 	l, err := listResources()
 	if err != nil {
 		return false
@@ -372,7 +372,7 @@ func (r Resource) IsClient(nodeName string) bool {
 	return r.doIsClient(l, nodeName)
 }
 
-func (r Resource) doIsClient(list resList, nodeName string) bool {
+func (r ResourceDeployment) doIsClient(list resList, nodeName string) bool {
 	// Traverse all the volume states to find volume 0 of our resource on nodeName.
 	// Assume volume 0 is the one we want.
 	for _, res := range list[0].ResourceStates {
@@ -398,7 +398,7 @@ func EnoughFreeSpace(requestedKiB, replicas string) error {
 
 // FSUtil handles creating a filesystem and mounting resources.
 type FSUtil struct {
-	*Resource
+	*ResourceDeployment
 	BlockSize int64
 	FSType    string
 	Force     bool
@@ -411,7 +411,7 @@ type FSUtil struct {
 
 // Mount the FSUtil's resource on the path.
 func (f FSUtil) Mount(path string) error {
-	device, err := WaitForDevPath(*f.Resource, 3)
+	device, err := WaitForDevPath(*f.ResourceDeployment, 3)
 	if err != nil {
 		return fmt.Errorf("unable to mount device, couldn't find Resource device path: %v", err)
 	}
@@ -581,7 +581,7 @@ func doCheckFSType(s string) (string, error) {
 }
 
 // WaitForDevPath polls until the resourse path appears on the system.
-func WaitForDevPath(r Resource, maxRetries int) (string, error) {
+func WaitForDevPath(r ResourceDeployment, maxRetries int) (string, error) {
 	var path string
 	var err error
 
@@ -595,7 +595,7 @@ func WaitForDevPath(r Resource, maxRetries int) (string, error) {
 	return path, err
 }
 
-func GetDevPath(r Resource, stat bool) (string, error) {
+func GetDevPath(r ResourceDeployment, stat bool) (string, error) {
 	list, err := listResources()
 	if err != nil {
 		return "", err
