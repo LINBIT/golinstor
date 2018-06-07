@@ -45,15 +45,20 @@ func TestNewResourceDeployment(t *testing.T) {
 	if res.DisklessStoragePool != "DfltDisklessStorPool" {
 		t.Errorf("Expected DisklessStoragePool to be %s, got %s", "DfltDisklessStorPool", res.DisklessStoragePool)
 	}
+	if res.Controllers != "" {
+		t.Errorf("Expected Controllers to be %s, got %s", "", res.Controllers)
+	}
 
 	// Test regularly configured deployment autoplace.
 	name := "Agamemnon"
 	res = NewResourceDeployment(
 		ResourceDeploymentConfig{
-			Name:      name,
-			AutoPlace: 5,
-			SizeKiB:   10000,
-		})
+			Name:        name,
+			AutoPlace:   5,
+			SizeKiB:     10000,
+			Controllers: "192.168.100.100:9001,172.5.1.30:5605,192.168.5.1:8080",
+		},
+	)
 	if res.Name != name {
 		t.Errorf("Expected %s to equal %s", res.Name, name)
 	}
@@ -62,6 +67,9 @@ func TestNewResourceDeployment(t *testing.T) {
 	}
 	if res.SizeKiB != 10000 {
 		t.Errorf("Expected SizeKiB to be %d, got %d", 10000, res.SizeKiB)
+	}
+	if res.Controllers != "192.168.100.100:9001,172.5.1.30:5605,192.168.5.1:8080" {
+		t.Errorf("Expected Controllers to be %s, got %s", "192.168.100.100:9001,172.5.1.30:5605,192.168.5.1:8080", res.Controllers)
 	}
 
 	// Test regularly configured deployment manual.
@@ -76,6 +84,50 @@ func TestNewResourceDeployment(t *testing.T) {
 	}
 	if !reflect.DeepEqual(res.NodeList, nodes) {
 		t.Errorf("Expected: %v, Got: %v", nodes, res.NodeList)
+	}
+}
+
+func TestPrependOpts(t *testing.T) {
+	var optsTests = []struct {
+		in  []string
+		out []string
+	}{
+		{[]string{"resource", "list"},
+			[]string{"-m", "resource", "list"}},
+		{[]string{"fee", "fie", "fo", "fum"},
+			[]string{"-m", "fee", "fie", "fo", "fum"}},
+	}
+
+	r1 := NewResourceDeployment(ResourceDeploymentConfig{})
+
+	for _, tt := range optsTests {
+		result := r1.prependOpts(tt.in...)
+		if !reflect.DeepEqual(result, tt.out) {
+			t.Errorf("Called: prependOpts(%v), Expected: %v, Got: %v. %+v", tt.in, tt.out, result, r1)
+		}
+	}
+
+	r2 := NewResourceDeployment(
+		ResourceDeploymentConfig{
+			Controllers: "192.168.100.100:9001,172.5.1.30:5605",
+		},
+	)
+
+	var optsTestsControllers = []struct {
+		in  []string
+		out []string
+	}{
+		{[]string{"resource", "list"},
+			[]string{"-m", "--controllers", r2.Controllers, "resource", "list"}},
+		{[]string{"fee", "fie", "fo", "fum"},
+			[]string{"-m", "--controllers", r2.Controllers, "fee", "fie", "fo", "fum"}},
+	}
+
+	for _, tt := range optsTestsControllers {
+		result := r2.prependOpts(tt.in...)
+		if !reflect.DeepEqual(result, tt.out) {
+			t.Errorf("Called: prependOpts(%v), Expected: %v, Got: %v. %+v", tt.in, tt.out, result, r2)
+		}
 	}
 }
 
