@@ -494,6 +494,7 @@ type FSUtil struct {
 	XFSDataSU string
 	XFSDataSW int
 	XFSLogDev string
+	MountOpts string
 
 	args []string
 }
@@ -515,7 +516,13 @@ func (f FSUtil) Mount(path string) error {
 		return fmt.Errorf("unable to mount device, failed to make mount directory: %v: %s", err, out)
 	}
 
-	out, err = exec.Command("mount", device, path).CombinedOutput()
+	if f.MountOpts == "" {
+		f.MountOpts = "defaults"
+	}
+
+	args := []string{"-o", f.MountOpts, device, path}
+
+	out, err = exec.Command("mount", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("unable to mount device: %v: %s", err, out)
 	}
