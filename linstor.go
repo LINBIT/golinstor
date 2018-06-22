@@ -357,6 +357,17 @@ func (r ResourceDeployment) Assign() error {
 		}
 	}
 
+	if r.autoPlaced {
+		args := []string{"resource", "create", r.Name, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
+		if r.DoNotPlaceWithRegex != "" {
+			args = append(args, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
+		}
+
+		if err := r.linstor(args...); err != nil {
+			return err
+		}
+	}
+
 	for _, node := range r.ClientList {
 		present, err := r.OnNode(node)
 		if err != nil {
@@ -367,17 +378,6 @@ func (r ResourceDeployment) Assign() error {
 			if err = r.linstor("resource", "create", node, r.Name, "-s", r.DisklessStoragePool); err != nil {
 				return err
 			}
-		}
-	}
-
-	if r.autoPlaced {
-		args := []string{"resource", "create", r.Name, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
-		if r.DoNotPlaceWithRegex != "" {
-			args = append(args, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
-		}
-
-		if err := r.linstor(args...); err != nil {
-			return err
 		}
 	}
 
