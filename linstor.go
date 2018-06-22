@@ -358,7 +358,7 @@ func (r ResourceDeployment) Assign() error {
 	}
 
 	if r.autoPlaced {
-		args := []string{"resource", "create", r.Name, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
+		args := []string{"resource", "create", r.Name, "-s", r.StoragePool, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
 		if r.DoNotPlaceWithRegex != "" {
 			args = append(args, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
 		}
