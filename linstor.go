@@ -52,6 +52,8 @@ type ResourceDeploymentConfig struct {
 	DisklessStoragePool string
 	Encryption          bool
 	Controllers         string
+
+	Trace bool
 }
 
 // NewResourceDeployment creates a new ResourceDeployment object. This tolerates
@@ -246,9 +248,16 @@ func (r ResourceDeployment) prependOpts(args ...string) []string {
 	return append(a, args...)
 }
 
+func (r ResourceDeployment) traceCombinedOutput(name string, args ...string) ([]byte, error) {
+	if r.Trace {
+		fmt.Printf("golinstor(%s): %s %s", r.Name, name, strings.Join(args, " "))
+	}
+	return exec.Command(name, args...).CombinedOutput()
+}
+
 // Only use this for things that return the normal returnStatuses json.
 func (r ResourceDeployment) linstor(args ...string) error {
-	out, err := exec.Command("linstor", r.prependOpts(args...)...).CombinedOutput()
+	out, err := r.traceCombinedOutput("linstor", r.prependOpts(args...)...)
 	if err != nil {
 		return fmt.Errorf("%s: %v", err, out)
 	}
@@ -266,7 +275,7 @@ func (r ResourceDeployment) linstor(args ...string) error {
 
 func (r ResourceDeployment) listResources() (resList, error) {
 	list := resList{}
-	out, err := exec.Command("linstor", r.prependOpts("resource", "list")...).CombinedOutput()
+	out, err := r.traceCombinedOutput("linstor", r.prependOpts("resource", "list")...)
 	if err != nil {
 		return list, err
 	}
@@ -310,7 +319,7 @@ func (r ResourceDeployment) Create() error {
 }
 
 func (r ResourceDeployment) checkDefined() (bool, bool, error) {
-	out, err := exec.Command("linstor", r.prependOpts("resource-definition", "list")...).CombinedOutput()
+	out, err := r.traceCombinedOutput("linstor", r.prependOpts("resource-definition", "list")...)
 	if err != nil {
 		return false, false, fmt.Errorf("%v: %s", err, out)
 	}
