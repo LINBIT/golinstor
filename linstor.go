@@ -505,13 +505,14 @@ func EnoughFreeSpace(requestedKiB, replicas string) error {
 // FSUtil handles creating a filesystem and mounting resources.
 type FSUtil struct {
 	*ResourceDeployment
-	BlockSize int64
-	FSType    string
-	Force     bool
-	XFSDataSU string
-	XFSDataSW int
-	XFSLogDev string
-	MountOpts string
+	BlockSize        int64
+	FSType           string
+	Force            bool
+	XFSDiscardBlocks bool
+	XFSDataSU        string
+	XFSDataSW        int
+	XFSLogDev        string
+	MountOpts        string
 
 	args []string
 }
@@ -649,6 +650,10 @@ func (f *FSUtil) populateArgs() error {
 
 		if f.XFSLogDev != "" {
 			f.args = append(f.args, "-l", fmt.Sprintf("logdev=%s", f.XFSLogDev))
+		}
+
+		if !f.XFSDiscardBlocks {
+			f.args = append(f.args, "-K")
 		}
 	}
 

@@ -229,45 +229,52 @@ func TestPopulateArgs(t *testing.T) {
 		out []string
 	}{
 		{FSUtil{
-			FSType:    "xfs",
-			BlockSize: 4096,
+			FSType:           "xfs",
+			BlockSize:        4096,
+			XFSDiscardBlocks: true,
 		}, []string{"-b", "size=4096"}},
 		{FSUtil{
 			FSType:    "xfs",
 			BlockSize: 2048,
-		}, []string{"-b", "size=2048"}},
+		}, []string{"-b", "size=2048", "-K"}},
 		{FSUtil{
 			FSType:    "ext4",
 			BlockSize: 2048,
 		}, []string{"-b", "2048"}},
 		{FSUtil{
-			FSType: "xfs",
-			Force:  true,
+			FSType:           "xfs",
+			Force:            true,
+			XFSDiscardBlocks: true,
 		}, []string{"-f"}},
 		{FSUtil{
-			FSType: "ext4",
-			Force:  true,
+			FSType:           "ext4",
+			Force:            true,
+			XFSDiscardBlocks: true,
 		}, []string{"-F"}},
 		{FSUtil{
-			FSType:    "xfs",
-			XFSDataSU: "128k",
+			FSType:           "xfs",
+			XFSDataSU:        "128k",
+			XFSDiscardBlocks: true,
 		}, []string{"-d", "su=128k"}},
 		{FSUtil{
-			FSType:    "xfs",
-			XFSDataSW: 1,
+			FSType:           "xfs",
+			XFSDataSW:        1,
+			XFSDiscardBlocks: true,
 		}, []string{"-d", "sw=1"}},
 		{FSUtil{
-			FSType:    "xfs",
-			XFSDataSU: "128k",
-			XFSDataSW: 1,
-			Force:     true,
+			FSType:           "xfs",
+			XFSDataSU:        "128k",
+			XFSDataSW:        1,
+			XFSDiscardBlocks: true,
+			Force:            true,
 			// Sadly, the order here matters based on how this []string is built in
 			// function. It's a little bit fragile, but probably not worth messing
 			// with right now.
 		}, []string{"-f", "-d", "su=128k", "-d", "sw=1"}},
 		{FSUtil{
-			FSType:    "xfs",
-			XFSLogDev: "/dev/example",
+			FSType:           "xfs",
+			XFSLogDev:        "/dev/example",
+			XFSDiscardBlocks: true,
 		}, []string{"-l", "logdev=/dev/example"}},
 	}
 
