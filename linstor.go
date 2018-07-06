@@ -540,7 +540,7 @@ func (f FSUtil) Mount(path string) error {
 
 	args := []string{"-o", f.MountOpts, device, path}
 
-	out, err = exec.Command("mount", args...).CombinedOutput()
+	out, err = f.traceCombinedOutput("mount", args...)
 	if err != nil {
 		return fmt.Errorf("unable to mount device: %v: %s", err, out)
 	}
@@ -598,7 +598,7 @@ func (f FSUtil) safeFormat(path string) error {
 	args = append(args, f.args...)
 	args = append(args, path)
 
-	out, err := exec.Command("mkfs", args...).CombinedOutput()
+	out, err := f.traceCombinedOutput("mkfs", args...)
 	if err != nil {
 		return fmt.Errorf("couldn't create %s filesystem %v: %q", f.FSType, err, out)
 	}
