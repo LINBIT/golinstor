@@ -512,6 +512,7 @@ type FSUtil struct {
 	XFSDataSU        string
 	XFSDataSW        int
 	XFSLogDev        string
+	FSOpts           string
 	MountOpts        string
 
 	args []string
@@ -529,6 +530,12 @@ func (f FSUtil) Mount(path string) error {
 		return fmt.Errorf("unable to mount device: %v", err)
 	}
 
+	if f.XFSLogDev != "" {
+		_, err = os.Stat(f.XFSLogDev)
+		if err != nil {
+			return fmt.Errorf("failed to stat xfs log device (%s): %v", f.XFSLogDev, err)
+		}
+	}
 	out, err := exec.Command("mkdir", "-p", path).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("unable to mount device, failed to make mount directory: %v: %s", err, out)
@@ -607,6 +614,13 @@ func (f FSUtil) safeFormat(path string) error {
 }
 
 func (f *FSUtil) populateArgs() error {
+
+	if f.FSOpts != "" {
+		f.args = strings.Split(f.FSOpts, " ")
+		return nil
+	}
+
+	// Everything below is depricated behavior.
 
 	xfs := "xfs"
 	ext4 := "ext4"

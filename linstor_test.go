@@ -276,6 +276,15 @@ func TestPopulateArgs(t *testing.T) {
 			XFSLogDev:        "/dev/example",
 			XFSDiscardBlocks: true,
 		}, []string{"-l", "logdev=/dev/example"}},
+		{FSUtil{
+			FSType:           "xfs",
+			XFSDataSU:        "128k",
+			XFSDataSW:        1,
+			XFSDiscardBlocks: true,
+			Force:            true,
+			// Ignore all other options is FSOpts is present.
+			FSOpts: "-d su=128k size=4000 noalign -i sparse=0",
+		}, []string{"-d", "su=128k", "size=4000", "noalign", "-i", "sparse=0"}},
 	}
 
 	for _, tt := range populateArgsTests {
