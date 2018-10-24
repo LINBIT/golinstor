@@ -38,8 +38,9 @@ import (
 // a resource.
 type ResourceDeployment struct {
 	ResourceDeploymentConfig
-	autoPlaced bool
-	log        *log.Logger
+	autoPlaced    bool
+	autoPlaceArgs []string
+	log           *log.Logger
 }
 
 // ResourceDeploymentConfig is a configuration object for ResourceDeployment.
@@ -49,6 +50,8 @@ type ResourceDeploymentConfig struct {
 	Name                string
 	NodeList            []string
 	ClientList          []string
+	ReplicasOnSame      []string
+	ReplicasOnDifferent []string
 	AutoPlace           uint64
 	DoNotPlaceWithRegex string
 	SizeKiB             uint64
@@ -68,7 +71,7 @@ type ResourceDeploymentConfig struct {
 // If there are duplicates within ClientList or NodeList, they will be removed.
 // If there are duplicates between ClientList and NodeList, duplicates in the ClientList will be removed.
 // If no AutoPlace Value is given AND there is no NodeList and no ClientList, it will default to 1.
-// If no DoNotPlaceWithRegex is provided resource assignment will occur without it.
+// If no DoNotPlaceWithRegex, ReplicasOnSame, or ReplicasOnDifferent are provided resource assignment will occur without them.
 // If no SizeKiB is provided, it will be given a size of 4096kb.
 // If no StoragePool is provided, the default storage pool will be used.
 // If no DisklessStoragePool is provided, the default diskless storage pool will be used.
@@ -105,6 +108,17 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 
 	if r.DisklessStoragePool == "" {
 		r.DisklessStoragePool = "DfltDisklessStorPool"
+	}
+
+	if r.DoNotPlaceWithRegex != "" {
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
+	}
+
+	if len(r.ReplicasOnSame) != 0 {
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-same", strings.Join(r.ReplicasOnSame, " "))
+	}
+	if len(r.ReplicasOnDifferent) != 0 {
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different", strings.Join(r.ReplicasOnDifferent, " "))
 	}
 
 	if r.LogOut == nil {
@@ -370,10 +384,7 @@ func (r ResourceDeployment) Assign() error {
 	}
 
 	if r.autoPlaced {
-		args := []string{"resource", "create", r.Name, "-s", r.StoragePool, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
-		if r.DoNotPlaceWithRegex != "" {
-			args = append(args, "--do-not-place-with-regex", r.DoNotPlaceWithRegex)
-		}
+		args := []string{"resource", "create", r.Name, "-s", r.StoragePool, "--auto-place", strconv.FormatUint(r.AutoPlace, 10), strings.Join(r.autoPlaceArgs, " ")}
 
 		if err := r.linstor(args...); err != nil {
 			return err

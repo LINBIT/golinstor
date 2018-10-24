@@ -72,6 +72,25 @@ func TestNewResourceDeployment(t *testing.T) {
 		t.Errorf("Expected Controllers to be %s, got %s", "192.168.100.100:9001,172.5.1.30:5605,192.168.5.1:8080", res.Controllers)
 	}
 
+	// Test regularly configured deployment autoplace.
+	name = "Agamemnon"
+	res = NewResourceDeployment(
+		ResourceDeploymentConfig{
+			Name:                name,
+			AutoPlace:           5,
+			SizeKiB:             10000,
+			Controllers:         "192.168.100.100:9001,172.5.1.30:5605,192.168.5.1:8080",
+			ReplicasOnSame:      []string{"foo", "bar", "baz"},
+			ReplicasOnDifferent: []string{"fee", "fie", "foe"},
+		},
+	)
+
+	expected := []string{"--replicas-on-same", "foo", "bar", "baz", "--replicas-on-different", "fee", "fie", "foe"}
+	if reflect.DeepEqual(res.autoPlaceArgs, expected) {
+		t.Errorf("Expected autoPlaceArgs to be %s, got %s", expected, res.autoPlaceArgs)
+
+	}
+
 	// Test regularly configured deployment manual.
 	nodes := []string{"host1", "host2"}
 	res = NewResourceDeployment(
