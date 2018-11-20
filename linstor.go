@@ -115,10 +115,12 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 	}
 
 	if len(r.ReplicasOnSame) != 0 {
-		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-same", strings.Join(r.ReplicasOnSame, " "))
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-same")
+		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnSame...)
 	}
 	if len(r.ReplicasOnDifferent) != 0 {
-		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different", strings.Join(r.ReplicasOnDifferent, " "))
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different")
+		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnDifferent...)
 	}
 
 	if r.LogOut == nil {
@@ -284,7 +286,7 @@ func (r ResourceDeployment) traceCombinedOutput(name string, args ...string) ([]
 func (r ResourceDeployment) linstor(args ...string) error {
 	out, err := r.traceCombinedOutput("linstor", r.prependOpts(args...)...)
 	if err != nil {
-		return fmt.Errorf("%s: %v", err, out)
+		return fmt.Errorf("%v: %s", err, out)
 	}
 
 	if !json.Valid(out) {
@@ -384,7 +386,8 @@ func (r ResourceDeployment) Assign() error {
 	}
 
 	if r.autoPlaced {
-		args := []string{"resource", "create", r.Name, "-s", r.StoragePool, "--auto-place", strconv.FormatUint(r.AutoPlace, 10), strings.Join(r.autoPlaceArgs, " ")}
+		args := []string{"resource", "create", r.Name, "-s", r.StoragePool, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
+		args = append(args, r.autoPlaceArgs...)
 
 		if err := r.linstor(args...); err != nil {
 			return err
@@ -533,8 +536,8 @@ type FSUtil struct {
 }
 
 // Mount the FSUtil's resource on the path.
-func (f FSUtil) Mount(path string) error {
-	device, err := WaitForDevPath(*f.ResourceDeployment, 3)
+func (f FSUtil) Mount(path, node string) error {
+	device, err := WaitForDevPath(*f.ResourceDeployment, node, 3)
 	if err != nil {
 		return fmt.Errorf("unable to mount device, couldn't find Resource device path: %v", err)
 	}
@@ -727,12 +730,12 @@ func doCheckFSType(s string) (string, error) {
 }
 
 // WaitForDevPath polls until the resourse path appears on the system.
-func WaitForDevPath(r ResourceDeployment, maxRetries int) (string, error) {
+func WaitForDevPath(r ResourceDeployment, node string, maxRetries int) (string, error) {
 	var path string
 	var err error
 
 	for i := 0; i < maxRetries; i++ {
-		path, err = GetDevPath(r, true)
+		path, err = r.GetDevPath(node, true)
 		if path != "" {
 			return path, err
 		}
@@ -741,17 +744,35 @@ func WaitForDevPath(r ResourceDeployment, maxRetries int) (string, error) {
 	return path, err
 }
 
-func GetDevPath(r ResourceDeployment, stat bool) (string, error) {
+// GetDevPath returns the path to the linstor volume on the given node.
+// If stat is set to true, the device will be stat'd as a loose test to
+// see if it is ready for IO.
+func (r ResourceDeployment) GetDevPath(node string, stat bool) (string, error) {
 	list, err := r.listResources()
 	if err != nil {
 		return "", err
 	}
 
+	devicePath, err := getDevPath(list, r.Name, node)
+	if err != nil {
+		return devicePath, err
+	}
+
+	if stat {
+		if _, err := os.Lstat(devicePath); err != nil {
+			return "", fmt.Errorf("Couldn't stat %s: %v", devicePath, err)
+		}
+	}
+
+	return devicePath, nil
+}
+
+func getDevPath(list resList, resName, node string) (string, error) {
 	// Traverse all the volume states to find volume 0 of our resource.
 	// Assume volume 0 is the one we want.
 	var devicePath string
 	for _, res := range list[0].Resources {
-		if r.Name == res.Name {
+		if resName == res.Name && node == res.NodeName {
 			for _, v := range res.Vlms {
 				if v.VlmNr == 0 {
 					devicePath = v.DevicePath
@@ -763,13 +784,7 @@ func GetDevPath(r ResourceDeployment, stat bool) (string, error) {
 
 	if devicePath == "" {
 		return devicePath, fmt.Errorf(
-			"unable to find the device path volume zero of %s in %+v", r.Name, list)
-	}
-
-	if stat {
-		if _, err := os.Lstat(devicePath); err != nil {
-			return "", fmt.Errorf("Couldn't stat %s: %v", devicePath, err)
-		}
+			"unable to find the device path volume zero of %s in %+v", resName, list)
 	}
 
 	return devicePath, nil
