@@ -115,10 +115,12 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 	}
 
 	if len(r.ReplicasOnSame) != 0 {
-		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-same", strings.Join(r.ReplicasOnSame, " "))
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-same")
+		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnSame...)
 	}
 	if len(r.ReplicasOnDifferent) != 0 {
-		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different", strings.Join(r.ReplicasOnDifferent, " "))
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different")
+		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnDifferent...)
 	}
 
 	if r.LogOut == nil {
@@ -284,7 +286,7 @@ func (r ResourceDeployment) traceCombinedOutput(name string, args ...string) ([]
 func (r ResourceDeployment) linstor(args ...string) error {
 	out, err := r.traceCombinedOutput("linstor", r.prependOpts(args...)...)
 	if err != nil {
-		return fmt.Errorf("%s: %v", err, out)
+		return fmt.Errorf("%v: %s", err, out)
 	}
 
 	if !json.Valid(out) {
@@ -384,7 +386,8 @@ func (r ResourceDeployment) Assign() error {
 	}
 
 	if r.autoPlaced {
-		args := []string{"resource", "create", r.Name, "-s", r.StoragePool, "--auto-place", strconv.FormatUint(r.AutoPlace, 10), strings.Join(r.autoPlaceArgs, " ")}
+		args := []string{"resource", "create", r.Name, "-s", r.StoragePool, "--auto-place", strconv.FormatUint(r.AutoPlace, 10)}
+		args = append(args, r.autoPlaceArgs...)
 
 		if err := r.linstor(args...); err != nil {
 			return err
