@@ -258,6 +258,7 @@ func (s returnStatuses) validate() error {
 
 func linstorSuccess(retcode uint64) bool {
 	const maskError = 0xC000000000000000 // includes warnings and info (i.e., everything != SUCCESS)
+
 	return (retcode & maskError) == 0
 }
 
@@ -404,13 +405,18 @@ func (r ResourceDeployment) deployToList(list []string, asClients bool) error {
 			return fmt.Errorf("unable to assign resource %s failed to check if it was already present on node %s: %v", r.Name, node, err)
 		}
 
-		pool := r.StoragePool
-		if asClients {
-			pool = r.DisklessStoragePool
-		}
+		args := []string{"resource", "create", node, r.Name, "-s"}
 
 		if !present {
-			if err = r.linstor("resource", "create", node, r.Name, "-s", pool); err != nil {
+			if asClients {
+				// If you're assigning to a diskless storage pool, you'll get warned that
+				// your resource will be... diskless, unless you pass a flag that says
+				// that it's... diskless
+				args = append(args, r.DisklessStoragePool, "--diskless")
+			} else {
+				args = append(args, r.StoragePool)
+			}
+			if err = r.linstor(args...); err != nil {
 				return err
 			}
 		}
