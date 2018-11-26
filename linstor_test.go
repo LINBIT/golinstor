@@ -320,7 +320,7 @@ func TestPopulateArgs(t *testing.T) {
 
 func TestDoIsClient(t *testing.T) {
 
-	out, err := ioutil.ReadFile("test_json/mixed_diskless.json")
+	out, err := ioutil.ReadFile("test_json/heterogeneous_device_paths.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -335,9 +335,10 @@ func TestDoIsClient(t *testing.T) {
 		l        resList
 		out      bool
 	}{
-		{"default-william", "kubelet-a", list, false},
-		{"default-william", "kubelet-x", list, false},
-		{"default-william", "kubelet-c", list, true},
+		{"swan", "node-1", list, false},
+		{"goose", "node-2", list, false},
+		{"duck", "node-0", list, true},
+		{"duck", "node-1", list, false},
 	}
 
 	for _, tt := range isClientTests {

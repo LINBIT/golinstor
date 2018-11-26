@@ -496,21 +496,21 @@ func (r ResourceDeployment) IsClient(nodeName string) bool {
 }
 
 func (r ResourceDeployment) doIsClient(list resList, nodeName string) bool {
-	// Traverse all the volume states to find volume 0 of our resource on nodeName.
-	// Assume volume 0 is the one we want.
-	for _, res := range list[0].ResourceStates {
-		if r.Name == res.RscName && nodeName == res.NodeName {
-			for _, v := range res.VlmStates {
-				if v.VlmNr == 0 {
-					if v.DiskState == "Diskless" {
-						return true
-					}
-					return false
-				}
-			}
+	// Traverse all resources to find our resource on nodeName.
+	for _, res := range list[0].Resources {
+		if r.Name == res.Name && nodeName == res.NodeName && contains(res.RscFlags, "DISKLESS") {
+			return true
 		}
 	}
+	return false
+}
 
+func contains(data []string, candidate string) bool {
+	for _, e := range data {
+		if candidate == e {
+			return true
+		}
+	}
 	return false
 }
 
