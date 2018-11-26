@@ -85,7 +85,7 @@ func TestNewResourceDeployment(t *testing.T) {
 		},
 	)
 
-	expected := []string{"--replicas-on-same", "foo", "bar", "baz", "--replicas-on-different", "fee", "fie", "foe"}
+	expected := []string{"--replicas-on-same", "foo bar baz", "--replicas-on-different", "fee fie foe"}
 	if reflect.DeepEqual(res.autoPlaceArgs, expected) {
 		t.Errorf("Expected autoPlaceArgs to be %s, got %s", expected, res.autoPlaceArgs)
 
