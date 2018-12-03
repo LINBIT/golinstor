@@ -426,6 +426,23 @@ func (r ResourceDeployment) deployToList(list []string, asClients bool) error {
 
 // Unassign unassigns a resource from a particular node.
 func (r ResourceDeployment) Unassign(nodeName string) error {
+	// If a reource doesn't exist, it's as unassigned as possible.
+	defPresent, _, err := r.checkDefined()
+	if err != nil {
+		return fmt.Errorf("failed to unassign resource %s from node %s: %v", r.Name, nodeName, err)
+	}
+	if !defPresent {
+		return nil
+	}
+	// If a resource isn't on the node, it's as unassigned as it can get.
+	present, err := r.OnNode(nodeName)
+	if err != nil {
+		return fmt.Errorf("failed to unassign resource %s from node %s: %v", r.Name, nodeName, err)
+	}
+	if !present {
+		return nil
+	}
+
 	if err := r.linstor("resource", "delete", nodeName, r.Name); err != nil {
 		return fmt.Errorf("failed to unassign resource %s from node %s: %v", r.Name, nodeName, err)
 	}
