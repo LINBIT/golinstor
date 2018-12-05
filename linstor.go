@@ -59,6 +59,7 @@ type ResourceDeploymentConfig struct {
 	DisklessStoragePool string
 	Encryption          bool
 	Controllers         string
+	Annotations         map[string]string
 	LogOut              io.Writer
 }
 
@@ -225,22 +226,24 @@ type returnStatuses []struct {
 }
 
 type resDefInfo []struct {
-	RscDfns []struct {
-		VlmDfns []struct {
-			VlmDfnUUID string `json:"vlm_dfn_uuid"`
-			VlmMinor   int    `json:"vlm_minor"`
-			VlmNr      int    `json:"vlm_nr"`
-			VlmSize    int    `json:"vlm_size"`
-		} `json:"vlm_dfns,omitempty"`
-		RscDfnSecret string `json:"rsc_dfn_secret"`
-		RscDfnUUID   string `json:"rsc_dfn_uuid"`
-		RscName      string `json:"rsc_name"`
-		RscDfnPort   int    `json:"rsc_dfn_port"`
-		RscDfnProps  []struct {
-			Value string `json:"value"`
-			Key   string `json:"key"`
-		} `json:"rsc_dfn_props,omitempty"`
-	} `json:"rsc_dfns"`
+	ResDefList []ResDef `json:"rsc_dfns"`
+}
+
+type ResDef struct {
+	VlmDfns []struct {
+		VlmDfnUUID string `json:"vlm_dfn_uuid"`
+		VlmMinor   int    `json:"vlm_minor"`
+		VlmNr      int    `json:"vlm_nr"`
+		VlmSize    int    `json:"vlm_size"`
+	} `json:"vlm_dfns,omitempty"`
+	RscDfnSecret string `json:"rsc_dfn_secret"`
+	RscDfnUUID   string `json:"rsc_dfn_uuid"`
+	RscName      string `json:"rsc_name"`
+	RscDfnPort   int    `json:"rsc_dfn_port"`
+	RscDfnProps  []struct {
+		Value string `json:"value"`
+		Key   string `json:"key"`
+	} `json:"rsc_dfn_props,omitempty"`
 }
 
 func (s returnStatuses) validate() error {
@@ -301,11 +304,28 @@ func (r ResourceDeployment) linstor(args ...string) error {
 	return s.validate()
 }
 
+func (r ResourceDeployment) ListResourceDefinitions() ([]ResDef, error) {
+	list := resDefInfo{}
+	out, err := r.traceCombinedOutput("linstor", r.prependOpts("resource-definition", "list")...)
+	if err != nil {
+		return nil, fmt.Errorf("%v: %s", err, out)
+	}
+
+	if !json.Valid(out) {
+		return nil, fmt.Errorf("invalid json from 'linstor -m resource-definition list'")
+	}
+	if err := json.Unmarshal(out, &list); err != nil {
+		return nil, fmt.Errorf("couldn't Unmarshal '%s' :%v", out, err)
+	}
+
+	return list[0].ResDefList, nil
+}
+
 func (r ResourceDeployment) listResources() (resList, error) {
 	list := resList{}
 	out, err := r.traceCombinedOutput("linstor", r.prependOpts("resource", "list")...)
 	if err != nil {
-		return list, err
+		return list, fmt.Errorf("%v: %s", err, out)
 	}
 
 	if !json.Valid(out) {
@@ -328,6 +348,13 @@ func (r ResourceDeployment) Create() error {
 	if !defPresent {
 		if err := r.linstor("resource-definition", "create", r.Name); err != nil {
 			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
+		}
+
+		// Store annotations in the res def's aux props.
+		for k, v := range r.Annotations {
+			if err := r.linstor("resource-definition", "set-property", "--aux", r.Name, k, v); err != nil {
+				return fmt.Errorf("unable to reserve resource name %s: %v", r.Name, err)
+			}
 		}
 	}
 
@@ -362,7 +389,7 @@ func (r ResourceDeployment) checkDefined() (bool, bool, error) {
 
 	var defPresent, volZeroPresent bool
 
-	for _, def := range s[0].RscDfns {
+	for _, def := range s[0].ResDefList {
 		if def.RscName == r.Name {
 			defPresent = true
 			for _, vol := range def.VlmDfns {
