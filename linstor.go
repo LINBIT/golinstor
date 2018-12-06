@@ -26,7 +26,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -578,47 +577,35 @@ func EnoughFreeSpace(requestedKiB, replicas string) error {
 // FSUtil handles creating a filesystem and mounting resources.
 type FSUtil struct {
 	*ResourceDeployment
-	BlockSize        int64
-	FSType           string
-	Force            bool
-	XFSDiscardBlocks bool
-	XFSDataSU        string
-	XFSDataSW        int
-	XFSLogDev        string
-	FSOpts           string
-	MountOpts        string
+	FSType    string
+	FSOpts    string
+	MountOpts string
 
 	args []string
 }
 
 // Mount the FSUtil's resource on the path.
-func (f FSUtil) Mount(path, node string) error {
-	device, err := WaitForDevPath(*f.ResourceDeployment, node, 3)
-	if err != nil {
-		return fmt.Errorf("unable to mount device, couldn't find Resource device path: %v", err)
-	}
+func (f FSUtil) Mount(source, target string) error {
 
-	err = f.safeFormat(device)
-	if err != nil {
-		return fmt.Errorf("unable to mount device: %v", err)
-	}
-
-	if f.XFSLogDev != "" {
-		_, err = os.Stat(f.XFSLogDev)
-		if err != nil {
-			return fmt.Errorf("failed to stat xfs log device (%s): %v", f.XFSLogDev, err)
-		}
-	}
-	out, err := exec.Command("mkdir", "-p", path).CombinedOutput()
+	out, err := exec.Command("mkdir", "-p", target).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("unable to mount device, failed to make mount directory: %v: %s", err, out)
+	}
+
+	// If the path isn't mounted, then we're not mounted.
+	mounted, err := f.isMounted(target)
+	if err != nil {
+		return fmt.Errorf("unable to unmount device: %q: %s", err, out)
+	}
+	if mounted {
+		return nil
 	}
 
 	if f.MountOpts == "" {
 		f.MountOpts = "defaults"
 	}
 
-	args := []string{"-o", f.MountOpts, device, path}
+	args := []string{"-o", f.MountOpts, source, target}
 
 	out, err = f.traceCombinedOutput("mount", args...)
 	if err != nil {
@@ -637,12 +624,15 @@ func (f FSUtil) UnMount(path string) error {
 	}
 
 	// If the path isn't mounted, then we're not mounted.
-	_, err = exec.Command("findmnt", "-f", path).CombinedOutput()
+	mounted, err := f.isMounted(path)
 	if err != nil {
+		return fmt.Errorf("unable to unmount device: %v", err)
+	}
+	if !mounted {
 		return nil
 	}
 
-	out, err := exec.Command("umount", path).CombinedOutput()
+	out, err := f.traceCombinedOutput("umount", path)
 	if err != nil {
 		return fmt.Errorf("unable to unmount device: %q: %s", err, out)
 	}
@@ -650,7 +640,13 @@ func (f FSUtil) UnMount(path string) error {
 	return nil
 }
 
-func (f FSUtil) safeFormat(path string) error {
+func (f FSUtil) SafeFormat(path string) error {
+
+	// If if it's not a block device, don't touch it.
+	_, err := exec.Command("test", "-b", path).CombinedOutput()
+	if err != nil {
+		return nil
+	}
 	deviceFS, err := checkFSType(path)
 	if err != nil {
 		return fmt.Errorf("unable to format filesystem for %q: %v", path, err)
@@ -665,13 +661,6 @@ func (f FSUtil) safeFormat(path string) error {
 		return fmt.Errorf("device %q already formatted with %q filesystem, refusing to overwrite with %q filesystem", path, deviceFS, f.FSType)
 	}
 
-	if f.XFSLogDev != "" {
-		_, err = os.Stat(f.XFSLogDev)
-		if err != nil {
-			return fmt.Errorf("failed to stat xfs log device (%s): %v", f.XFSLogDev, err)
-		}
-	}
-
 	f.populateArgs()
 
 	args := []string{"-t", f.FSType}
@@ -680,10 +669,22 @@ func (f FSUtil) safeFormat(path string) error {
 
 	out, err := f.traceCombinedOutput("mkfs", args...)
 	if err != nil {
-		return fmt.Errorf("couldn't create %s filesystem %v: %q", f.FSType, err, out)
+		return fmt.Errorf("couldn't create %s filesystem on %s: %v: %q", f.FSType, path, err, out)
 	}
 
 	return nil
+}
+
+func (f *FSUtil) isMounted(path string) (bool, error) {
+	out, err := exec.Command("findmnt", "-f", path).CombinedOutput()
+	if err != nil {
+		if string(out) != "" {
+			return false, fmt.Errorf("%v: %s", err, out)
+		}
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (f *FSUtil) populateArgs() error {
@@ -691,57 +692,6 @@ func (f *FSUtil) populateArgs() error {
 	if f.FSOpts != "" {
 		f.args = strings.Split(f.FSOpts, " ")
 		return nil
-	}
-
-	// Everything below is depricated behavior.
-
-	xfs := "xfs"
-	ext4 := "ext4"
-
-	if f.Force {
-		if f.FSType == xfs {
-			f.args = append(f.args, "-f")
-		}
-
-		if f.FSType == ext4 {
-			f.args = append(f.args, "-F")
-		}
-	}
-
-	if f.BlockSize != 0 {
-		b := strconv.FormatInt(f.BlockSize, 10)
-
-		if f.FSType == xfs {
-			b = fmt.Sprintf("size=%s", b)
-		}
-		f.args = append(f.args, "-b", b)
-	}
-
-	if f.FSType == xfs {
-
-		if f.XFSDataSU != "" {
-			ok, err := regexp.MatchString("^\\d+[kmg]?$", f.XFSDataSU)
-			if !ok {
-				return fmt.Errorf("su must be a number and optionally a prefix of k,m, or g")
-			}
-			if err != nil {
-				return err
-			}
-
-			f.args = append(f.args, "-d", fmt.Sprintf("su=%s", f.XFSDataSU))
-		}
-
-		if f.XFSDataSW != 0 {
-			f.args = append(f.args, "-d", fmt.Sprintf("sw=%d", f.XFSDataSW))
-		}
-
-		if f.XFSLogDev != "" {
-			f.args = append(f.args, "-l", fmt.Sprintf("logdev=%s", f.XFSLogDev))
-		}
-
-		if !f.XFSDiscardBlocks {
-			f.args = append(f.args, "-K")
-		}
 	}
 
 	return nil
@@ -786,7 +736,7 @@ func doCheckFSType(s string) (string, error) {
 }
 
 // WaitForDevPath polls until the resourse path appears on the system.
-func WaitForDevPath(r ResourceDeployment, node string, maxRetries int) (string, error) {
+func (r ResourceDeployment) WaitForDevPath(node string, maxRetries int) (string, error) {
 	var path string
 	var err error
 
