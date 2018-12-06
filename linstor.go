@@ -301,7 +301,13 @@ func (r ResourceDeployment) linstor(args ...string) error {
 		return fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
 	}
 
-	return s.validate()
+	// Sometimes logs get separated, so it helps these to stay together,
+	// even if it seems redundant.
+	err = s.validate()
+	if err != nil {
+		return fmt.Errorf("failed to run command %q: %v", out, err)
+	}
+	return nil
 }
 
 func (r ResourceDeployment) ListResourceDefinitions() ([]ResDef, error) {
