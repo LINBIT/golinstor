@@ -634,7 +634,7 @@ func (r ResourceDeployment) Delete() error {
 	return nil
 }
 
-// Exists checks to see if a resource is defined in DRBD Manage.
+// Exists checks to see if a resource is defined in LINSTOR.
 func (r ResourceDeployment) Exists() (bool, error) {
 	l, err := r.listResources()
 	if err != nil {
