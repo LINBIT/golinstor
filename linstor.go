@@ -26,7 +26,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -52,6 +51,8 @@ type ResourceDeploymentConfig struct {
 	ClientList          []string
 	ReplicasOnSame      []string
 	ReplicasOnDifferent []string
+	DRSites             []string
+	DRSiteKey           string
 	AutoPlace           uint64
 	DoNotPlaceWithRegex string
 	SizeKiB             uint64
@@ -59,6 +60,7 @@ type ResourceDeploymentConfig struct {
 	DisklessStoragePool string
 	Encryption          bool
 	Controllers         string
+	Annotations         map[string]string
 	LogOut              io.Writer
 }
 
@@ -78,11 +80,12 @@ type ResourceDeploymentConfig struct {
 // If no Encryption is specified, none will be used.
 // If no Controllers are specified, none will be used.
 // If no LogOut is specified, ioutil.Discard will be used.
+// TODO: Document DR stuff.
 func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 	r := ResourceDeployment{ResourceDeploymentConfig: c}
 
 	if r.Name == "" {
-		r.Name = fmt.Sprintf("%s", uuid.NewV4())
+		r.Name = fmt.Sprintf("auto-%s", uuid.NewV4())
 	}
 
 	if len(r.NodeList) == 0 && r.AutoPlace == 0 {
@@ -125,6 +128,10 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 
 	if r.LogOut == nil {
 		r.LogOut = ioutil.Discard
+	}
+
+	if r.DRSiteKey == "" {
+		r.DRSiteKey = "DR-site"
 	}
 
 	r.log = log.New(r.LogOut, "golinstor: ", log.Ldate|log.Ltime|log.Lshortfile)
@@ -225,22 +232,44 @@ type returnStatuses []struct {
 }
 
 type resDefInfo []struct {
-	RscDfns []struct {
-		VlmDfns []struct {
-			VlmDfnUUID string `json:"vlm_dfn_uuid"`
-			VlmMinor   int    `json:"vlm_minor"`
-			VlmNr      int    `json:"vlm_nr"`
-			VlmSize    int    `json:"vlm_size"`
-		} `json:"vlm_dfns,omitempty"`
-		RscDfnSecret string `json:"rsc_dfn_secret"`
-		RscDfnUUID   string `json:"rsc_dfn_uuid"`
-		RscName      string `json:"rsc_name"`
-		RscDfnPort   int    `json:"rsc_dfn_port"`
-		RscDfnProps  []struct {
+	ResDefList []ResDef `json:"rsc_dfns"`
+}
+
+type ResDef struct {
+	VlmDfns []struct {
+		VlmDfnUUID string `json:"vlm_dfn_uuid"`
+		VlmMinor   int    `json:"vlm_minor"`
+		VlmNr      int    `json:"vlm_nr"`
+		VlmSize    int    `json:"vlm_size"`
+	} `json:"vlm_dfns,omitempty"`
+	RscDfnSecret string `json:"rsc_dfn_secret"`
+	RscDfnUUID   string `json:"rsc_dfn_uuid"`
+	RscName      string `json:"rsc_name"`
+	RscDfnPort   int    `json:"rsc_dfn_port"`
+	RscDfnProps  []struct {
+		Value string `json:"value"`
+		Key   string `json:"key"`
+	} `json:"rsc_dfn_props,omitempty"`
+}
+
+type nodeInfo []struct {
+	Nodes []struct {
+		ConnectionStatus int    `json:"connection_status"`
+		UUID             string `json:"uuid"`
+		NetInterfaces    []struct {
+			StltPort           int    `json:"stlt_port"`
+			StltEncryptionType string `json:"stlt_encryption_type"`
+			Address            string `json:"address"`
+			UUID               string `json:"uuid"`
+			Name               string `json:"name"`
+		} `json:"net_interfaces"`
+		Props []struct {
 			Value string `json:"value"`
 			Key   string `json:"key"`
-		} `json:"rsc_dfn_props,omitempty"`
-	} `json:"rsc_dfns"`
+		} `json:"props"`
+		Type string `json:"type"`
+		Name string `json:"name"`
+	} `json:"nodes"`
 }
 
 func (s returnStatuses) validate() error {
@@ -298,14 +327,37 @@ func (r ResourceDeployment) linstor(args ...string) error {
 		return fmt.Errorf("couldn't Unmarshal %s :%v", out, err)
 	}
 
-	return s.validate()
+	// Sometimes logs get separated, so it helps these to stay together,
+	// even if it seems redundant.
+	err = s.validate()
+	if err != nil {
+		return fmt.Errorf("failed to run command %q: %v", out, err)
+	}
+	return nil
+}
+
+func (r ResourceDeployment) ListResourceDefinitions() ([]ResDef, error) {
+	list := resDefInfo{}
+	out, err := r.traceCombinedOutput("linstor", r.prependOpts("resource-definition", "list")...)
+	if err != nil {
+		return nil, fmt.Errorf("%v: %s", err, out)
+	}
+
+	if !json.Valid(out) {
+		return nil, fmt.Errorf("invalid json from 'linstor -m resource-definition list'")
+	}
+	if err := json.Unmarshal(out, &list); err != nil {
+		return nil, fmt.Errorf("couldn't Unmarshal '%s' :%v", out, err)
+	}
+
+	return list[0].ResDefList, nil
 }
 
 func (r ResourceDeployment) listResources() (resList, error) {
 	list := resList{}
 	out, err := r.traceCombinedOutput("linstor", r.prependOpts("resource", "list")...)
 	if err != nil {
-		return list, err
+		return list, fmt.Errorf("%v: %s", err, out)
 	}
 
 	if !json.Valid(out) {
@@ -313,6 +365,23 @@ func (r ResourceDeployment) listResources() (resList, error) {
 	}
 	if err := json.Unmarshal(out, &list); err != nil {
 		return list, fmt.Errorf("couldn't Unmarshal '%s' :%v", out, err)
+	}
+
+	return list, nil
+}
+
+func (r ResourceDeployment) listNodes() (nodeInfo, error) {
+	list := nodeInfo{}
+	out, err := r.traceCombinedOutput("linstor", r.prependOpts("node", "list")...)
+	if err != nil {
+		return nil, fmt.Errorf("%v: %s", err, out)
+	}
+
+	if !json.Valid(out) {
+		return nil, fmt.Errorf("invalid json from 'linstor -m node list'")
+	}
+	if err := json.Unmarshal(out, &list); err != nil {
+		return nil, fmt.Errorf("couldn't Unmarshal '%s' :%v", out, err)
 	}
 
 	return list, nil
@@ -328,6 +397,13 @@ func (r ResourceDeployment) Create() error {
 	if !defPresent {
 		if err := r.linstor("resource-definition", "create", r.Name); err != nil {
 			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
+		}
+
+		// Store annotations in the res def's aux props.
+		for k, v := range r.Annotations {
+			if err := r.linstor("resource-definition", "set-property", "--aux", r.Name, k, v); err != nil {
+				return fmt.Errorf("unable to reserve resource name %s: %v", r.Name, err)
+			}
 		}
 	}
 
@@ -362,7 +438,7 @@ func (r ResourceDeployment) checkDefined() (bool, bool, error) {
 
 	var defPresent, volZeroPresent bool
 
-	for _, def := range s[0].RscDfns {
+	for _, def := range s[0].ResDefList {
 		if def.RscName == r.Name {
 			defPresent = true
 			for _, vol := range def.VlmDfns {
@@ -395,7 +471,16 @@ func (r ResourceDeployment) Assign() error {
 		}
 	}
 
-	return r.deployToList(r.ClientList, true)
+	if err := r.deployToList(r.ClientList, true); err != nil {
+		return err
+	}
+
+	if len(r.ResourceDeploymentConfig.DRSites) > 0 {
+		if err := r.enableProxy(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r ResourceDeployment) deployToList(list []string, asClients bool) error {
@@ -422,6 +507,81 @@ func (r ResourceDeployment) deployToList(list []string, asClients bool) error {
 		}
 	}
 	return nil
+}
+
+func (r ResourceDeployment) enableProxy() error {
+
+	drNodes, err := r.proxyNodes()
+	if err != nil {
+		return err
+	}
+
+	// Figure out deployed nodes before assigning proxy resources.
+	deployedNodes, err := r.deployedNodes()
+	if err != nil {
+		return err
+	}
+
+	// Assign the resource to all proxy nodes.
+	if err := r.deployToList(drNodes, false); err != nil {
+		return err
+	}
+
+	for _, p := range drNodes {
+		for _, d := range deployedNodes {
+			if err := r.linstor("resource-connection", "drbd-options", "--protocol", "A", p, d, r.Name); err != nil {
+				return nil
+			}
+			if err := r.linstor("drbd-proxy", "enable", p, d, r.Name); err != nil {
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func (r ResourceDeployment) proxyNodes() ([]string, error) {
+	list, err := r.listNodes()
+	if err != nil {
+		return []string{}, nil
+	}
+	return doProxyNodes(list, r.DRSites, r.DRSiteKey)
+}
+
+func doProxyNodes(list nodeInfo, sites []string, key string) ([]string, error) {
+	var proxySiteNodes []string
+	auxPrefix := "Aux/"
+	if !strings.HasPrefix(key, auxPrefix) {
+		key = auxPrefix + key
+	}
+
+	for _, n := range list[0].Nodes {
+		for _, p := range n.Props {
+			if p.Key == key && contains(sites, p.Value) {
+				proxySiteNodes = append(proxySiteNodes, n.Name)
+			}
+		}
+	}
+
+	return proxySiteNodes, nil
+}
+
+func (r ResourceDeployment) deployedNodes() ([]string, error) {
+	list, err := r.listResources()
+	if err != nil {
+		return []string{}, nil
+	}
+	return doDeployedNodes(list, r.Name)
+}
+
+func doDeployedNodes(l resList, resName string) ([]string, error) {
+	var deployed []string
+	for _, res := range l[0].Resources {
+		if res.Name == resName && !contains(res.RscFlags, "DISKLESS") {
+			deployed = append(deployed, res.NodeName)
+		}
+	}
+	return deployed, nil
 }
 
 // Unassign unassigns a resource from a particular node.
@@ -545,47 +705,35 @@ func EnoughFreeSpace(requestedKiB, replicas string) error {
 // FSUtil handles creating a filesystem and mounting resources.
 type FSUtil struct {
 	*ResourceDeployment
-	BlockSize        int64
-	FSType           string
-	Force            bool
-	XFSDiscardBlocks bool
-	XFSDataSU        string
-	XFSDataSW        int
-	XFSLogDev        string
-	FSOpts           string
-	MountOpts        string
+	FSType    string
+	FSOpts    string
+	MountOpts string
 
 	args []string
 }
 
 // Mount the FSUtil's resource on the path.
-func (f FSUtil) Mount(path, node string) error {
-	device, err := WaitForDevPath(*f.ResourceDeployment, node, 3)
-	if err != nil {
-		return fmt.Errorf("unable to mount device, couldn't find Resource device path: %v", err)
-	}
+func (f FSUtil) Mount(source, target string) error {
 
-	err = f.safeFormat(device)
-	if err != nil {
-		return fmt.Errorf("unable to mount device: %v", err)
-	}
-
-	if f.XFSLogDev != "" {
-		_, err = os.Stat(f.XFSLogDev)
-		if err != nil {
-			return fmt.Errorf("failed to stat xfs log device (%s): %v", f.XFSLogDev, err)
-		}
-	}
-	out, err := exec.Command("mkdir", "-p", path).CombinedOutput()
+	out, err := exec.Command("mkdir", "-p", target).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("unable to mount device, failed to make mount directory: %v: %s", err, out)
+	}
+
+	// If the path isn't mounted, then we're not mounted.
+	mounted, err := f.isMounted(target)
+	if err != nil {
+		return fmt.Errorf("unable to unmount device: %q: %s", err, out)
+	}
+	if mounted {
+		return nil
 	}
 
 	if f.MountOpts == "" {
 		f.MountOpts = "defaults"
 	}
 
-	args := []string{"-o", f.MountOpts, device, path}
+	args := []string{"-o", f.MountOpts, source, target}
 
 	out, err = f.traceCombinedOutput("mount", args...)
 	if err != nil {
@@ -604,12 +752,15 @@ func (f FSUtil) UnMount(path string) error {
 	}
 
 	// If the path isn't mounted, then we're not mounted.
-	_, err = exec.Command("findmnt", "-f", path).CombinedOutput()
+	mounted, err := f.isMounted(path)
 	if err != nil {
+		return fmt.Errorf("unable to unmount device: %v", err)
+	}
+	if !mounted {
 		return nil
 	}
 
-	out, err := exec.Command("umount", path).CombinedOutput()
+	out, err := f.traceCombinedOutput("umount", path)
 	if err != nil {
 		return fmt.Errorf("unable to unmount device: %q: %s", err, out)
 	}
@@ -617,7 +768,13 @@ func (f FSUtil) UnMount(path string) error {
 	return nil
 }
 
-func (f FSUtil) safeFormat(path string) error {
+func (f FSUtil) SafeFormat(path string) error {
+
+	// If if it's not a block device, don't touch it.
+	_, err := exec.Command("test", "-b", path).CombinedOutput()
+	if err != nil {
+		return nil
+	}
 	deviceFS, err := checkFSType(path)
 	if err != nil {
 		return fmt.Errorf("unable to format filesystem for %q: %v", path, err)
@@ -632,13 +789,6 @@ func (f FSUtil) safeFormat(path string) error {
 		return fmt.Errorf("device %q already formatted with %q filesystem, refusing to overwrite with %q filesystem", path, deviceFS, f.FSType)
 	}
 
-	if f.XFSLogDev != "" {
-		_, err = os.Stat(f.XFSLogDev)
-		if err != nil {
-			return fmt.Errorf("failed to stat xfs log device (%s): %v", f.XFSLogDev, err)
-		}
-	}
-
 	f.populateArgs()
 
 	args := []string{"-t", f.FSType}
@@ -647,10 +797,22 @@ func (f FSUtil) safeFormat(path string) error {
 
 	out, err := f.traceCombinedOutput("mkfs", args...)
 	if err != nil {
-		return fmt.Errorf("couldn't create %s filesystem %v: %q", f.FSType, err, out)
+		return fmt.Errorf("couldn't create %s filesystem on %s: %v: %q", f.FSType, path, err, out)
 	}
 
 	return nil
+}
+
+func (f *FSUtil) isMounted(path string) (bool, error) {
+	out, err := exec.Command("findmnt", "-f", path).CombinedOutput()
+	if err != nil {
+		if string(out) != "" {
+			return false, fmt.Errorf("%v: %s", err, out)
+		}
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (f *FSUtil) populateArgs() error {
@@ -658,57 +820,6 @@ func (f *FSUtil) populateArgs() error {
 	if f.FSOpts != "" {
 		f.args = strings.Split(f.FSOpts, " ")
 		return nil
-	}
-
-	// Everything below is depricated behavior.
-
-	xfs := "xfs"
-	ext4 := "ext4"
-
-	if f.Force {
-		if f.FSType == xfs {
-			f.args = append(f.args, "-f")
-		}
-
-		if f.FSType == ext4 {
-			f.args = append(f.args, "-F")
-		}
-	}
-
-	if f.BlockSize != 0 {
-		b := strconv.FormatInt(f.BlockSize, 10)
-
-		if f.FSType == xfs {
-			b = fmt.Sprintf("size=%s", b)
-		}
-		f.args = append(f.args, "-b", b)
-	}
-
-	if f.FSType == xfs {
-
-		if f.XFSDataSU != "" {
-			ok, err := regexp.MatchString("^\\d+[kmg]?$", f.XFSDataSU)
-			if !ok {
-				return fmt.Errorf("su must be a number and optionally a prefix of k,m, or g")
-			}
-			if err != nil {
-				return err
-			}
-
-			f.args = append(f.args, "-d", fmt.Sprintf("su=%s", f.XFSDataSU))
-		}
-
-		if f.XFSDataSW != 0 {
-			f.args = append(f.args, "-d", fmt.Sprintf("sw=%d", f.XFSDataSW))
-		}
-
-		if f.XFSLogDev != "" {
-			f.args = append(f.args, "-l", fmt.Sprintf("logdev=%s", f.XFSLogDev))
-		}
-
-		if !f.XFSDiscardBlocks {
-			f.args = append(f.args, "-K")
-		}
 	}
 
 	return nil
@@ -753,7 +864,7 @@ func doCheckFSType(s string) (string, error) {
 }
 
 // WaitForDevPath polls until the resourse path appears on the system.
-func WaitForDevPath(r ResourceDeployment, node string, maxRetries int) (string, error) {
+func (r ResourceDeployment) WaitForDevPath(node string, maxRetries int) (string, error) {
 	var path string
 	var err error
 
