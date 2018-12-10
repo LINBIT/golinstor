@@ -18,6 +18,8 @@
 
 package linstor
 
+//go:generate ./linstor-common/genconsts.py golang apiconsts.go
+
 import (
 	"encoding/json"
 	"fmt"
