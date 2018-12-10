@@ -918,7 +918,7 @@ func getDevPath(list resList, resName, node string) (string, error) {
 
 	if devicePath == "" {
 		return devicePath, fmt.Errorf(
-			"unable to find the device path volume zero of %s in %+v", resName, list)
+			"unable to find the device path of volume zero of resource %s on node %s in %+v", resName, node, list)
 	}
 
 	return devicePath, nil
