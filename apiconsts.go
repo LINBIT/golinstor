@@ -434,6 +434,7 @@ const KEY_PEER_SLOTS_NEW_RESOURCE = "PeerSlotsNewResource"
 const KEY_PEER_SLOTS = "PeerSlots"
 const KEY_ALLOW_LARGER_VOLUME_SIZE = "AllowLargerVolumeSize"
 const KEY_RSC_ROLLBACK_TARGET = "RollbackTarget"
+const KEY_RSC_MIGRATE_FROM = "MigrateFrom"
 
 // ## Property values ###
 const VAL_NETCOM_TYPE_SSL = "SSL"
