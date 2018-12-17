@@ -54,6 +54,7 @@ type ResourceDeploymentConfig struct {
 	DRSites             []string
 	DRSiteKey           string
 	AutoPlace           uint64
+	DisklessOnRemaining bool
 	DoNotPlaceWithRegex string
 	SizeKiB             uint64
 	StoragePool         string
@@ -73,6 +74,7 @@ type ResourceDeploymentConfig struct {
 // If there are duplicates within ClientList or NodeList, they will be removed.
 // If there are duplicates between ClientList and NodeList, duplicates in the ClientList will be removed.
 // If no AutoPlace Value is given AND there is no NodeList and no ClientList, it will default to 1.
+// If no DisklessOnRemaining is given, no diskless assignments on non replica nodes will be made.
 // If no DoNotPlaceWithRegex, ReplicasOnSame, or ReplicasOnDifferent are provided resource assignment will occur without them.
 // If no SizeKiB is provided, it will be given a size of 4096kb.
 // If no StoragePool is provided, the default storage pool will be used.
@@ -111,6 +113,10 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 
 	if r.DisklessStoragePool == "" {
 		r.DisklessStoragePool = "DfltDisklessStorPool"
+	}
+
+	if r.DisklessOnRemaining {
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--diskless-on-remaining")
 	}
 
 	if r.DoNotPlaceWithRegex != "" {
