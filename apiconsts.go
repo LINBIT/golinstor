@@ -452,6 +452,7 @@ const VAL_NODE_TYPE_CTRL = "Controller"
 const VAL_NODE_TYPE_STLT = "Satellite"
 const VAL_NODE_TYPE_CMBD = "Combined"
 const VAL_NODE_TYPE_AUX = "Auxiliary"
+const VAL_NODE_TYPE_SWFISH_TARGET = "SWORDFISH_TARGET"
 
 // ## Net interface Type values ###
 const VAL_NETIF_TYPE_IP = "IP"
