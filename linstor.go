@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -33,6 +32,7 @@ import (
 	"time"
 
 	"github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 // ResourceDeployment contains all the information needed to query and assign/deploy
@@ -41,7 +41,7 @@ type ResourceDeployment struct {
 	ResourceDeploymentConfig
 	autoPlaced    bool
 	autoPlaceArgs []string
-	log           *log.Logger
+	log           *log.Entry
 }
 
 // ResourceDeploymentConfig is a configuration object for ResourceDeployment.
@@ -65,6 +65,7 @@ type ResourceDeploymentConfig struct {
 	Controllers         string
 	Annotations         map[string]string
 	LogOut              io.Writer
+	LogFmt              log.Formatter
 }
 
 // NewResourceDeployment creates a new ResourceDeployment object. This tolerates
@@ -142,7 +143,18 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 		r.DRSiteKey = "DR-site"
 	}
 
-	r.log = log.New(r.LogOut, "golinstor: ", log.Ldate|log.Ltime|log.Lshortfile)
+	if r.LogFmt != nil {
+		log.SetFormatter(r.LogFmt)
+	}
+	if r.LogOut == nil {
+		r.LogOut = ioutil.Discard
+	}
+	log.SetOutput(r.LogOut)
+
+	r.log = log.WithFields(log.Fields{
+		"package":      "golinstor",
+		"resourceName": r.Name,
+	})
 
 	return r
 }
@@ -316,7 +328,10 @@ func (r ResourceDeployment) prependOpts(args ...string) []string {
 }
 
 func (r ResourceDeployment) traceCombinedOutput(name string, args ...string) ([]byte, error) {
-	r.log.Printf("(%q): %s %s", r.Name, name, strings.Join(args, " "))
+	r.log.WithFields(log.Fields{
+		"command": name,
+		"args":    strings.Join(args, " "),
+	}).Info("running external command")
 	return exec.Command(name, args...).CombinedOutput()
 }
 
