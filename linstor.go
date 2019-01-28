@@ -517,7 +517,7 @@ func (r ResourceDeployment) Attach(node string, asClient bool) error {
 	}
 
 	if r.MigrateOnAttach && asClient {
-		r.migrateTo(node)
+		return r.migrateTo(node)
 	}
 
 	return nil
