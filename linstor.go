@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
@@ -62,6 +63,7 @@ type ResourceDeploymentConfig struct {
 	StoragePool         string
 	DisklessStoragePool string
 	Encryption          bool
+	MigrateOnAttach     bool
 	Controllers         string
 	Annotations         map[string]string
 	LogOut              io.Writer
@@ -83,6 +85,7 @@ type ResourceDeploymentConfig struct {
 // If no StoragePool is provided, the default storage pool will be used.
 // If no DisklessStoragePool is provided, the default diskless storage pool will be used.
 // If no Encryption is specified, none will be used.
+// If no MigrateOnAttach is specified, none will be used.
 // If no Controllers are specified, none will be used.
 // If no LogOut is specified, ioutil.Discard will be used.
 // TODO: Document DR stuff.
@@ -504,6 +507,42 @@ func (r ResourceDeployment) Assign() error {
 		}
 	}
 	return nil
+}
+
+// Attach assigns a resource on a single node disklessly or diskfully.
+// If migrateOnAttach is true the migration will be be performed directly
+// after assignment.
+func (r ResourceDeployment) Attach(node string, asClient bool) error {
+	if err := r.deployToList([]string{node}, asClient); err != nil {
+		return err
+	}
+
+	if r.MigrateOnAttach && asClient {
+		return r.migrateTo(node)
+	}
+
+	return nil
+}
+
+// Make node diskfull without changing the total number of replicas.
+func (r ResourceDeployment) migrateTo(node string) error {
+	diskfulNodes, err := r.deployedNodes()
+	if err != nil {
+		return err
+	}
+	numDiskful := len(diskfulNodes)
+	if numDiskful == 0 {
+		return fmt.Errorf("resource %s has no healthy diskful assignments, unable to migrate", r.Name)
+	}
+
+	// We don't need to make this nodes diskfull it it happens to be diskful anyhow.
+	if contains(diskfulNodes, node) {
+		return nil
+	}
+
+	migrationSource := diskfulNodes[rand.Intn(numDiskful)]
+	args := []string{"resource", "toggle-disk", node, r.Name, "--storage-pool", r.StoragePool, "--migrate-from", migrationSource}
+	return r.linstor(args...)
 }
 
 func (r ResourceDeployment) deployToList(list []string, asClients bool) error {
