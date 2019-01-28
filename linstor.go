@@ -332,8 +332,7 @@ func (r ResourceDeployment) prependOpts(args ...string) []string {
 
 func (r ResourceDeployment) traceCombinedOutput(name string, args ...string) ([]byte, error) {
 	r.log.WithFields(log.Fields{
-		"command": name,
-		"args":    strings.Join(args, " "),
+		"command": fmt.Sprintf("%s %s", name, strings.Join(args, " ")),
 	}).Info("running external command")
 	return exec.Command(name, args...).CombinedOutput()
 }
