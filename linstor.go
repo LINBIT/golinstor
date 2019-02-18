@@ -22,11 +22,13 @@ package linstor
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -945,4 +947,29 @@ func getDevPath(list resList, resName, node string) (string, error) {
 	}
 
 	return devicePath, nil
+}
+
+// ValidResourceName returns an error if the input string is not a valid LINSTOR name
+func ValidResourceName(resName string) error {
+	if resName == "all" {
+		return errors.New("Not allowed to use 'all' as resource name")
+	}
+
+	b, err := regexp.MatchString("[[:alpha:]]", resName)
+	if err != nil {
+		return err
+	} else if !b {
+		return errors.New("Resource name did not contain at least one alphabetic (A-Za-z) character")
+	}
+
+	re := "^[A-Za-z_][A-Za-z0-9\\-_]{1,47}$"
+	b, err = regexp.MatchString(re, resName)
+	if err != nil {
+		return err
+	} else if !b {
+		// without open coding it (ugh!) as good as it gets
+		return fmt.Errorf("Resource name did not match: '%s'", re)
+	}
+
+	return nil
 }
