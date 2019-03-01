@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/satori/go.uuid"
@@ -30,8 +31,9 @@ import (
 func TestNewResourceDeployment(t *testing.T) {
 	// Test totally unconfigured deployment.
 	res := NewResourceDeployment(ResourceDeploymentConfig{})
-	if _, err := uuid.FromString(res.Name); err != nil {
-		t.Errorf("Expected a UUID got %s", res.Name)
+	name := strings.TrimPrefix(res.Name, "auto-")
+	if _, err := uuid.FromString(name); err != nil {
+		t.Errorf("Expected a UUID got %s", name)
 	}
 	if res.AutoPlace != 1 {
 		t.Errorf("Expected autoplace to be %d, got %d", 1, res.AutoPlace)
@@ -50,7 +52,7 @@ func TestNewResourceDeployment(t *testing.T) {
 	}
 
 	// Test regularly configured deployment autoplace.
-	name := "Agamemnon"
+	name = "Agamemnon"
 	res = NewResourceDeployment(
 		ResourceDeploymentConfig{
 			Name:        name,
@@ -240,82 +242,6 @@ func TestDoCheckFSType(t *testing.T) {
 			t.Errorf("Called: doCheckFSType(%q), Expected: %q, Got: %q", tt.in, tt.out, FSType)
 		}
 	}
-}
-
-func TestPopulateArgs(t *testing.T) {
-	var populateArgsTests = []struct {
-		in  FSUtil
-		out []string
-	}{
-		{FSUtil{
-			FSType:           "xfs",
-			BlockSize:        4096,
-			XFSDiscardBlocks: true,
-		}, []string{"-b", "size=4096"}},
-		{FSUtil{
-			FSType:    "xfs",
-			BlockSize: 2048,
-		}, []string{"-b", "size=2048", "-K"}},
-		{FSUtil{
-			FSType:    "ext4",
-			BlockSize: 2048,
-		}, []string{"-b", "2048"}},
-		{FSUtil{
-			FSType:           "xfs",
-			Force:            true,
-			XFSDiscardBlocks: true,
-		}, []string{"-f"}},
-		{FSUtil{
-			FSType:           "ext4",
-			Force:            true,
-			XFSDiscardBlocks: true,
-		}, []string{"-F"}},
-		{FSUtil{
-			FSType:           "xfs",
-			XFSDataSU:        "128k",
-			XFSDiscardBlocks: true,
-		}, []string{"-d", "su=128k"}},
-		{FSUtil{
-			FSType:           "xfs",
-			XFSDataSW:        1,
-			XFSDiscardBlocks: true,
-		}, []string{"-d", "sw=1"}},
-		{FSUtil{
-			FSType:           "xfs",
-			XFSDataSU:        "128k",
-			XFSDataSW:        1,
-			XFSDiscardBlocks: true,
-			Force:            true,
-			// Sadly, the order here matters based on how this []string is built in
-			// function. It's a little bit fragile, but probably not worth messing
-			// with right now.
-		}, []string{"-f", "-d", "su=128k", "-d", "sw=1"}},
-		{FSUtil{
-			FSType:           "xfs",
-			XFSLogDev:        "/dev/example",
-			XFSDiscardBlocks: true,
-		}, []string{"-l", "logdev=/dev/example"}},
-		{FSUtil{
-			FSType:           "xfs",
-			XFSDataSU:        "128k",
-			XFSDataSW:        1,
-			XFSDiscardBlocks: true,
-			Force:            true,
-			// Ignore all other options is FSOpts is present.
-			FSOpts: "-d su=128k size=4000 noalign -i sparse=0",
-		}, []string{"-d", "su=128k", "size=4000", "noalign", "-i", "sparse=0"}},
-	}
-
-	for _, tt := range populateArgsTests {
-
-		tt.in.populateArgs()
-
-		if !reflect.DeepEqual(tt.in.args, tt.out) {
-			t.Errorf("Expected: %v Got: %v", tt.out, tt.in.args)
-		}
-
-	}
-
 }
 
 func TestDoIsClient(t *testing.T) {
