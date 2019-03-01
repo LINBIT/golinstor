@@ -32,7 +32,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -134,8 +134,7 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnSame...)
 	}
 	if len(r.ReplicasOnDifferent) != 0 {
-		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different")
-		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnDifferent...)
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different", r.ReplicasOnDifferent...)
 	}
 
 	if r.LogOut == nil {
