@@ -449,8 +449,8 @@ func (r ResourceDeployment) Create() error {
 
 		// Store annotations in the res def's aux props.
 		for k, v := range r.Annotations {
-			if err := r.linstor("resource-definition", "set-property", "--aux", r.Name, k, v); err != nil {
-				return fmt.Errorf("unable to reserve resource name %s: %v", r.Name, err)
+			if err := r.SetAuxProp(k, v); err != nil {
+				return err
 			}
 		}
 	}
@@ -872,6 +872,15 @@ func (r ResourceDeployment) Delete() error {
 	if err := r.linstor("resource-definition", "delete", r.Name); err != nil {
 		return fmt.Errorf("failed to delete resource %s: %v", r.Name, err)
 	}
+	return nil
+}
+
+// SetAuxProp adds an aux prop to the resource.
+func (r ResourceDeployment) SetAuxProp(key, value string) error {
+	if err := r.linstor("resource-definition", "set-property", "--aux", r.Name, key, value); err != nil {
+		return fmt.Errorf("unable to set aux prop for resource %s :%v", r.Name, err)
+	}
+
 	return nil
 }
 
