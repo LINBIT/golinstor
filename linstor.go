@@ -134,7 +134,8 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnSame...)
 	}
 	if len(r.ReplicasOnDifferent) != 0 {
-		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different", r.ReplicasOnDifferent...)
+		r.autoPlaceArgs = append(r.autoPlaceArgs, "--replicas-on-different")
+		r.autoPlaceArgs = append(r.autoPlaceArgs, r.ReplicasOnDifferent...)
 	}
 
 	if r.LogOut == nil {
