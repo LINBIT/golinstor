@@ -65,6 +65,7 @@ type ResourceDeploymentConfig struct {
 	Encryption          bool
 	MigrateOnAttach     bool
 	Controllers         string
+	LayerList           []string
 	Annotations         map[string]string
 	LogOut              io.Writer
 	LogFmt              log.Formatter
@@ -420,7 +421,12 @@ func (r ResourceDeployment) Create() error {
 	}
 
 	if !defPresent {
-		if err := r.linstor("resource-definition", "create", r.Name); err != nil {
+		args := []string{"resource-definition", "create", r.Name}
+		if len(r.LayerList) != 0 {
+			args = append(args, "--layer-list", strings.Join(r.LayerList, ","))
+		}
+
+		if err := r.linstor(args...); err != nil {
 			return fmt.Errorf("unable to reserve resource name %s :%v", r.Name, err)
 		}
 
