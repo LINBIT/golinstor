@@ -21,7 +21,9 @@ type Client struct {
 	logCfg     *LogCfg
 	// log        *logrus.Entry
 
-	Nodes *NodeService
+	Nodes               *NodeService
+	ResourceDefinitions *ResourceDefinitionService
+	// Resources *ResourceService
 }
 
 type LogCfg struct {
@@ -69,6 +71,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 	Log(l)(c)
 
 	c.Nodes = &NodeService{client: c}
+	c.ResourceDefinitions = &ResourceDefinitionService{client: c}
 
 	for _, opt := range options {
 		if err := opt(c); err != nil {
