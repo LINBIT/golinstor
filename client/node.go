@@ -59,91 +59,91 @@ type NodeService struct {
 
 func (n *NodeService) ListAll(ctx context.Context, opts ...*ListOpts) ([]Node, error) {
 	var nodes []Node
-	_, err := n.client.GET(ctx, "/v1/nodes", &nodes, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes", &nodes, opts...)
 	return nodes, err
 }
 
 func (n *NodeService) List(ctx context.Context, nodeName string, opts ...*ListOpts) (Node, error) {
 	var node Node
-	_, err := n.client.GET(ctx, "/v1/nodes/"+nodeName, &node, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName, &node, opts...)
 	return node, err
 }
 
 func (n *NodeService) Create(ctx context.Context, node Node) error {
-	_, err := n.client.POST(ctx, "/v1/nodes", nil, node)
+	_, err := n.client.doPOST(ctx, "/v1/nodes", nil, node)
 	return err
 }
 
 func (n *NodeService) Modify(ctx context.Context, nodeName string, props PropsModify) error {
-	_, err := n.client.PUT(ctx, "/v1/nodes/"+nodeName, nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName, nil, props)
 	return err
 }
 
 func (n *NodeService) Delete(ctx context.Context, nodeName string) error {
-	_, err := n.client.DELETE(ctx, "/v1/nodes/"+nodeName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName, nil, nil)
 	return err
 }
 
 func (n *NodeService) Lost(ctx context.Context, nodeName string) error {
-	_, err := n.client.DELETE(ctx, "/v1/nodes/"+nodeName+"/lost", nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/lost", nil, nil)
 	return err
 }
 
 func (n *NodeService) Reconnect(ctx context.Context, nodeName string) error {
-	_, err := n.client.PUT(ctx, "/v1/nodes/"+nodeName+"/reconnect", nil, nil)
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/reconnect", nil, nil)
 	return err
 }
 
 func (n *NodeService) ListNetInterfaces(ctx context.Context, nodeName string, opts ...*ListOpts) ([]NetInterface, error) {
 	var nifs []NetInterface
-	_, err := n.client.GET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces", &nifs, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces", &nifs, opts...)
 	return nifs, err
 }
 
 func (n *NodeService) ListNetInterface(ctx context.Context, nodeName, nifName string, opts ...*ListOpts) (NetInterface, error) {
 	var nif NetInterface
-	_, err := n.client.GET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nif, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nif, opts...)
 	return nif, err
 }
 
 func (n *NodeService) CreateNetInterface(ctx context.Context, nodeName string, nif NetInterface) error {
-	_, err := n.client.POST(ctx, "/v1/nodes/"+nodeName+"/net-interfaces", nil, nif)
+	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/net-interfaces", nil, nif)
 	return err
 }
 
 func (n *NodeService) ModifyNetInterface(ctx context.Context, nodeName, nifName string, nif NetInterface) error {
-	_, err := n.client.PUT(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil, nif)
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil, nif)
 	return err
 }
 
 func (n *NodeService) DeleteNetinterface(ctx context.Context, nodeName, nifName string) error {
-	_, err := n.client.DELETE(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil, nil)
 	return err
 }
 
 func (n *NodeService) ListStoragePools(ctx context.Context, nodeName string, opts ...*ListOpts) ([]StoragePool, error) {
 	var sps []StoragePool
-	_, err := n.client.GET(ctx, "/v1/nodes/"+nodeName+"/storage-pools", &sps, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools", &sps, opts...)
 	return sps, err
 }
 
 func (n *NodeService) ListStoragePool(ctx context.Context, nodeName, spName string, opts ...*ListOpts) (StoragePool, error) {
 	var sp StoragePool
-	_, err := n.client.GET(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, sp, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, sp, opts...)
 	return sp, err
 }
 
 func (n *NodeService) CreateStoragePool(ctx context.Context, nodeName string, sp StoragePool) error {
-	_, err := n.client.POST(ctx, "/v1/nodes/"+nodeName+"/storage-pools", nil, sp)
+	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/storage-pools", nil, sp)
 	return err
 }
 
 func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName string, sp StoragePool) error {
-	_, err := n.client.POST(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil, sp)
+	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil, sp)
 	return err
 }
 
 func (n *NodeService) DeleteStoragePool(ctx context.Context, nodeName, spName string) error {
-	_, err := n.client.DELETE(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil, nil)
 	return err
 }

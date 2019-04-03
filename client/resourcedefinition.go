@@ -137,55 +137,55 @@ func (d *DrbdVolumeDefinition) isOneOfDrbdVolumeDefinition() {}
 
 func (n *ResourceDefinitionService) ListAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error) {
 	var resDefs []ResourceDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions", &resDefs, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions", &resDefs, opts...)
 	return resDefs, err
 }
 
 func (n *ResourceDefinitionService) List(ctx context.Context, resDefName string, opts ...*ListOpts) (ResourceDefinition, error) {
 	var resDef ResourceDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName, &resDef, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName, &resDef, opts...)
 	return resDef, err
 }
 
 func (n *ResourceDefinitionService) Create(ctx context.Context, resDef ResourceDefinition) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/", nil, resDef)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/", nil, resDef)
 	return err
 }
 
 func (n *ResourceDefinitionService) Modify(ctx context.Context, resDefName string, props PropsModify) error {
-	_, err := n.client.PUT(ctx, "/v1/resource-definitions/"+resDefName, nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName, nil, props)
 	return err
 }
 
 func (n *ResourceDefinitionService) Delete(ctx context.Context, resDefName string) error {
-	_, err := n.client.DELETE(ctx, "/v1/resource-definitions/"+resDefName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName, nil, nil)
 	return err
 }
 
 func (n *ResourceDefinitionService) ListVolumeDefinitions(ctx context.Context, resDefName string, opts ...*ListOpts) ([]VolumeDefinition, error) {
 	var volDefs []VolumeDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDefs, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDefs, opts...)
 	return volDefs, err
 }
 
 func (n *ResourceDefinitionService) ListVolumeDefinition(ctx context.Context, resDefName string, opts ...*ListOpts) (VolumeDefinition, error) {
 	var volDef VolumeDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDef, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDef, opts...)
 	return volDef, err
 }
 
 // only size required
 func (n *ResourceDefinitionService) CreateVolumeDefinition(ctx context.Context, resDefName string, volDef VolumeDefinition) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", nil, volDef)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", nil, volDef)
 	return err
 }
 
 func (n *ResourceDefinitionService) ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props PropsModify) error {
-	_, err := n.client.PUT(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil, props)
 	return err
 }
 
 func (n *ResourceDefinitionService) DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error {
-	_, err := n.client.DELETE(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil, nil)
 	return err
 }

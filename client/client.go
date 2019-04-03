@@ -179,7 +179,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 
 // Higer Leve Abstractions
 
-func (c *Client) GET(ctx context.Context, url string, ret interface{}, opts ...*ListOpts) (*http.Response, error) {
+func (c *Client) doGET(ctx context.Context, url string, ret interface{}, opts ...*ListOpts) (*http.Response, error) {
 
 	u, err := addOptions(url, genOptions(opts...))
 	if err != nil {
@@ -193,7 +193,7 @@ func (c *Client) GET(ctx context.Context, url string, ret interface{}, opts ...*
 	return c.do(ctx, req, ret)
 }
 
-func (c *Client) POST(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
+func (c *Client) doPOST(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
 	u, err := addOptions(url, opts)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (c *Client) POST(ctx context.Context, url string, opts *ListOpts, body inte
 	return c.do(ctx, req, nil)
 }
 
-func (c *Client) PUT(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
+func (c *Client) doPUT(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
 	u, err := addOptions(url, opts)
 	if err != nil {
 		return nil, err
@@ -221,7 +221,7 @@ func (c *Client) PUT(ctx context.Context, url string, opts *ListOpts, body inter
 	return c.do(ctx, req, nil)
 }
 
-func (c *Client) DELETE(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
+func (c *Client) doDELETE(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
 	u, err := addOptions(url, opts)
 	if err != nil {
 		return nil, err

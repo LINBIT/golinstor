@@ -211,42 +211,42 @@ func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume() {}
 
 func (n *ResourceService) ListAll(ctx context.Context, resName string, opts ...*ListOpts) ([]Resource, error) {
 	var reses []Resource
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources", &reses, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources", &reses, opts...)
 	return reses, err
 }
 
 func (n *ResourceService) List(ctx context.Context, resName, nodeName string, opts ...*ListOpts) (Resource, error) {
 	var res Resource
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, &res, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, &res, opts...)
 	return res, err
 }
 
 func (n *ResourceService) Create(ctx context.Context, res Resource) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+res.Name+"/resources/"+res.NodeName, nil, res)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+res.Name+"/resources/"+res.NodeName, nil, res)
 	return err
 }
 
 func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, props PropsModify) error {
-	_, err := n.client.PUT(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, nil, props)
 	return err
 }
 
 func (n *ResourceService) Delete(ctx context.Context, resName, nodeName string) error {
-	_, err := n.client.DELETE(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, nil, nil)
 	return err
 }
 
 func (n *ResourceService) ListVolumes(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]Volume, error) {
 	var vols []Volume
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes", &vols, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes", &vols, opts...)
 	return vols, err
 }
 
 func (n *ResourceService) ListVolume(ctx context.Context, resName, nodeName string, volNr int, opts ...*ListOpts) (Volume, error) {
 	var vol Volume
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes/"+strconv.Itoa(volNr), &vol, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes/"+strconv.Itoa(volNr), &vol, opts...)
 	return vol, err
 }
 
@@ -255,7 +255,7 @@ func (n *ResourceService) Diskless(ctx context.Context, resName, nodeName, diskl
 	if disklessPoolName != "" {
 		u += "/" + disklessPoolName
 	}
-	_, err := n.client.PUT(ctx, u, nil, nil)
+	_, err := n.client.doPUT(ctx, u, nil, nil)
 	return err
 }
 
@@ -264,7 +264,7 @@ func (n *ResourceService) Diskful(ctx context.Context, resName, nodeName, storag
 	if storagePoolName != "" {
 		u += "/" + storagePoolName
 	}
-	_, err := n.client.PUT(ctx, u, nil, nil)
+	_, err := n.client.doPUT(ctx, u, nil, nil)
 	return err
 }
 
@@ -273,12 +273,12 @@ func (n *ResourceService) Migrate(ctx context.Context, resName, fromNodeName, to
 	if storagePoolName != "" {
 		u += "/" + storagePoolName
 	}
-	_, err := n.client.PUT(ctx, u, nil, nil)
+	_, err := n.client.doPUT(ctx, u, nil, nil)
 	return err
 }
 
 func (n *ResourceService) Autoplace(ctx context.Context, resName string, apr AutoPlaceRequest) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+resName+"/autoplace", nil, apr)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resName+"/autoplace", nil, apr)
 	return err
 }
 
@@ -290,63 +290,63 @@ func (n *ResourceService) ListConnections(ctx context.Context, resName, nodeANam
 		u += fmt.Sprintf("/%s/%s", nodeAName, nodeBName)
 	}
 
-	_, err := n.client.GET(ctx, u, &resConns, opts...)
+	_, err := n.client.doGET(ctx, u, &resConns, opts...)
 	return resConns, err
 }
 
 func (n *ResourceService) ModifyConnection(ctx context.Context, resName, nodeAName, nodeBName string, props PropsModify) error {
 	u := fmt.Sprintf("/v1/resource-definitions/%s/resource-connections/%s/%s", resName, nodeAName, nodeBName)
-	_, err := n.client.PUT(ctx, u, nil, props)
+	_, err := n.client.doPUT(ctx, u, nil, props)
 	return err
 }
 
 func (n *ResourceService) ListSnapshots(ctx context.Context, resName string, opts ...*ListOpts) ([]Snapshot, error) {
 	var snaps []Snapshot
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots", &snaps, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/snapshots", &snaps, opts...)
 	return snaps, err
 }
 
 func (n *ResourceService) ListSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) (Snapshot, error) {
 	var snap Snapshot
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, &snap, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, &snap, opts...)
 	return snap, err
 }
 
 func (n *ResourceService) CreateSnapshot(ctx context.Context, snapshot Snapshot) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+snapshot.ResourceName+"/snapshots/"+snapshot.Name, nil, snapshot)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+snapshot.ResourceName+"/snapshots/"+snapshot.Name, nil, snapshot)
 	return err
 }
 
 func (n *ResourceService) DeleteSnapshot(ctx context.Context, resName, snapName string) error {
-	_, err := n.client.DELETE(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, nil, nil)
 	return err
 }
 
 func (n *ResourceService) RestoreSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+origResName+"/snapshot-restore-resource/"+snapName, nil, snapRestoreConf)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+origResName+"/snapshot-restore-resource/"+snapName, nil, snapRestoreConf)
 	return err
 }
 
 func (n *ResourceService) RestoreVolumeDefinitionSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+origResName+"/snapshot-restore-resource/"+snapName, nil, snapRestoreConf)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+origResName+"/snapshot-restore-resource/"+snapName, nil, snapRestoreConf)
 	return err
 }
 
 func (n *ResourceService) RollbackSnapshot(ctx context.Context, resName, snapName string) error {
-	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+resName+"/snapshot-rollback/"+snapName, nil, nil)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resName+"/snapshot-rollback/"+snapName, nil, nil)
 	return err
 }
 
 func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props PropsModify) error {
-	_, err := n.client.PUT(ctx, "/v1/resource-definitions/"+resName+"/drbd-proxy", nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/drbd-proxy", nil, props)
 	return err
 }
 
 func (n *ResourceService) enableDisableDRBDProxy(ctx context.Context, what, resName, nodeAName, nodeBName string) error {
 	u := fmt.Sprintf("/v1/resource-definitions/%s/drbd-proxy/%s/%s/%s", resName, what, nodeAName, nodeBName)
-	_, err := n.client.POST(ctx, u, nil, nil)
+	_, err := n.client.doPOST(ctx, u, nil, nil)
 	return err
 }
 
