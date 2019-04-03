@@ -7,11 +7,11 @@ import (
 	"strconv"
 )
 
-// copy & paste from generated code
-
 type ResourceDefinitionService struct {
 	client *Client
 }
+
+// copy & paste from generated code
 
 type ResourceDefinition struct {
 	Name string `json:"name,omitempty"`
