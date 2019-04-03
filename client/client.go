@@ -1,4 +1,4 @@
-package linstor
+package client
 
 import (
 	"bytes"

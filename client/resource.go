@@ -1,4 +1,4 @@
-package linstor
+package client
 
 import (
 	"context"
@@ -139,7 +139,7 @@ type ResourceConnection struct {
 	Port  int32             `json:"port,omitempty"`
 }
 
-type SnapshotClient struct {
+type Snapshot struct {
 	Name         string   `json:"name,omitempty"`
 	ResourceName string   `json:"resource_name,omitempty"`
 	Nodes        []string `json:"nodes,omitempty"`
@@ -300,21 +300,21 @@ func (n *ResourceService) ModifyConnection(ctx context.Context, resName, nodeANa
 	return err
 }
 
-func (n *ResourceService) ListSnapshots(ctx context.Context, opts *ListOpts, resName string) ([]SnapshotClient, error) {
-	var snaps []SnapshotClient
+func (n *ResourceService) ListSnapshots(ctx context.Context, opts *ListOpts, resName string) ([]Snapshot, error) {
+	var snaps []Snapshot
 
 	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots", opts, &snaps)
 	return snaps, err
 }
 
-func (n *ResourceService) ListSnapshot(ctx context.Context, opts *ListOpts, resName, snapName string) (SnapshotClient, error) {
-	var snap SnapshotClient
+func (n *ResourceService) ListSnapshot(ctx context.Context, opts *ListOpts, resName, snapName string) (Snapshot, error) {
+	var snap Snapshot
 
 	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, opts, &snap)
 	return snap, err
 }
 
-func (n *ResourceService) CreateSnapshot(ctx context.Context, snapshot SnapshotClient) error {
+func (n *ResourceService) CreateSnapshot(ctx context.Context, snapshot Snapshot) error {
 	_, err := n.client.POST(ctx, "/v1/resource-definitions/"+snapshot.ResourceName+"/snapshots/"+snapshot.Name, nil, snapshot)
 	return err
 }
