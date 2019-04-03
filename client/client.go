@@ -193,13 +193,8 @@ func (c *Client) doGET(ctx context.Context, url string, ret interface{}, opts ..
 	return c.do(ctx, req, ret)
 }
 
-func (c *Client) doPOST(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
-	u, err := addOptions(url, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := c.newRequest("POST", u, body)
+func (c *Client) doPOST(ctx context.Context, url string, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -207,13 +202,8 @@ func (c *Client) doPOST(ctx context.Context, url string, opts *ListOpts, body in
 	return c.do(ctx, req, nil)
 }
 
-func (c *Client) doPUT(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
-	u, err := addOptions(url, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := c.newRequest("PUT", u, body)
+func (c *Client) doPUT(ctx context.Context, url string, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest("PUT", url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -221,13 +211,8 @@ func (c *Client) doPUT(ctx context.Context, url string, opts *ListOpts, body int
 	return c.do(ctx, req, nil)
 }
 
-func (c *Client) doDELETE(ctx context.Context, url string, opts *ListOpts, body interface{}) (*http.Response, error) {
-	u, err := addOptions(url, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := c.newRequest("DELETE", u, nil)
+func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest("DELETE", url, body)
 	if err != nil {
 		return nil, err
 	}

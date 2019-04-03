@@ -70,27 +70,27 @@ func (n *NodeService) List(ctx context.Context, nodeName string, opts ...*ListOp
 }
 
 func (n *NodeService) Create(ctx context.Context, node Node) error {
-	_, err := n.client.doPOST(ctx, "/v1/nodes", nil, node)
+	_, err := n.client.doPOST(ctx, "/v1/nodes", node)
 	return err
 }
 
 func (n *NodeService) Modify(ctx context.Context, nodeName string, props PropsModify) error {
-	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName, nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName, props)
 	return err
 }
 
 func (n *NodeService) Delete(ctx context.Context, nodeName string) error {
-	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName, nil)
 	return err
 }
 
 func (n *NodeService) Lost(ctx context.Context, nodeName string) error {
-	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/lost", nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/lost", nil)
 	return err
 }
 
 func (n *NodeService) Reconnect(ctx context.Context, nodeName string) error {
-	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/reconnect", nil, nil)
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/reconnect", nil)
 	return err
 }
 
@@ -107,17 +107,17 @@ func (n *NodeService) ListNetInterface(ctx context.Context, nodeName, nifName st
 }
 
 func (n *NodeService) CreateNetInterface(ctx context.Context, nodeName string, nif NetInterface) error {
-	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/net-interfaces", nil, nif)
+	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/net-interfaces", nif)
 	return err
 }
 
 func (n *NodeService) ModifyNetInterface(ctx context.Context, nodeName, nifName string, nif NetInterface) error {
-	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil, nif)
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nif)
 	return err
 }
 
 func (n *NodeService) DeleteNetinterface(ctx context.Context, nodeName, nifName string) error {
-	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil)
 	return err
 }
 
@@ -134,16 +134,16 @@ func (n *NodeService) ListStoragePool(ctx context.Context, nodeName, spName stri
 }
 
 func (n *NodeService) CreateStoragePool(ctx context.Context, nodeName string, sp StoragePool) error {
-	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/storage-pools", nil, sp)
+	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/storage-pools", sp)
 	return err
 }
 
 func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName string, sp StoragePool) error {
-	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil, sp)
+	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, sp)
 	return err
 }
 
 func (n *NodeService) DeleteStoragePool(ctx context.Context, nodeName, spName string) error {
-	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil)
 	return err
 }

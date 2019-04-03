@@ -148,17 +148,17 @@ func (n *ResourceDefinitionService) List(ctx context.Context, resDefName string,
 }
 
 func (n *ResourceDefinitionService) Create(ctx context.Context, resDef ResourceDefinition) error {
-	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/", nil, resDef)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/", resDef)
 	return err
 }
 
 func (n *ResourceDefinitionService) Modify(ctx context.Context, resDefName string, props PropsModify) error {
-	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName, nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName, props)
 	return err
 }
 
 func (n *ResourceDefinitionService) Delete(ctx context.Context, resDefName string) error {
-	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName, nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName, nil)
 	return err
 }
 
@@ -176,16 +176,16 @@ func (n *ResourceDefinitionService) ListVolumeDefinition(ctx context.Context, re
 
 // only size required
 func (n *ResourceDefinitionService) CreateVolumeDefinition(ctx context.Context, resDefName string, volDef VolumeDefinition) error {
-	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", nil, volDef)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", volDef)
 	return err
 }
 
 func (n *ResourceDefinitionService) ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props PropsModify) error {
-	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil, props)
+	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), props)
 	return err
 }
 
 func (n *ResourceDefinitionService) DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error {
-	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil, nil)
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil)
 	return err
 }
