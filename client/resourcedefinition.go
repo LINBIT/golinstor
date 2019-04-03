@@ -135,15 +135,15 @@ type OneOfDrbdVolumeDefinition interface {
 
 func (d *DrbdVolumeDefinition) isOneOfDrbdVolumeDefinition() {}
 
-func (n *ResourceDefinitionService) ListAll(ctx context.Context, opts *ListOpts) ([]ResourceDefinition, error) {
+func (n *ResourceDefinitionService) ListAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error) {
 	var resDefs []ResourceDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions", opts, &resDefs)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions", &resDefs, opts...)
 	return resDefs, err
 }
 
-func (n *ResourceDefinitionService) List(ctx context.Context, opts *ListOpts, resDefName string) (ResourceDefinition, error) {
+func (n *ResourceDefinitionService) List(ctx context.Context, resDefName string, opts ...*ListOpts) (ResourceDefinition, error) {
 	var resDef ResourceDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName, nil, &resDef)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName, &resDef, opts...)
 	return resDef, err
 }
 
@@ -162,15 +162,15 @@ func (n *ResourceDefinitionService) Delete(ctx context.Context, resDefName strin
 	return err
 }
 
-func (n *ResourceDefinitionService) ListVolumeDefinitions(ctx context.Context, opts *ListOpts, resDefName string) ([]VolumeDefinition, error) {
+func (n *ResourceDefinitionService) ListVolumeDefinitions(ctx context.Context, resDefName string, opts ...*ListOpts) ([]VolumeDefinition, error) {
 	var volDefs []VolumeDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", opts, &volDefs)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDefs, opts...)
 	return volDefs, err
 }
 
-func (n *ResourceDefinitionService) ListVolumeDefinition(ctx context.Context, opts *ListOpts, resDefName string) (VolumeDefinition, error) {
+func (n *ResourceDefinitionService) ListVolumeDefinition(ctx context.Context, resDefName string, opts ...*ListOpts) (VolumeDefinition, error) {
 	var volDef VolumeDefinition
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", opts, &volDef)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDef, opts...)
 	return volDef, err
 }
 

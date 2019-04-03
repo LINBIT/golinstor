@@ -209,15 +209,15 @@ func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
 func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
 func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume() {}
 
-func (n *ResourceService) ListAll(ctx context.Context, opts *ListOpts, resName string) ([]Resource, error) {
+func (n *ResourceService) ListAll(ctx context.Context, resName string, opts ...*ListOpts) ([]Resource, error) {
 	var reses []Resource
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources", opts, &reses)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources", &reses, opts...)
 	return reses, err
 }
 
-func (n *ResourceService) List(ctx context.Context, opts *ListOpts, resName, nodeName string) (Resource, error) {
+func (n *ResourceService) List(ctx context.Context, resName, nodeName string, opts ...*ListOpts) (Resource, error) {
 	var res Resource
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, opts, &res)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, &res, opts...)
 	return res, err
 }
 
@@ -236,17 +236,17 @@ func (n *ResourceService) Delete(ctx context.Context, resName, nodeName string) 
 	return err
 }
 
-func (n *ResourceService) ListVolumes(ctx context.Context, opts *ListOpts, resName, nodeName string) ([]Volume, error) {
+func (n *ResourceService) ListVolumes(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]Volume, error) {
 	var vols []Volume
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes", opts, &vols)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes", &vols, opts...)
 	return vols, err
 }
 
-func (n *ResourceService) ListVolume(ctx context.Context, opts *ListOpts, resName, nodeName string, volNr int) (Volume, error) {
+func (n *ResourceService) ListVolume(ctx context.Context, resName, nodeName string, volNr int, opts ...*ListOpts) (Volume, error) {
 	var vol Volume
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes/"+strconv.Itoa(volNr), opts, &vol)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes/"+strconv.Itoa(volNr), &vol, opts...)
 	return vol, err
 }
 
@@ -282,7 +282,7 @@ func (n *ResourceService) Autoplace(ctx context.Context, resName string, apr Aut
 	return err
 }
 
-func (n *ResourceService) ListConnections(ctx context.Context, opts *ListOpts, resName, nodeAName, nodeBName string) ([]ResourceConnection, error) {
+func (n *ResourceService) ListConnections(ctx context.Context, resName, nodeAName, nodeBName string, opts ...*ListOpts) ([]ResourceConnection, error) {
 	var resConns []ResourceConnection
 
 	u := "/v1/resource-definitions/" + resName + "/resources-connections"
@@ -290,7 +290,7 @@ func (n *ResourceService) ListConnections(ctx context.Context, opts *ListOpts, r
 		u += fmt.Sprintf("/%s/%s", nodeAName, nodeBName)
 	}
 
-	_, err := n.client.GET(ctx, u, opts, &resConns)
+	_, err := n.client.GET(ctx, u, &resConns, opts...)
 	return resConns, err
 }
 
@@ -300,17 +300,17 @@ func (n *ResourceService) ModifyConnection(ctx context.Context, resName, nodeANa
 	return err
 }
 
-func (n *ResourceService) ListSnapshots(ctx context.Context, opts *ListOpts, resName string) ([]Snapshot, error) {
+func (n *ResourceService) ListSnapshots(ctx context.Context, resName string, opts ...*ListOpts) ([]Snapshot, error) {
 	var snaps []Snapshot
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots", opts, &snaps)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots", &snaps, opts...)
 	return snaps, err
 }
 
-func (n *ResourceService) ListSnapshot(ctx context.Context, opts *ListOpts, resName, snapName string) (Snapshot, error) {
+func (n *ResourceService) ListSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) (Snapshot, error) {
 	var snap Snapshot
 
-	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, opts, &snap)
+	_, err := n.client.GET(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, &snap, opts...)
 	return snap, err
 }
 

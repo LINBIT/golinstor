@@ -12,6 +12,14 @@ type ListOpts struct {
 	PerPage int `url:"limit"`
 }
 
+func genOptions(opts ...*ListOpts) *ListOpts {
+	if opts == nil || len(opts) == 0 {
+		return nil
+	}
+
+	return opts[0]
+}
+
 func addOptions(s string, opt interface{}) (string, error) {
 	v := reflect.ValueOf(opt)
 	if v.Kind() == reflect.Ptr && v.IsNil() {

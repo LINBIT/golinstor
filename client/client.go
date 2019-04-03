@@ -179,8 +179,9 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 
 // Higer Leve Abstractions
 
-func (c *Client) GET(ctx context.Context, url string, opts *ListOpts, ret interface{}) (*http.Response, error) {
-	u, err := addOptions(url, opts)
+func (c *Client) GET(ctx context.Context, url string, ret interface{}, opts ...*ListOpts) (*http.Response, error) {
+
+	u, err := addOptions(url, genOptions(opts...))
 	if err != nil {
 		return nil, err
 	}
