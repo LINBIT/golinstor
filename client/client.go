@@ -24,6 +24,7 @@ type Client struct {
 	Nodes               *NodeService
 	ResourceDefinitions *ResourceDefinitionService
 	Resources           *ResourceService
+	Encryption          *EncryptionService
 }
 
 type LogCfg struct {
@@ -73,6 +74,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 	c.Nodes = &NodeService{client: c}
 	c.ResourceDefinitions = &ResourceDefinitionService{client: c}
 	c.Resources = &ResourceService{client: c}
+	c.Encryption = &EncryptionService{client: c}
 
 	for _, opt := range options {
 		if err := opt(c); err != nil {
@@ -204,6 +206,15 @@ func (c *Client) doPOST(ctx context.Context, url string, body interface{}) (*htt
 
 func (c *Client) doPUT(ctx context.Context, url string, body interface{}) (*http.Response, error) {
 	req, err := c.newRequest("PUT", url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.do(ctx, req, nil)
+}
+
+func (c *Client) doPATCH(ctx context.Context, url string, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest("PATCH", url, body)
 	if err != nil {
 		return nil, err
 	}
