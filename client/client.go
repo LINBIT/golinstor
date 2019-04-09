@@ -233,13 +233,18 @@ func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*h
 
 type ApiCallRc struct {
 	// A masked error number
-	RetCode        int64             `json:"ret_code"`
-	Message        string            `json:"message"`
-	Cause          string            `json:"cause,omitempty"`
-	Details        string            `json:"details,omitempty"`
-	Correction     string            `json:"correction,omitempty"`
-	ErrorReportIds []string          `json:"error_report_ids,omitempty"`
-	ObjRefs        map[string]string `json:"obj_refs,omitempty"`
+	RetCode int64  `json:"ret_code"`
+	Message string `json:"message"`
+	// Cause of the error
+	Cause string `json:"cause,omitempty"`
+	// Details to the error message
+	Details string `json:"details,omitempty"`
+	// Possible correction options
+	Correction string `json:"correction,omitempty"`
+	// List of error report ids related to this api call return code.
+	ErrorReportIds []string `json:"error_report_ids,omitempty"`
+	// Map of objection that have been involved by the operation.
+	ObjRefs map[string]string `json:"obj_refs,omitempty"`
 }
 
 func (rc *ApiCallRc) String() string {

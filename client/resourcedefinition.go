@@ -31,7 +31,7 @@ type ResourceDefinitionLayer struct {
 type DrbdResourceDefinitionLayer struct {
 	ResourceNameSuffix string `json:"resource_name_suffix,omitempty"`
 	PeerSlots          int32  `json:"peer_slots,omitempty"`
-	AlStripes          int32  `json:"al_stripes,omitempty"`
+	AlStripes          int64  `json:"al_stripes,omitempty"`
 	// used drbd port for this resource
 	Port          int32  `json:"port,omitempty"`
 	TransportType string `json:"transport_type,omitempty"`
@@ -67,7 +67,7 @@ type VolumeDefinitionLayer struct {
 type DrbdVolumeDefinition struct {
 	ResourceNameSuffix string `json:"resource_name_suffix,omitempty"`
 	VolumeNumber       int32  `json:"volume_number,omitempty"`
-	MinorNumber        uint64 `json:"minor_number,omitempty"`
+	MinorNumber        int32  `json:"minor_number,omitempty"`
 }
 
 // custom code
