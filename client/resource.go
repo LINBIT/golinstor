@@ -228,13 +228,13 @@ func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
 func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
 func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume() {}
 
-func (n *ResourceService) ListAll(ctx context.Context, resName string, opts ...*ListOpts) ([]Resource, error) {
+func (n *ResourceService) GetAll(ctx context.Context, resName string, opts ...*ListOpts) ([]Resource, error) {
 	var reses []Resource
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources", &reses, opts...)
 	return reses, err
 }
 
-func (n *ResourceService) List(ctx context.Context, resName, nodeName string, opts ...*ListOpts) (Resource, error) {
+func (n *ResourceService) Get(ctx context.Context, resName, nodeName string, opts ...*ListOpts) (Resource, error) {
 	var res Resource
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, &res, opts...)
 	return res, err
@@ -255,14 +255,14 @@ func (n *ResourceService) Delete(ctx context.Context, resName, nodeName string) 
 	return err
 }
 
-func (n *ResourceService) ListVolumes(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]Volume, error) {
+func (n *ResourceService) GetVolumes(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]Volume, error) {
 	var vols []Volume
 
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes", &vols, opts...)
 	return vols, err
 }
 
-func (n *ResourceService) ListVolume(ctx context.Context, resName, nodeName string, volNr int, opts ...*ListOpts) (Volume, error) {
+func (n *ResourceService) GetVolume(ctx context.Context, resName, nodeName string, volNr int, opts ...*ListOpts) (Volume, error) {
 	var vol Volume
 
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes/"+strconv.Itoa(volNr), &vol, opts...)
@@ -301,7 +301,7 @@ func (n *ResourceService) Autoplace(ctx context.Context, resName string, apr Aut
 	return err
 }
 
-func (n *ResourceService) ListConnections(ctx context.Context, resName, nodeAName, nodeBName string, opts ...*ListOpts) ([]ResourceConnection, error) {
+func (n *ResourceService) GetConnections(ctx context.Context, resName, nodeAName, nodeBName string, opts ...*ListOpts) ([]ResourceConnection, error) {
 	var resConns []ResourceConnection
 
 	u := "/v1/resource-definitions/" + resName + "/resources-connections"
@@ -319,14 +319,14 @@ func (n *ResourceService) ModifyConnection(ctx context.Context, resName, nodeANa
 	return err
 }
 
-func (n *ResourceService) ListSnapshots(ctx context.Context, resName string, opts ...*ListOpts) ([]Snapshot, error) {
+func (n *ResourceService) GetSnapshots(ctx context.Context, resName string, opts ...*ListOpts) ([]Snapshot, error) {
 	var snaps []Snapshot
 
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/snapshots", &snaps, opts...)
 	return snaps, err
 }
 
-func (n *ResourceService) ListSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) (Snapshot, error) {
+func (n *ResourceService) GetSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) (Snapshot, error) {
 	var snap Snapshot
 
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, &snap, opts...)

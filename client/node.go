@@ -76,13 +76,13 @@ type NodeService struct {
 	client *Client
 }
 
-func (n *NodeService) ListAll(ctx context.Context, opts ...*ListOpts) ([]Node, error) {
+func (n *NodeService) GetAll(ctx context.Context, opts ...*ListOpts) ([]Node, error) {
 	var nodes []Node
 	_, err := n.client.doGET(ctx, "/v1/nodes", &nodes, opts...)
 	return nodes, err
 }
 
-func (n *NodeService) List(ctx context.Context, nodeName string, opts ...*ListOpts) (Node, error) {
+func (n *NodeService) Get(ctx context.Context, nodeName string, opts ...*ListOpts) (Node, error) {
 	var node Node
 	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName, &node, opts...)
 	return node, err
@@ -113,13 +113,13 @@ func (n *NodeService) Reconnect(ctx context.Context, nodeName string) error {
 	return err
 }
 
-func (n *NodeService) ListNetInterfaces(ctx context.Context, nodeName string, opts ...*ListOpts) ([]NetInterface, error) {
+func (n *NodeService) GetNetInterfaces(ctx context.Context, nodeName string, opts ...*ListOpts) ([]NetInterface, error) {
 	var nifs []NetInterface
 	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces", &nifs, opts...)
 	return nifs, err
 }
 
-func (n *NodeService) ListNetInterface(ctx context.Context, nodeName, nifName string, opts ...*ListOpts) (NetInterface, error) {
+func (n *NodeService) GetNetInterface(ctx context.Context, nodeName, nifName string, opts ...*ListOpts) (NetInterface, error) {
 	var nif NetInterface
 	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nif, opts...)
 	return nif, err
@@ -140,13 +140,13 @@ func (n *NodeService) DeleteNetinterface(ctx context.Context, nodeName, nifName 
 	return err
 }
 
-func (n *NodeService) ListStoragePools(ctx context.Context, nodeName string, opts ...*ListOpts) ([]StoragePool, error) {
+func (n *NodeService) GetStoragePools(ctx context.Context, nodeName string, opts ...*ListOpts) ([]StoragePool, error) {
 	var sps []StoragePool
 	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools", &sps, opts...)
 	return sps, err
 }
 
-func (n *NodeService) ListStoragePool(ctx context.Context, nodeName, spName string, opts ...*ListOpts) (StoragePool, error) {
+func (n *NodeService) GetStoragePool(ctx context.Context, nodeName, spName string, opts ...*ListOpts) (StoragePool, error) {
 	var sp StoragePool
 	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, sp, opts...)
 	return sp, err

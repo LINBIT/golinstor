@@ -154,13 +154,13 @@ type OneOfDrbdVolumeDefinition interface {
 
 func (d *DrbdVolumeDefinition) isOneOfDrbdVolumeDefinition() {}
 
-func (n *ResourceDefinitionService) ListAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error) {
+func (n *ResourceDefinitionService) GetAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error) {
 	var resDefs []ResourceDefinition
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions", &resDefs, opts...)
 	return resDefs, err
 }
 
-func (n *ResourceDefinitionService) List(ctx context.Context, resDefName string, opts ...*ListOpts) (ResourceDefinition, error) {
+func (n *ResourceDefinitionService) Get(ctx context.Context, resDefName string, opts ...*ListOpts) (ResourceDefinition, error) {
 	var resDef ResourceDefinition
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName, &resDef, opts...)
 	return resDef, err
@@ -181,13 +181,13 @@ func (n *ResourceDefinitionService) Delete(ctx context.Context, resDefName strin
 	return err
 }
 
-func (n *ResourceDefinitionService) ListVolumeDefinitions(ctx context.Context, resDefName string, opts ...*ListOpts) ([]VolumeDefinition, error) {
+func (n *ResourceDefinitionService) GetVolumeDefinitions(ctx context.Context, resDefName string, opts ...*ListOpts) ([]VolumeDefinition, error) {
 	var volDefs []VolumeDefinition
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDefs, opts...)
 	return volDefs, err
 }
 
-func (n *ResourceDefinitionService) ListVolumeDefinition(ctx context.Context, resDefName string, opts ...*ListOpts) (VolumeDefinition, error) {
+func (n *ResourceDefinitionService) GetVolumeDefinition(ctx context.Context, resDefName string, opts ...*ListOpts) (VolumeDefinition, error) {
 	var volDef VolumeDefinition
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDef, opts...)
 	return volDef, err
