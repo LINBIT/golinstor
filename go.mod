@@ -4,7 +4,9 @@ go 1.12
 
 require (
 	github.com/google/go-querystring v1.0.0
+	github.com/google/uuid v1.1.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/lithammer/shortuuid v3.0.0+incompatible
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/satori/go.uuid v1.2.0
