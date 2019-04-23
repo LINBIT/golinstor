@@ -124,6 +124,51 @@ var _ = Describe("Resource Definitions", func() {
 				}
 			})
 		})
+
+		Context("when an resource definition is created with an invalid name", func() {
+			var (
+				startingResDefs []lapi.ResourceDefinition
+				err             error
+			)
+
+			defName := "กิจวัตรประจำวัน"
+			It("should error on creation", func() {
+				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{Name: defName}})
+				Ω(err).Should(HaveOccurred())
+			})
+
+			It("should not increase the number of resource definitions", func() {
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(currentResDefs).Should(HaveLen(len(startingResDefs)))
+			})
+
+			It("should not be found", func() {
+				By("getting the resource definition")
+
+				// TODO: Determine when a resource is not present (404) vs. another error.
+				resDef, err := client.ResourceDefinitions.Get(testCTX, defName)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(resDef).Should(BeEquivalentTo(lapi.ResourceDefinition{}))
+
+				By("checking the resource definition list")
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(currentResDefs).ShouldNot(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(defName)})))
+			})
+
+			It("should fail to delete a resource that doesn't exist", func() {
+				By("deleteing the resource definitions")
+				Ω(client.ResourceDefinitions.Delete(testCTX, defName)).ShouldNot(Succeed())
+			})
+
+		})
 	})
 })
 
