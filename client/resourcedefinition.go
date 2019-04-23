@@ -42,6 +42,15 @@ type ResourceDefinition struct {
 	LayerData []ResourceDefinitionLayer `json:"layer_data,omitempty"`
 }
 
+type ResourceDefinitionCreate struct {
+	// drbd port for resources
+	DrbdPort int32 `json:"drbd_port,omitempty"`
+	// drbd resource secret
+	DrbdSecret         string             `json:"drbd_secret,omitempty"`
+	DrbdTransportType  string             `json:"drbd_transport_type,omitempty"`
+	ResourceDefinition ResourceDefinition `json:"resource_definition"`
+}
+
 type ResourceDefinitionLayer struct {
 	Type LayerType                        `json:"type,omitempty"`
 	Data OneOfDrbdResourceDefinitionLayer `json:"data,omitempty"`
@@ -67,6 +76,11 @@ const (
 	LUKS    LayerType = "LUKS"
 	STORAGE LayerType = "STORAGE"
 )
+
+type VolumeDefinitionCreate struct {
+	VolumeDefinition VolumeDefinition `json:"volume_definition"`
+	DrbdMinorNumber  int32            `json:"drbd_minor_number,omitempty"`
+}
 
 type VolumeDefinition struct {
 	VolumeNumber int32 `json:"volume_number,omitempty"`
@@ -168,8 +182,8 @@ func (n *ResourceDefinitionService) Get(ctx context.Context, resDefName string, 
 	return resDef, err
 }
 
-func (n *ResourceDefinitionService) Create(ctx context.Context, resDef ResourceDefinition) error {
-	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/", resDef)
+func (n *ResourceDefinitionService) Create(ctx context.Context, resDef ResourceDefinitionCreate) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions", resDef)
 	return err
 }
 
@@ -196,7 +210,7 @@ func (n *ResourceDefinitionService) GetVolumeDefinition(ctx context.Context, res
 }
 
 // only size required
-func (n *ResourceDefinitionService) CreateVolumeDefinition(ctx context.Context, resDefName string, volDef VolumeDefinition) error {
+func (n *ResourceDefinitionService) CreateVolumeDefinition(ctx context.Context, resDefName string, volDef VolumeDefinitionCreate) error {
 	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", volDef)
 	return err
 }

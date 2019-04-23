@@ -42,6 +42,12 @@ type Resource struct {
 	State       ResourceState     `json:"state,omitempty"`
 }
 
+type ResourceCreate struct {
+	Resource   Resource    `json:"resource,omitempty"`
+	LayerList  []LayerType `json:"layer_list,omitempty"`
+	DrbdNodeId int32       `json:"drbd_node_id,omitempty"`
+}
+
 type ResourceLayer struct {
 	Children           []ResourceLayer `json:"children,omitempty"`
 	ResourceNameSuffix string          `json:"resource_name_suffix,omitempty"`
@@ -240,8 +246,8 @@ func (n *ResourceService) Get(ctx context.Context, resName, nodeName string, opt
 	return res, err
 }
 
-func (n *ResourceService) Create(ctx context.Context, res Resource) error {
-	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+res.Name+"/resources/"+res.NodeName, res)
+func (n *ResourceService) Create(ctx context.Context, res ResourceCreate) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+res.Resource.Name+"/resources/"+res.Resource.NodeName, res)
 	return err
 }
 

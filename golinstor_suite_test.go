@@ -29,7 +29,7 @@ var _ = Describe("Resource Creation", func() {
 		Context("when an resource definition is created with a valid name", func() {
 
 			defName := namePrefix + "simpleResDef"
-			err := client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinition{Name: defName})
+			err := client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{Name: defName}})
 			It("should not error", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 			})
