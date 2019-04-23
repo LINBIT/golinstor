@@ -2,6 +2,7 @@ package linstor_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	lapi "github.com/LINBIT/golinstor/client"
@@ -154,7 +155,7 @@ var _ = Describe("Resource Definitions", func() {
 				resDef, err := client.ResourceDefinitions.Get(testCTX, defName)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(resDef).Should(BeEquivalentTo(lapi.ResourceDefinition{}))
+				Ω(resDef).Should(BeZero())
 
 				By("checking the resource definition list")
 				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
@@ -167,7 +168,57 @@ var _ = Describe("Resource Definitions", func() {
 				By("deleteing the resource definitions")
 				Ω(client.ResourceDefinitions.Delete(testCTX, defName)).ShouldNot(Succeed())
 			})
+		})
 
+		Context("when an resource definition is created with an ExternalName", func() {
+
+			var (
+				startingResDefs []lapi.ResourceDefinition
+				err             error
+				actualName      string
+			)
+
+			defExtName := strings.Repeat("ö", 80)
+			It("should not error", func() {
+				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{ExternalName: defExtName}})
+				Ω(err).ShouldNot(HaveOccurred())
+			})
+
+			It("should increase the number of resource definitions", func() {
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(currentResDefs).Should(HaveLen(len(startingResDefs) + 1))
+			})
+
+			It("should have the requested name", func() {
+				By("checking the resource definition list for the external name")
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(currentResDefs).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"ExternalName": Equal(defExtName)})))
+				for _, resDef := range currentResDefs {
+					if resDef.ExternalName == defExtName {
+						actualName = resDef.Name
+					}
+				}
+
+				By("getting the resource definition")
+				resDef, err := client.ResourceDefinitions.Get(testCTX, actualName)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(resDef.ExternalName).Should(Equal(defExtName))
+				Ω(resDef.Name).Should(Equal(actualName))
+
+			})
+
+			It("should clean up", func() {
+				By("deleteing the resource definition")
+				Ω(client.ResourceDefinitions.Delete(testCTX, actualName)).Should(Succeed())
+			})
 		})
 	})
 })
