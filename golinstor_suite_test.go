@@ -151,9 +151,8 @@ var _ = Describe("Resource Definitions", func() {
 			It("should not be found", func() {
 				By("getting the resource definition")
 
-				// TODO: Determine when a resource is not present (404) vs. another error.
 				resDef, err := client.ResourceDefinitions.Get(testCTX, defName)
-				Ω(err).ShouldNot(HaveOccurred())
+				Ω(err).Should(Equal(lapi.NotFoundError))
 
 				Ω(resDef).Should(BeZero())
 

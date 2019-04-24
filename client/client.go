@@ -52,6 +52,13 @@ type LogCfg struct {
 	Level     string
 }
 
+// const errors as in https://dave.cheney.net/2016/04/07/constant-errors
+type clientError string
+
+func (e clientError) Error() string { return string(e) }
+
+const NotFoundError = clientError("404 Not Found")
+
 func NewClient(options ...func(*Client) error) (*Client, error) {
 	httpClient := http.DefaultClient
 
@@ -185,6 +192,9 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		if resp.StatusCode == 404 {
+			return nil, NotFoundError
+		}
 		var rets []ApiCallRc
 		if err = json.NewDecoder(resp.Body).Decode(&rets); err != nil {
 			return nil, err
