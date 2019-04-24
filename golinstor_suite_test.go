@@ -2,9 +2,14 @@ package linstor_test
 
 import (
 	"context"
+	"io"
+	"io/ioutil"
+	"net/url"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	lapi "github.com/LINBIT/golinstor/client"
 	"github.com/lithammer/shortuuid"
 
@@ -12,6 +17,22 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 )
+
+type Config struct {
+	ResourceDefinitionCreateLimit int
+	ClientConf                    Client
+	// Nodes that are expected to have their storage pools, interfaces, etc.
+	// already configured and ready to have resources and snapshots created
+	// on them.
+	PreconfiguredNodes []lapi.Node
+	StoragePools       []lapi.StoragePool
+}
+
+type Client struct {
+	Endpoint string
+	LogLevel string
+	LogFile  string
+}
 
 func TestGolinstor(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -22,56 +43,50 @@ var testCTX = context.Background()
 
 var _ = Describe("Resource Definitions", func() {
 
-	client, err := lapi.NewClient()
+	conf := Config{
+		ResourceDefinitionCreateLimit: 1,
+		ClientConf: Client{
+			Endpoint: "http://localhost:3370",
+			LogLevel: "debug",
+		},
+	}
+
+	if _, err := toml.DecodeFile("./golinstor-e2e.toml", &conf); err != nil {
+		panic(err)
+	}
+
+	u, err := url.Parse(conf.ClientConf.Endpoint)
 	if err != nil {
 		panic(err)
 	}
 
-	Describe("Creating a resource definition", func() {
-		Context("when an resource definition is created with a valid name", func() {
+	var logFile io.Writer
 
-			var (
-				startingResDefs []lapi.ResourceDefinition
-				err             error
-			)
+	if conf.ClientConf.LogFile == "" {
+		logFile, err = ioutil.TempFile("", "golinstor-test-logs")
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		logFile, err = os.Create(conf.ClientConf.LogFile)
+		if err != nil {
+			panic(err)
+		}
+	}
 
-			defName := uniqueName("simpleResDef")
-			It("should not error", func() {
-				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
-				Ω(err).ShouldNot(HaveOccurred())
+	client, err := lapi.NewClient(
+		lapi.BaseURL(u),
+		lapi.Log(&lapi.LogCfg{
+			Level: conf.ClientConf.LogLevel,
+			Out:   logFile,
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
 
-				err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{Name: defName}})
-				Ω(err).ShouldNot(HaveOccurred())
-			})
-
-			It("should increase the number of resource definitions", func() {
-				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				Ω(currentResDefs).Should(HaveLen(len(startingResDefs) + 1))
-			})
-
-			It("should have the requested name", func() {
-				By("getting the resource definition")
-				resDef, err := client.ResourceDefinitions.Get(testCTX, defName)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				Ω(resDef.Name).Should(Equal(defName))
-
-				By("checking the resource definition list")
-				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				Ω(currentResDefs).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(defName)})))
-			})
-
-			It("should clean up", func() {
-				By("deleteing the resource definition")
-				Ω(client.ResourceDefinitions.Delete(testCTX, defName)).Should(Succeed())
-			})
-		})
-
-		Context("when many resource definitions are created with valid names", func() {
+	Describe("Creating resource definitions", func() {
+		Context("resource definitions with valid names", func() {
 
 			var (
 				startingResDefs []lapi.ResourceDefinition
@@ -79,10 +94,8 @@ var _ = Describe("Resource Definitions", func() {
 				err             error
 			)
 
-			// TODO: Configure upper limit?
-			limit := 5
-			for i := 0; i < limit; i++ {
-				resDefNames = append(resDefNames, uniqueName("manyResDefs"))
+			for i := 0; i < conf.ResourceDefinitionCreateLimit; i++ {
+				resDefNames = append(resDefNames, uniqueName("simpleResDef"))
 			}
 
 			It("should not error", func() {
@@ -99,7 +112,7 @@ var _ = Describe("Resource Definitions", func() {
 				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(currentResDefs).Should(HaveLen(len(startingResDefs) + limit))
+				Ω(currentResDefs).Should(HaveLen(len(startingResDefs) + conf.ResourceDefinitionCreateLimit))
 			})
 
 			It("should have the requested names", func() {
