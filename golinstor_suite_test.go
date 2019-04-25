@@ -4,10 +4,12 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	lapi "github.com/LINBIT/golinstor/client"
@@ -20,6 +22,8 @@ import (
 
 type Config struct {
 	ResourceDefinitionCreateLimit int
+	ResourceVolumeLimit           int
+	ResourceVolumeSizeLimitKiB    uint64
 	ClientConf                    Client
 	// Nodes that are expected to have their storage pools, interfaces, etc.
 	// already configured and ready to have resources and snapshots created
@@ -41,10 +45,12 @@ func TestGolinstor(t *testing.T) {
 
 var testCTX = context.Background()
 
-var _ = Describe("Resource Definitions", func() {
+var _ = Describe("Resources", func() {
 
 	conf := Config{
 		ResourceDefinitionCreateLimit: 1,
+		ResourceVolumeLimit:           1,
+		ResourceVolumeSizeLimitKiB:    500,
 		ClientConf: Client{
 			Endpoint: "http://localhost:3370",
 			LogLevel: "debug",
@@ -85,14 +91,20 @@ var _ = Describe("Resource Definitions", func() {
 		panic(err)
 	}
 
-	Describe("Creating resource definitions", func() {
-		Context("resource definitions with valid names", func() {
+	Describe("Creating resources", func() {
+		Context("resources with valid names", func() {
 
 			var (
 				startingResDefs []lapi.ResourceDefinition
 				resDefNames     []string
-				err             error
+				// Set of storage pools and a set of nodes they're present on.
+				storagePools = make(map[string]map[string]bool)
+				err          error
 			)
+
+			for _, p := range conf.StoragePools {
+				storagePools[p.StoragePoolName] = map[string]bool{p.NodeName: true}
+			}
 
 			for i := 0; i < conf.ResourceDefinitionCreateLimit; i++ {
 				resDefNames = append(resDefNames, uniqueName("simpleResDef"))
@@ -102,9 +114,17 @@ var _ = Describe("Resource Definitions", func() {
 				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
 				Ω(err).ShouldNot(HaveOccurred())
 
+				By("Creating resource definitions.")
 				for _, name := range resDefNames {
 					err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{Name: name}})
 					Ω(err).ShouldNot(HaveOccurred())
+
+					By("Creating volumes for each resource definition.")
+					for i := 0; i < conf.ResourceVolumeLimit; i++ {
+						err = client.ResourceDefinitions.CreateVolumeDefinition(testCTX, name, lapi.VolumeDefinitionCreate{
+							VolumeDefinition: lapi.VolumeDefinition{SizeKib: conf.ResourceVolumeSizeLimitKiB}})
+						Ω(err).ShouldNot(HaveOccurred())
+					}
 				}
 			})
 
@@ -128,6 +148,115 @@ var _ = Describe("Resource Definitions", func() {
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(currentResDefs).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(name)})))
+				}
+			})
+
+			It("should create each resource on random nodes in each storage pool", func() {
+				By("Interating through every storage pool.")
+				for pool, nodes := range storagePools {
+
+					By("creating every resource on a randomly selected nodes.")
+					for _, res := range resDefNames {
+						nodeList := make([]string, len(nodes))
+						i := 0
+						for k := range nodes {
+							nodeList[i] = k
+							i++
+						}
+
+						count := random(1, len(nodeList))
+						rand.Shuffle(len(nodeList), func(i, j int) { nodeList[i], nodeList[j] = nodeList[j], nodeList[i] })
+
+						nodes := nodeList[:count]
+
+						for _, node := range nodes {
+							err = client.Resources.Create(testCTX, lapi.ResourceCreate{
+								Resource: lapi.Resource{
+									Name:     res,
+									NodeName: node,
+									Props: map[string]string{
+										"StorPoolName": pool,
+									},
+								}})
+							Ω(err).ShouldNot(HaveOccurred())
+						}
+
+						By("Getting every resource.")
+						resList, err := client.Resources.GetAll(testCTX, res)
+						Ω(err).ShouldNot(HaveOccurred())
+
+						Ω(resList).Should(HaveLen(count))
+
+						for i, r := range resList {
+							By("Getting each resource.")
+							_, err := client.Resources.Get(testCTX, r.Name, r.NodeName)
+							Ω(err).ShouldNot(HaveOccurred())
+
+							Ω(resList).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(r.Name)})))
+
+							By("removing the resource from each node")
+							err = client.Resources.Delete(testCTX, r.Name, r.NodeName)
+							Ω(err).ShouldNot(HaveOccurred())
+
+							postDeletionResList, err := client.Resources.GetAll(testCTX, r.Name)
+							Ω(err).ShouldNot(HaveOccurred())
+
+							Ω(postDeletionResList).Should(HaveLen(count - (i + 1)))
+
+							instance, err := client.Resources.Get(testCTX, r.Name, r.NodeName)
+							Ω(err).Should(Equal(lapi.NotFoundError))
+							Ω(instance).Should(BeZero())
+
+							Ω(postDeletionResList).ShouldNot(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(r.Name)})))
+						}
+
+					}
+				}
+			})
+
+			It("should auto place the resource on each storage pool", func() {
+				By("Interating through every storage pool.")
+				for pool, nodes := range storagePools {
+					By("AutoPlacing every resource.")
+					for _, res := range resDefNames {
+						count := random(1, len(nodes))
+						err = client.Resources.Autoplace(testCTX, res, lapi.AutoPlaceRequest{
+							SelectFilter: lapi.AutoSelectFilter{
+								PlaceCount:  int32(count),
+								StoragePool: pool,
+							}})
+						Ω(err).ShouldNot(HaveOccurred())
+
+						By("Getting every resource.")
+						resList, err := client.Resources.GetAll(testCTX, res)
+						Ω(err).ShouldNot(HaveOccurred())
+
+						Ω(resList).Should(HaveLen(count))
+
+						for i, r := range resList {
+							By("Getting each resource.")
+							_, err := client.Resources.Get(testCTX, r.Name, r.NodeName)
+							Ω(err).ShouldNot(HaveOccurred())
+
+							Ω(resList).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(r.Name)})))
+
+							By("removing the resource from each node")
+							err = client.Resources.Delete(testCTX, r.Name, r.NodeName)
+							Ω(err).ShouldNot(HaveOccurred())
+
+							postDeletionResList, err := client.Resources.GetAll(testCTX, r.Name)
+							Ω(err).ShouldNot(HaveOccurred())
+
+							Ω(postDeletionResList).Should(HaveLen(count - (i + 1)))
+
+							instance, err := client.Resources.Get(testCTX, r.Name, r.NodeName)
+							Ω(err).Should(Equal(lapi.NotFoundError))
+							Ω(instance).Should(BeZero())
+
+							Ω(postDeletionResList).ShouldNot(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(r.Name)})))
+						}
+
+					}
 				}
 			})
 
@@ -237,4 +366,13 @@ var _ = Describe("Resource Definitions", func() {
 
 func uniqueName(n string) string {
 	return "e2e" + n + shortuuid.New()
+}
+
+func random(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	upperLimit := max - min
+	if upperLimit == 0 {
+		return min
+	}
+	return rand.Intn(max-min) + min
 }
