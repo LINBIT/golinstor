@@ -2,6 +2,7 @@ package linstor_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -365,7 +366,7 @@ var _ = Describe("Resources", func() {
 })
 
 func uniqueName(n string) string {
-	return "e2e" + n + shortuuid.New()
+	return fmt.Sprintf("%s-%s-%s", "e2e", n, shortuuid.New())
 }
 
 func random(min, max int) int {
