@@ -178,7 +178,9 @@ var _ = Describe("Resources", func() {
 									Props: map[string]string{
 										"StorPoolName": pool,
 									},
-								}})
+								},
+								LayerList: []lapi.LayerType{lapi.DRBD},
+							})
 							Ω(err).ShouldNot(HaveOccurred())
 						}
 
