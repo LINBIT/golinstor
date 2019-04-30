@@ -64,7 +64,7 @@ type DrbdResource struct {
 	AlStripes              int32                       `json:"al_stripes,omitempty"`
 	AlSize                 int64                       `json:"al_size,omitempty"`
 	Flags                  []string                    `json:"flags,omitempty"`
-	DrbdVolumes            DrbdVolume                  `json:"drbd_volumes,omitempty"`
+	DrbdVolumes            []DrbdVolume                `json:"drbd_volumes,omitempty"`
 }
 
 type DrbdVolume struct {
