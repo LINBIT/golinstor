@@ -31,6 +31,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/moul/http2curl"
 	"github.com/sirupsen/logrus"
 )
 
@@ -176,8 +177,31 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	return req, nil
 }
 
+func (c *Client) curlify(req *http.Request) (string, error) {
+	cc, err := http2curl.GetCurlCommand(req)
+	if err != nil {
+		return "", err
+	}
+	return cc.String(), nil
+}
+
+func (c *Client) logCurlify(req *http.Request, lvl logrus.Level) {
+	// allow it to be called unconditionally; make it a noop if level does not match
+	if !logrus.IsLevelEnabled(lvl) {
+		return
+	}
+
+	if curl, err := c.curlify(req); err != nil {
+		logrus.Println(err)
+	} else {
+		logrus.Println(curl)
+	}
+}
+
 func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
 	req = req.WithContext(ctx)
+
+	c.logCurlify(req, logrus.DebugLevel)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
