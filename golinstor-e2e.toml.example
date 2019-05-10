@@ -5,19 +5,19 @@ ResourceDefinitionCreateLimit = 10
   LogLevel = "debug"
   LogFile = "/tmp/e2e-test-logs"
 
-[[PreconfiguredNodes]]
+[[Nodes]]
   Name = "worker1.example.com"
   Type = "Combined"
 
-  [[PreconfiguredNodes.NetInterfaces]]
+  [[Nodes.NetInterfaces]]
     Name = "default"
     Address = "192.168.100.101"
 
-[[PreconfiguredNodes]]
+[[Nodes]]
   Name = "worker2.example.com"
   Type = "Satellite"
 
-  [[PreconfiguredNodes.NetInterfaces]]
+  [[Nodes.NetInterfaces]]
     Name = "default"
     Address = "192.168.100.102"
     SatelliteEncryptionType = ""

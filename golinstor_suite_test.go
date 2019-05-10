@@ -29,8 +29,8 @@ type Config struct {
 	// Nodes that are expected to have their storage pools, interfaces, etc.
 	// already configured and ready to have resources and snapshots created
 	// on them.
-	PreconfiguredNodes []lapi.Node
-	StoragePools       []lapi.StoragePool
+	Nodes        []lapi.Node
+	StoragePools []lapi.StoragePool
 }
 
 type Client struct {
@@ -44,53 +44,13 @@ func TestGolinstor(t *testing.T) {
 	RunSpecs(t, "Golinstor Suite")
 }
 
-var testCTX = context.Background()
+var (
+	testCTX = context.Background()
+	conf    *Config
+	client  *lapi.Client
+)
 
 var _ = Describe("Resources", func() {
-
-	conf := Config{
-		ResourceDefinitionCreateLimit: 1,
-		ResourceVolumeLimit:           1,
-		ResourceVolumeSizeLimitKiB:    500,
-		ClientConf: Client{
-			Endpoint: "http://localhost:3370",
-			LogLevel: "debug",
-		},
-	}
-
-	if _, err := toml.DecodeFile("./golinstor-e2e.toml", &conf); err != nil {
-		panic(err)
-	}
-
-	u, err := url.Parse(conf.ClientConf.Endpoint)
-	if err != nil {
-		panic(err)
-	}
-
-	var logFile io.Writer
-
-	if conf.ClientConf.LogFile == "" {
-		logFile, err = ioutil.TempFile("", "golinstor-test-logs")
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		logFile, err = os.Create(conf.ClientConf.LogFile)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	client, err := lapi.NewClient(
-		lapi.BaseURL(u),
-		lapi.Log(&lapi.LogCfg{
-			Level: conf.ClientConf.LogLevel,
-			Out:   logFile,
-		}),
-	)
-	if err != nil {
-		panic(err)
-	}
 
 	Describe("Creating resources", func() {
 		Context("resources with valid names", func() {
@@ -103,13 +63,15 @@ var _ = Describe("Resources", func() {
 				err          error
 			)
 
-			for _, p := range conf.StoragePools {
-				storagePools[p.StoragePoolName] = map[string]bool{p.NodeName: true}
-			}
+			It("should prepare the list of storagePools and ResourceDefinitions", func() {
+				for _, p := range conf.StoragePools {
+					storagePools[p.StoragePoolName] = map[string]bool{p.NodeName: true}
+				}
 
-			for i := 0; i < conf.ResourceDefinitionCreateLimit; i++ {
-				resDefNames = append(resDefNames, uniqueName("simpleResDef"))
-			}
+				for i := 0; i < conf.ResourceDefinitionCreateLimit; i++ {
+					resDefNames = append(resDefNames, uniqueName("simpleResDef"))
+				}
+			})
 
 			It("should not error", func() {
 				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
@@ -378,4 +340,119 @@ func random(min, max int) int {
 		return min
 	}
 	return rand.Intn(max-min) + min
+}
+
+var _ = BeforeSuite(func() {
+
+	conf = &Config{
+		ResourceDefinitionCreateLimit: 1,
+		ResourceVolumeLimit:           1,
+		ResourceVolumeSizeLimitKiB:    500,
+		ClientConf: Client{
+			Endpoint: "http://localhost:3370",
+			LogLevel: "debug",
+		},
+	}
+
+	if _, err := toml.DecodeFile("./golinstor-e2e.toml", conf); err != nil {
+		panic(err)
+	}
+
+	u, err := url.Parse(conf.ClientConf.Endpoint)
+	if err != nil {
+		panic(err)
+	}
+
+	var logFile io.Writer
+
+	if conf.ClientConf.LogFile == "" {
+		logFile, err = ioutil.TempFile("", "golinstor-test-logs")
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		logFile, err = os.Create(conf.ClientConf.LogFile)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	client, err = lapi.NewClient(
+		lapi.BaseURL(u),
+		lapi.Log(&lapi.LogCfg{
+			Level: conf.ClientConf.LogLevel,
+			Out:   logFile,
+		}),
+	)
+	if err != nil {
+		panic(err)
+	}
+	conf.setup(client)
+
+})
+
+var _ = AfterSuite(func() {
+	conf.teardown(client)
+})
+
+// Setup prepares the cluster for tests via adding all of the nodes,
+// and their network interfaces and storage pools.
+func (cfg Config) setup(c *lapi.Client) {
+	controllers, rest := cfg.splitNodeTypes()
+
+	By("setting up the controllers")
+	for _, n := range controllers {
+		err := c.Nodes.Create(testCTX, n)
+		Ω(err).ShouldNot(HaveOccurred())
+	}
+
+	By("setting up the rest of the nodes")
+	for _, n := range rest {
+		err := c.Nodes.Create(testCTX, n)
+		Ω(err).ShouldNot(HaveOccurred())
+	}
+
+	By("adding each storage pool")
+	for _, sp := range cfg.StoragePools {
+		err := c.Nodes.CreateStoragePool(testCTX, sp.NodeName, sp)
+		Ω(err).ShouldNot(HaveOccurred())
+	}
+}
+
+// Teardown removes all nodes and storage pools.
+func (cfg Config) teardown(c *lapi.Client) {
+	By("removing each storage pool")
+	for _, sp := range cfg.StoragePools {
+		err := c.Nodes.DeleteStoragePool(testCTX, sp.NodeName, sp.StoragePoolName)
+		Ω(err).ShouldNot(HaveOccurred())
+	}
+
+	controllers, rest := cfg.splitNodeTypes()
+
+	By("removing non-controller nodes")
+	for _, n := range rest {
+		err := c.Nodes.Delete(testCTX, n.Name)
+		Ω(err).ShouldNot(HaveOccurred())
+	}
+
+	By("removing controller nodes")
+	for _, n := range controllers {
+		err := c.Nodes.Delete(testCTX, n.Name)
+		Ω(err).ShouldNot(HaveOccurred())
+	}
+}
+
+func (cfg Config) splitNodeTypes() ([]lapi.Node, []lapi.Node) {
+
+	var controllers = make([]lapi.Node, 0)
+	var rest = make([]lapi.Node, 0)
+
+	for _, n := range cfg.Nodes {
+		if n.Type == "Satellite" {
+			rest = append(rest, n)
+		} else {
+			controllers = append(controllers, n)
+		}
+	}
+	return controllers, rest
 }
