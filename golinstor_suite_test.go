@@ -199,9 +199,12 @@ var _ = Describe("Resources", func() {
 						Ω(resList).Should(HaveLen(count))
 
 						for i, r := range resList {
-							By("Getting each resource.")
-							_, err := client.Resources.Get(testCTX, r.Name, r.NodeName)
-							Ω(err).ShouldNot(HaveOccurred())
+							By("Waiting until the resource has been deployed")
+							Eventually(func() bool {
+								res, err := client.Resources.Get(testCTX, r.Name, r.NodeName)
+								Ω(err).ShouldNot(HaveOccurred())
+								return res.State.InUse
+							}, time.Second*5, time.Millisecond*500).Should(BeFalse())
 
 							Ω(resList).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(r.Name)})))
 
