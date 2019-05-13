@@ -363,7 +363,7 @@ var _ = BeforeSuite(func() {
 		panic(err)
 	}
 
-	var logFile io.Writer
+	var logFile io.WriteCloser
 
 	if conf.ClientConf.LogFile == "" {
 		logFile, err = ioutil.TempFile("", "golinstor-test-logs")
@@ -371,7 +371,7 @@ var _ = BeforeSuite(func() {
 			panic(err)
 		}
 	} else {
-		logFile, err = os.Create(conf.ClientConf.LogFile)
+		logFile, err = os.OpenFile(conf.ClientConf.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			panic(err)
 		}
