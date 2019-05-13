@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 
 type Config struct {
 	ResourceDefinitionCreateLimit int
+	SnapshotCreateLimit           int
 	ResourceVolumeLimit           int
 	ResourceVolumeSizeLimitKiB    uint64
 	ClientConf                    Client
@@ -332,6 +334,106 @@ var _ = Describe("Resources", func() {
 	})
 })
 
+var _ = Describe("Snapshots", func() {
+
+	var (
+		startingSnaps []lapi.Snapshot
+		snapNames     []string
+		// Set of storage pools that are capable of making snapshots
+		storagePools = make(map[string]bool)
+		err          error
+	)
+
+	It("should prepare the list of storagePools and snapshots", func() {
+		for _, p := range conf.StoragePools {
+			sp, err := client.Nodes.GetStoragePool(testCTX, p.NodeName, p.StoragePoolName)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			canSnap, err := strconv.ParseBool(sp.StaticTraits["SupportsSnapshots"])
+			Ω(err).ShouldNot(HaveOccurred())
+
+			if canSnap {
+				storagePools[p.StoragePoolName] = true
+			}
+		}
+
+		for i := 0; i < conf.SnapshotCreateLimit; i++ {
+			snapNames = append(snapNames, uniqueName("simplesnap"))
+		}
+	})
+
+	It("Should create snapshots on each StoragePool", func() {
+		for p, _ := range storagePools {
+			By("Creating a resource to host the snapshots.")
+			resName := uniqueName("snap-res")
+			err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{Name: resName}})
+			Ω(err).ShouldNot(HaveOccurred())
+
+			err = client.ResourceDefinitions.CreateVolumeDefinition(testCTX, resName, lapi.VolumeDefinitionCreate{
+				VolumeDefinition: lapi.VolumeDefinition{SizeKib: conf.ResourceVolumeSizeLimitKiB}})
+			Ω(err).ShouldNot(HaveOccurred())
+
+			err = client.Resources.Autoplace(testCTX, resName, lapi.AutoPlaceRequest{
+				SelectFilter: lapi.AutoSelectFilter{
+					PlaceCount:  int32(1),
+					StoragePool: p,
+				}})
+			Ω(err).ShouldNot(HaveOccurred())
+
+			By("Getting every resource.")
+			resList, err := client.Resources.GetAll(testCTX, resName)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(resList).Should(HaveLen(1))
+
+			for _, r := range resList {
+				By("Waiting until the resource has been deployed")
+				Eventually(func() bool {
+					res, err := client.Resources.Get(testCTX, r.Name, r.NodeName)
+					Ω(err).ShouldNot(HaveOccurred())
+					return res.State.InUse
+				}, time.Second*5, time.Millisecond*500).Should(BeFalse())
+			}
+
+			By("Ensuring that there are no snaps on a new resource.")
+			startingSnaps, err = client.Resources.GetSnapshots(testCTX, resName)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(startingSnaps).Should(HaveLen(0))
+
+			for _, snapName := range snapNames {
+
+				By("Checking that each particular snap is not present.")
+				instance, err := client.Resources.GetSnapshot(testCTX, resName, snapName)
+				Ω(err).Should(Equal(lapi.NotFoundError))
+				Ω(instance).Should(BeZero())
+
+				err = client.Resources.CreateSnapshot(testCTX, lapi.Snapshot{
+					Name:         snapName,
+					ResourceName: resName,
+				})
+				Ω(err).ShouldNot(HaveOccurred())
+
+				By("Getting the newly created snapshot.")
+				_, err = client.Resources.GetSnapshot(testCTX, resName, snapName)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				By("Checking that the snapshot appears in the list of snapshots.")
+				snaps, err := client.Resources.GetSnapshots(testCTX, resName)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(snaps).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Name":         Equal(snapName),
+					"ResourceName": Equal(resName),
+				})))
+
+				By("Deleting the snapshot")
+				err = client.Resources.DeleteSnapshot(testCTX, resName, snapName)
+				Ω(err).ShouldNot(HaveOccurred())
+			}
+		}
+
+	})
+})
+
 func uniqueName(n string) string {
 	return fmt.Sprintf("%s-%s-%s", "e2e", n, shortuuid.New())
 }
@@ -349,6 +451,7 @@ var _ = BeforeSuite(func() {
 
 	conf = &Config{
 		ResourceDefinitionCreateLimit: 1,
+		SnapshotCreateLimit:           1,
 		ResourceVolumeLimit:           1,
 		ResourceVolumeSizeLimitKiB:    500,
 		ClientConf: Client{
