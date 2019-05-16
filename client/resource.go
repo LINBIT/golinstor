@@ -169,9 +169,9 @@ type Snapshot struct {
 	ResourceName string   `json:"resource_name,omitempty"`
 	Nodes        []string `json:"nodes,omitempty"`
 	// A string to string property map.
-	Props             map[string]string        `json:"props,omitempty"`
-	Flags             []string                 `json:"flags,omitempty"`
-	VolumeDefinitions SnapshotVolumeDefinition `json:"volume_definitions,omitempty"`
+	Props             map[string]string          `json:"props,omitempty"`
+	Flags             []string                   `json:"flags,omitempty"`
+	VolumeDefinitions []SnapshotVolumeDefinition `json:"volume_definitions,omitempty"`
 }
 
 type SnapshotVolumeDefinition struct {
@@ -340,7 +340,7 @@ func (n *ResourceService) GetSnapshot(ctx context.Context, resName, snapName str
 }
 
 func (n *ResourceService) CreateSnapshot(ctx context.Context, snapshot Snapshot) error {
-	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+snapshot.ResourceName+"/snapshots/"+snapshot.Name, snapshot)
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+snapshot.ResourceName+"/snapshots", snapshot)
 	return err
 }
 
