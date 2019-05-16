@@ -148,7 +148,7 @@ func (n *NodeService) GetStoragePools(ctx context.Context, nodeName string, opts
 
 func (n *NodeService) GetStoragePool(ctx context.Context, nodeName, spName string, opts ...*ListOpts) (StoragePool, error) {
 	var sp StoragePool
-	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, sp, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, &sp, opts...)
 	return sp, err
 }
 
