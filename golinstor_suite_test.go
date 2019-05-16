@@ -341,8 +341,11 @@ var _ = Describe("Snapshots", func() {
 		snapNames     []string
 		// Set of storage pools that are capable of making snapshots
 		storagePools = make(map[string]bool)
+		resName      string
 		err          error
 	)
+
+	resName = uniqueName("snap-res")
 
 	It("should prepare the list of storagePools and snapshots", func() {
 		for _, p := range conf.StoragePools {
@@ -365,7 +368,6 @@ var _ = Describe("Snapshots", func() {
 	It("Should create snapshots on each StoragePool", func() {
 		for p, _ := range storagePools {
 			By("Creating a resource to host the snapshots.")
-			resName := uniqueName("snap-res")
 			err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{Name: resName}})
 			Ω(err).ShouldNot(HaveOccurred())
 
@@ -431,6 +433,11 @@ var _ = Describe("Snapshots", func() {
 			}
 		}
 
+	})
+
+	It("should clean up", func() {
+		By("deleteing the resource definition")
+		Ω(client.ResourceDefinitions.Delete(testCTX, resName)).Should(Succeed())
 	})
 })
 
