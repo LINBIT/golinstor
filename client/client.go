@@ -216,7 +216,8 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		logrus.Debugf("Status code not within 200 to 400, but %v\n", resp.StatusCode)
+		logrus.Debugf("Status code not within 200 to 400, but %d (%s)\n",
+			resp.StatusCode, http.StatusText(resp.StatusCode))
 		if resp.StatusCode == 404 {
 			return nil, NotFoundError
 		}
