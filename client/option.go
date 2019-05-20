@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-querystring/query"
 )
 
+// ListOpts is a struct used to define parameters used for pagination.
 type ListOpts struct {
 	Page    int `url:"offset"`
 	PerPage int `url:"limit"`
