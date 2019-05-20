@@ -23,25 +23,30 @@ import "context"
 
 // custom code
 
+// EncryptionService is the service that deals with encyrption related tasks.
 type EncryptionService struct {
 	client *Client
 }
 
+// Passphrase represents a LINSTOR passphrase
 type Passphrase struct {
 	NewPassphrase string `json:"new_passphrase,omitempty"`
 	OldPassphrase string `json:"old_passphrase,omitempty"`
 }
 
+// Create creates an encryption with the given passphrase
 func (n *EncryptionService) Create(ctx context.Context, passphrase Passphrase) error {
 	_, err := n.client.doPOST(ctx, "/v1/encryption/passphrase", passphrase)
 	return err
 }
 
+// Modify modifies an existing passphrase
 func (n *EncryptionService) Modify(ctx context.Context, passphrase Passphrase) error {
 	_, err := n.client.doPUT(ctx, "/v1/encryption/passphrase", passphrase)
 	return err
 }
 
+// Enter is used to enter a password so that content can be decrypted
 func (n *EncryptionService) Enter(ctx context.Context, password string) error {
 	_, err := n.client.doPATCH(ctx, "/v1/encryption/passphrase", password)
 	return err

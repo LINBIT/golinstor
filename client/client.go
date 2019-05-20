@@ -35,6 +35,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Client is a struct representing a LINSTOR REST client.
 type Client struct {
 	httpClient *http.Client
 	baseURL    *url.URL
@@ -47,6 +48,7 @@ type Client struct {
 	Encryption          *EncryptionService
 }
 
+// LogCfg is a struct containing the client's logging configuration
 type LogCfg struct {
 	Out       io.Writer
 	Formatter logrus.Formatter
@@ -58,8 +60,10 @@ type clientError string
 
 func (e clientError) Error() string { return string(e) }
 
+// NotFoundError is the error type returned in case of a 404 error. This is required to test for this kind of error.
 const NotFoundError = clientError("404 Not Found")
 
+// NewClient takes an arbitrary number of options and returns a Client or an error.
 func NewClient(options ...func(*Client) error) (*Client, error) {
 	httpClient := http.DefaultClient
 
@@ -84,14 +88,14 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 		u = "http://" + hostPort
 	}
 
-	baseUrl, err := url.Parse(u)
+	baseURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &Client{
 		httpClient: httpClient,
-		baseURL:    baseUrl,
+		baseURL:    baseURL,
 	}
 	l := &LogCfg{
 		Level: logrus.WarnLevel.String(),
@@ -117,6 +121,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 // u, _ := url.Parse("http://somehost:3370")
 // c, _ := linstor.NewClient(linstor.BaseURL(u))
 
+// BaseUrl is a client's option to set the baseURL of the REST client.
 func BaseURL(URL *url.URL) func(*Client) error {
 	return func(c *Client) error {
 		c.baseURL = URL
@@ -124,6 +129,7 @@ func BaseURL(URL *url.URL) func(*Client) error {
 	}
 }
 
+// HTTPClient is a client's option to set a specific http.Client.
 func HTTPClient(httpClient *http.Client) func(*Client) error {
 	return func(c *Client) error {
 		c.httpClient = httpClient
@@ -131,6 +137,7 @@ func HTTPClient(httpClient *http.Client) func(*Client) error {
 	}
 }
 
+// Log is a client's option to set a LogCfg.
 func Log(logCfg *LogCfg) func(*Client) error {
 	return func(c *Client) error {
 		c.logCfg = logCfg
@@ -286,6 +293,7 @@ func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*h
 	return c.do(ctx, req, nil)
 }
 
+// ApiCallRc represents the struct returned by LINSTOR, when accessing its REST API.
 type ApiCallRc struct {
 	// A masked error number
 	RetCode int64  `json:"ret_code"`
@@ -320,8 +328,13 @@ func (rc *ApiCallRc) String() string {
 	return s
 }
 
+// DeleteProps is a slice of properties to delete.
 type DeleteProps []string
+
+// OverrideProps is a map of properties to modify (key/value pairs)
 type OverrideProps map[string]string
+
+// PropsModify is a struct combining DeleteProps and OverrideProps
 type PropsModify struct {
 	DeleteProps   DeleteProps   `json:"delete_props,omitempty"`
 	OverrideProps OverrideProps `json:"override_props,omitempty"`
