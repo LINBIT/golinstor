@@ -100,7 +100,9 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 	l := &LogCfg{
 		Level: logrus.WarnLevel.String(),
 	}
-	Log(l)(c)
+	if err := Log(l)(c); err != nil {
+		return nil, err
+	}
 
 	c.Nodes = &NodeService{client: c}
 	c.ResourceDefinitions = &ResourceDefinitionService{client: c}
@@ -121,7 +123,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 // u, _ := url.Parse("http://somehost:3370")
 // c, _ := linstor.NewClient(linstor.BaseURL(u))
 
-// BaseUrl is a client's option to set the baseURL of the REST client.
+// BaseURL is a client's option to set the baseURL of the REST client.
 func BaseURL(URL *url.URL) func(*Client) error {
 	return func(c *Client) error {
 		c.baseURL = URL

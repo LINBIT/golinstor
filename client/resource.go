@@ -409,7 +409,7 @@ func (n *ResourceService) RollbackSnapshot(ctx context.Context, resName, snapNam
 	return err
 }
 
-//  ModifyDRBDProxy  is used to modify drbd-proxy properties
+// ModifyDRBDProxy is used to modify drbd-proxy properties
 func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props PropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/drbd-proxy", props)
 	return err

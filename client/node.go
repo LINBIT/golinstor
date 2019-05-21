@@ -43,6 +43,7 @@ type NetInterface struct {
 	SatelliteEncryptionType string `json:"satellite_encryption_type,omitempty"`
 }
 
+// StoragePool represents a nodes storage pool as defined in LINSTOR.
 type StoragePool struct {
 	StoragePoolName string       `json:"storage_pool_name"`
 	NodeName        string       `json:"node_name,omitempty"`
@@ -150,7 +151,7 @@ func (n *NodeService) ModifyNetInterface(ctx context.Context, nodeName, nifName 
 	return err
 }
 
-// DeleteNetInterface deletes the given network interface on a given node.
+// DeleteNetinterface deletes the given network interface on a given node.
 func (n *NodeService) DeleteNetinterface(ctx context.Context, nodeName, nifName string) error {
 	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nil)
 	return err

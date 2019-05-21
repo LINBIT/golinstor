@@ -31,7 +31,6 @@ type ResourceDefinitionService struct {
 	client *Client
 }
 
-// copy & paste from generated code
 // ResourceDefinition is a struct to store the information about a resource-definition
 type ResourceDefinition struct {
 	Name string `json:"name,omitempty"`
@@ -43,7 +42,7 @@ type ResourceDefinition struct {
 	LayerData []ResourceDefinitionLayer `json:"layer_data,omitempty"`
 }
 
-//  ResourceDefinitionCreate is a struct for holding the data needed to create a resource-defintion
+// ResourceDefinitionCreate is a struct for holding the data needed to create a resource-defintion
 type ResourceDefinitionCreate struct {
 	// drbd port for resources
 	DrbdPort int32 `json:"drbd_port,omitempty"`
@@ -157,7 +156,7 @@ type volumeDefinitionLayerIn struct {
 	Data json.RawMessage `json:"data,omitempty"`
 }
 
-//  UnmarshalJSON is needed for the unmarshal interface for VolumeDefinitionLayer types
+// UnmarshalJSON is needed for the unmarshal interface for VolumeDefinitionLayer types
 func (vd *VolumeDefinitionLayer) UnmarshalJSON(b []byte) error {
 	var vdIn volumeDefinitionLayerIn
 	if err := json.Unmarshal(b, &vdIn); err != nil {
@@ -234,8 +233,7 @@ func (n *ResourceDefinitionService) GetVolumeDefinition(ctx context.Context, res
 	return volDef, err
 }
 
-// only size required
-// CreateVolumeDefinition adds a volume-definition to a resource-definition
+// CreateVolumeDefinition adds a volume-definition to a resource-definition. Only the size is required.
 func (n *ResourceDefinitionService) CreateVolumeDefinition(ctx context.Context, resDefName string, volDef VolumeDefinitionCreate) error {
 	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", volDef)
 	return err
