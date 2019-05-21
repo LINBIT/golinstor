@@ -329,7 +329,7 @@ func (n *ResourceService) Diskful(ctx context.Context, resName, nodeName, storag
 
 // Migrate mirgates a resource from one node to another node
 func (n *ResourceService) Migrate(ctx context.Context, resName, fromNodeName, toNodeName, storagePoolName string) error {
-	u := "/v1/resource-definitions/" + resName + "/resources/" + toNodeName + "/migrate-disk/" + toNodeName
+	u := "/v1/resource-definitions/" + resName + "/resources/" + toNodeName + "/migrate-disk/" + fromNodeName
 	if storagePoolName != "" {
 		u += "/" + storagePoolName
 	}
