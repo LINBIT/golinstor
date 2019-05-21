@@ -26,10 +26,14 @@ import (
 	"github.com/google/go-querystring/query"
 )
 
-// ListOpts is a struct used to define parameters used for pagination.
+// ListOpts is a struct primarily used to define parameters used for pagination. It is also used for filtering (e.g., the /view/ calls)
 type ListOpts struct {
 	Page    int `url:"offset"`
 	PerPage int `url:"limit"`
+
+	StoragePool []string `url:"storage_pools"`
+	Resource    []string `url:"resources"`
+	Node        []string `url:"nodes"`
 }
 
 func genOptions(opts ...*ListOpts) *ListOpts {

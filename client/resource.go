@@ -259,6 +259,13 @@ func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
 func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
 func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume() {}
 
+// GetOverall returns all resources in the cluster. Filters can be set via ListOpts.
+func (n *ResourceService) GetOverall(ctx context.Context, opts ...*ListOpts) ([]Resource, error) {
+	var reses []Resource
+	_, err := n.client.doGET(ctx, "/v1/view/resources", &reses, opts...)
+	return reses, err
+}
+
 // GetAll returns all resources for a resource-definition
 func (n *ResourceService) GetAll(ctx context.Context, resName string, opts ...*ListOpts) ([]Resource, error) {
 	var reses []Resource
