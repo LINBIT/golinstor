@@ -26,12 +26,13 @@ import (
 	"strconv"
 )
 
+// ResourceDefinitionService is a struct for the client pointer
 type ResourceDefinitionService struct {
 	client *Client
 }
 
 // copy & paste from generated code
-
+// ResourceDefinition is a struct to store the information about a resource-definition
 type ResourceDefinition struct {
 	Name string `json:"name,omitempty"`
 	// External name can be used to have native resource names. If you need to store a non Linstor compatible resource name use this field and Linstor will generate a compatible name.
@@ -42,6 +43,7 @@ type ResourceDefinition struct {
 	LayerData []ResourceDefinitionLayer `json:"layer_data,omitempty"`
 }
 
+//  ResourceDefinitionCreate is a struct for holding the data needed to create a resource-defintion
 type ResourceDefinitionCreate struct {
 	// drbd port for resources
 	DrbdPort int32 `json:"drbd_port,omitempty"`
@@ -51,11 +53,13 @@ type ResourceDefinitionCreate struct {
 	ResourceDefinition ResourceDefinition `json:"resource_definition"`
 }
 
+// ResourceDefinitionLayer is a struct for the storing the layertype of a resource-defintion
 type ResourceDefinitionLayer struct {
 	Type LayerType                        `json:"type,omitempty"`
 	Data OneOfDrbdResourceDefinitionLayer `json:"data,omitempty"`
 }
 
+// DrbdResourceDefinitionLayer is a struct which contains the information about the layertype of a resource-definition on drbd level
 type DrbdResourceDefinitionLayer struct {
 	ResourceNameSuffix string `json:"resource_name_suffix,omitempty"`
 	PeerSlots          int32  `json:"peer_slots,omitempty"`
@@ -68,6 +72,7 @@ type DrbdResourceDefinitionLayer struct {
 	Down   bool   `json:"down,omitempty"`
 }
 
+// LayerType initialized as string
 type LayerType string
 
 // List of LayerType
@@ -77,11 +82,13 @@ const (
 	STORAGE LayerType = "STORAGE"
 )
 
+// VolumeDefinitionCreate is a struct used for creating volume-definitions
 type VolumeDefinitionCreate struct {
 	VolumeDefinition VolumeDefinition `json:"volume_definition"`
 	DrbdMinorNumber  int32            `json:"drbd_minor_number,omitempty"`
 }
 
+// VolumeDefinition is a struct which is used to store volume-definition properties
 type VolumeDefinition struct {
 	VolumeNumber int32 `json:"volume_number,omitempty"`
 	// Size of the volume in Kibi.
@@ -92,11 +99,13 @@ type VolumeDefinition struct {
 	LayerData []VolumeDefinitionLayer `json:"layer_data,omitempty"`
 }
 
+// VolumeDefinitionLayer is a struct for the layer-type of a volume-definition
 type VolumeDefinitionLayer struct {
 	Type LayerType                 `json:"type"`
 	Data OneOfDrbdVolumeDefinition `json:"data,omitempty"`
 }
 
+// DrbdVolumeDefinition is a struct containing volume-definition on drbd level
 type DrbdVolumeDefinition struct {
 	ResourceNameSuffix string `json:"resource_name_suffix,omitempty"`
 	VolumeNumber       int32  `json:"volume_number,omitempty"`
@@ -104,11 +113,14 @@ type DrbdVolumeDefinition struct {
 }
 
 // custom code
+
+// resourceDefinitionLayerIn is a struct for resource-definitions
 type resourceDefinitionLayerIn struct {
 	Type LayerType       `json:"type,omitempty"`
 	Data json.RawMessage `json:"data,omitempty"`
 }
 
+// UnmarshalJSON is needed for the unmarshal interface for ResourceDefinitionLayer types
 func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 	var rdIn resourceDefinitionLayerIn
 	if err := json.Unmarshal(b, &rdIn); err != nil {
@@ -131,17 +143,21 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// OneOfDrbdResourceDefinitionLayer is used to prevent other layertypes than drbd-resource-definition
 type OneOfDrbdResourceDefinitionLayer interface {
 	isOneOfDrbdResourceDefinitionLayer()
 }
 
+// Function used if resource-definition-layertype is correct
 func (d *DrbdResourceDefinitionLayer) isOneOfDrbdResourceDefinitionLayer() {}
 
+//volumeDefinitionLayerIn is a struct for volume-defintion-layers
 type volumeDefinitionLayerIn struct {
 	Type LayerType       `json:"type,omitempty"`
 	Data json.RawMessage `json:"data,omitempty"`
 }
 
+//  UnmarshalJSON is needed for the unmarshal interface for VolumeDefinitionLayer types
 func (vd *VolumeDefinitionLayer) UnmarshalJSON(b []byte) error {
 	var vdIn volumeDefinitionLayerIn
 	if err := json.Unmarshal(b, &vdIn); err != nil {
@@ -164,39 +180,47 @@ func (vd *VolumeDefinitionLayer) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// OneOfDrbdVolumeDefinition is used to prevent other layertypes than drbd-volume-defintion
 type OneOfDrbdVolumeDefinition interface {
 	isOneOfDrbdVolumeDefinition()
 }
 
+// Function used if volume-defintion-layertype is correct
 func (d *DrbdVolumeDefinition) isOneOfDrbdVolumeDefinition() {}
 
+// GetAll lists all resource-definitions
 func (n *ResourceDefinitionService) GetAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error) {
 	var resDefs []ResourceDefinition
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions", &resDefs, opts...)
 	return resDefs, err
 }
 
+// Get return information about a resource-defintion
 func (n *ResourceDefinitionService) Get(ctx context.Context, resDefName string, opts ...*ListOpts) (ResourceDefinition, error) {
 	var resDef ResourceDefinition
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName, &resDef, opts...)
 	return resDef, err
 }
 
+// Create adds a new resource-definition
 func (n *ResourceDefinitionService) Create(ctx context.Context, resDef ResourceDefinitionCreate) error {
 	_, err := n.client.doPOST(ctx, "/v1/resource-definitions", resDef)
 	return err
 }
 
+// Modify allows to modify a resource-definition
 func (n *ResourceDefinitionService) Modify(ctx context.Context, resDefName string, props PropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName, props)
 	return err
 }
 
+// Delete completely deletes a resource-definition
 func (n *ResourceDefinitionService) Delete(ctx context.Context, resDefName string) error {
 	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName, nil)
 	return err
 }
 
+// GetVolumeDefinitions returns all volume-definitions of a resource-definition
 func (n *ResourceDefinitionService) GetVolumeDefinitions(ctx context.Context, resDefName string, opts ...*ListOpts) ([]VolumeDefinition, error) {
 	var volDefs []VolumeDefinition
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", &volDefs, opts...)
@@ -210,16 +234,19 @@ func (n *ResourceDefinitionService) GetVolumeDefinition(ctx context.Context, res
 }
 
 // only size required
+// CreateVolumeDefinition adds a volume-definition to a resource-definition
 func (n *ResourceDefinitionService) CreateVolumeDefinition(ctx context.Context, resDefName string, volDef VolumeDefinitionCreate) error {
 	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions", volDef)
 	return err
 }
 
+// ModifyVolumeDefinition give the abilty to modify a specific volume-definition
 func (n *ResourceDefinitionService) ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props PropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), props)
 	return err
 }
 
+// DeleteVolumeDefinition deletes a specific volume-definition
 func (n *ResourceDefinitionService) DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error {
 	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil)
 	return err
