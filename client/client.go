@@ -40,7 +40,7 @@ type Client struct {
 	httpClient *http.Client
 	baseURL    *url.URL
 	logCfg     *LogCfg
-	// log        *logrus.Entry
+	log        *logrus.Entry
 
 	Nodes               *NodeService
 	ResourceDefinitions *ResourceDefinitionService
@@ -96,6 +96,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 	c := &Client{
 		httpClient: httpClient,
 		baseURL:    baseURL,
+		log:        logrus.NewEntry(logrus.New()),
 	}
 	l := &LogCfg{
 		Level: logrus.WarnLevel.String(),
@@ -147,13 +148,13 @@ func Log(logCfg *LogCfg) func(*Client) error {
 		if err != nil {
 			return err
 		}
-		logrus.SetLevel(level)
+		c.log.Logger.SetLevel(level)
 		if c.logCfg.Out == nil {
 			c.logCfg.Out = os.Stderr
 		}
-		logrus.SetOutput(c.logCfg.Out)
+		c.log.Logger.SetOutput(c.logCfg.Out)
 		if c.logCfg.Formatter != nil {
-			logrus.SetFormatter(c.logCfg.Formatter)
+			c.log.Logger.SetFormatter(c.logCfg.Formatter)
 		}
 		return nil
 	}
@@ -170,7 +171,7 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 		if err != nil {
 			return nil, err
 		}
-		logrus.Debug(body)
+		c.log.Debug(body)
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -196,14 +197,14 @@ func (c *Client) curlify(req *http.Request) (string, error) {
 
 func (c *Client) logCurlify(req *http.Request, lvl logrus.Level) {
 	// allow it to be called unconditionally; make it a noop if level does not match
-	if !logrus.IsLevelEnabled(lvl) {
+	if !c.log.Logger.IsLevelEnabled(lvl) {
 		return
 	}
 
 	if curl, err := c.curlify(req); err != nil {
-		logrus.Println(err)
+		c.log.Println(err)
 	} else {
-		logrus.Println(curl)
+		c.log.Println(curl)
 	}
 }
 
@@ -225,7 +226,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		logrus.Debugf("Status code not within 200 to 400, but %d (%s)\n",
+		c.log.Debugf("Status code not within 200 to 400, but %d (%s)\n",
 			resp.StatusCode, http.StatusText(resp.StatusCode))
 		if resp.StatusCode == 404 {
 			return nil, NotFoundError
