@@ -33,6 +33,7 @@ import (
 
 	"github.com/moul/http2curl"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 )
 
 // Client is a struct representing a LINSTOR REST client.
@@ -40,6 +41,7 @@ type Client struct {
 	httpClient *http.Client
 	baseURL    *url.URL
 	logCfg     *LogCfg
+	lim        *rate.Limiter
 	log        *logrus.Entry
 
 	Nodes               *NodeService
@@ -96,6 +98,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 	c := &Client{
 		httpClient: httpClient,
 		baseURL:    baseURL,
+		lim:        rate.NewLimiter(rate.Inf, 0),
 		log:        logrus.NewEntry(logrus.New()),
 	}
 	l := &LogCfg{
@@ -160,6 +163,18 @@ func Log(logCfg *LogCfg) func(*Client) error {
 	}
 }
 
+// Limit is the client's option to set number of requests per second and
+// max number of bursts.
+func Limit(r rate.Limit, b int) func(*Client) error {
+	return func(c *Client) error {
+		if b == 0 && r != rate.Inf {
+			return fmt.Errorf("invalid rate limit, burst must not be zero for non-unlimted rates")
+		}
+		c.lim = rate.NewLimiter(r, b)
+		return nil
+	}
+}
+
 func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
 	rel := &url.URL{Path: path}
 	u := c.baseURL.ResolveReference(rel)
@@ -209,6 +224,9 @@ func (c *Client) logCurlify(req *http.Request, lvl logrus.Level) {
 }
 
 func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
+	if err := c.lim.Wait(ctx); err != nil {
+		return nil, err
+	}
 	req = req.WithContext(ctx)
 
 	c.logCurlify(req, logrus.DebugLevel)
