@@ -59,6 +59,7 @@ type ResourceLayer struct {
 	Drbd               DrbdResource    `json:"drbd,omitempty"`
 	Luks               LuksResource    `json:"luks,omitempty"`
 	Storage            StorageResource `json:"storage,omitempty"`
+	Nvme               NvmeResource    `json:"nvme,omitempty"`
 }
 
 // DrbdResource is a struct used to give linstor drbd properties for a resource
@@ -121,6 +122,22 @@ type StorageVolume struct {
 	DiskState string `json:"disk_state,omitempty"`
 }
 
+type NvmeResource struct {
+	NvmeVolumes []NvmeVolume `json:"nvme_volumes,omitempty"`
+}
+
+type NvmeVolume struct {
+	VolumeNumber int32 `json:"volume_number,omitempty"`
+	// block device path
+	DevicePath string `json:"device_path,omitempty"`
+	// block device used by nvme
+	BackingDevice    string `json:"backing_device,omitempty"`
+	AllocatedSizeKib uint64 `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    uint64 `json:"usable_size_kib,omitempty"`
+	// String describing current volume state
+	DiskState string `json:"disk_state,omitempty"`
+}
+
 // ResourceState is a struct for getting the status of a resource
 type ResourceState struct {
 	InUse bool `json:"in_use,omitempty"`
@@ -143,8 +160,8 @@ type Volume struct {
 
 // VolumeLayer is a struct for storing the layer-properties of a linstor-volume
 type VolumeLayer struct {
-	Type LayerType                              `json:"type,omitempty"`
-	Data OneOfDrbdVolumeLuksVolumeStorageVolume `json:"data,omitempty"`
+	Type LayerType                                        `json:"type,omitempty"`
+	Data OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume `json:"data,omitempty"`
 }
 
 // VolumeState is a struct which contains the disk-state for volume
@@ -242,6 +259,12 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 			return err
 		}
 		v.Data = dst
+	case NVME:
+		dst := new(NvmeVolume)
+		if err := json.Unmarshal(vIn.Data, &dst); err != nil {
+			return err
+		}
+		v.Data = dst
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", v.Type)
 	}
@@ -249,15 +272,16 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// OneOfDrbdVolumeLuksVolumeStorageVolume  is used to prevent that other types than drbd- luks- and storage-volume are used for a VolumeLayer
-type OneOfDrbdVolumeLuksVolumeStorageVolume interface {
-	isOneOfDrbdVolumeLuksVolumeStorageVolume()
+// OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume  is used to prevent that other types than drbd- luks- and storage-volume are used for a VolumeLayer
+type OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume interface {
+	isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()
 }
 
 // Functions which are used if type is a correct VolumeLayer
-func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
-func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume()    {}
-func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolume() {}
+func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()    {}
+func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()    {}
+func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume() {}
+func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()    {}
 
 // GetOverall returns all resources in the cluster. Filters can be set via ListOpts.
 func (n *ResourceService) GetOverall(ctx context.Context, opts ...*ListOpts) ([]Resource, error) {
