@@ -42,6 +42,7 @@ type Resource struct {
 	Flags       []string          `json:"flags,omitempty"`
 	LayerObject ResourceLayer     `json:"layer_object,omitempty"`
 	State       ResourceState     `json:"state,omitempty"`
+	Volumes     []Volume          `json:"volumes,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
 }
