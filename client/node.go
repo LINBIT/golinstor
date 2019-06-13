@@ -33,6 +33,8 @@ type Node struct {
 	NetInterfaces []NetInterface    `json:"net_interfaces,omitempty"`
 	// Enum describing the current connection status.
 	ConnectionStatus string `json:"connection_status,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
 }
 
 // NetInterface represents a node's network interface.
@@ -41,6 +43,8 @@ type NetInterface struct {
 	Address                 string `json:"address"`
 	SatellitePort           int32  `json:"satellite_port,omitempty"`
 	SatelliteEncryptionType string `json:"satellite_encryption_type,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
 }
 
 // StoragePool represents a nodes storage pool as defined in LINSTOR.
@@ -58,6 +62,10 @@ type StoragePool struct {
 	TotalCapacity int64 `json:"total_capacity,omitempty"`
 	// read only
 	FreeSpaceMgrName string `json:"free_space_mgr_name,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
+	// Currently known report messages for this storage pool
+	Reports []ApiCallRc `json:"reports,omitempty"`
 }
 
 // ProviderKind is a type that represents various types of storage.

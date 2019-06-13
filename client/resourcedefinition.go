@@ -40,6 +40,8 @@ type ResourceDefinition struct {
 	Props     map[string]string         `json:"props,omitempty"`
 	Flags     []string                  `json:"flags,omitempty"`
 	LayerData []ResourceDefinitionLayer `json:"layer_data,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
 }
 
 // ResourceDefinitionCreate is a struct for holding the data needed to create a resource-defintion
@@ -97,6 +99,8 @@ type VolumeDefinition struct {
 	Props     map[string]string       `json:"props,omitempty"`
 	Flags     []string                `json:"flags,omitempty"`
 	LayerData []VolumeDefinitionLayer `json:"layer_data,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
 }
 
 // VolumeDefinitionLayer is a struct for the layer-type of a volume-definition

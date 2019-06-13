@@ -42,6 +42,8 @@ type Resource struct {
 	Flags       []string          `json:"flags,omitempty"`
 	LayerObject ResourceLayer     `json:"layer_object,omitempty"`
 	State       ResourceState     `json:"state,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
 }
 
 // ResourceCreate is a struct where the properties of a resource are stored to create it
@@ -156,6 +158,8 @@ type Volume struct {
 	Flags         []string          `json:"flags,omitempty"`
 	State         VolumeState       `json:"state,omitempty"`
 	LayerDataList []VolumeLayer     `json:"layer_data_list,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
 }
 
 // VolumeLayer is a struct for storing the layer-properties of a linstor-volume
@@ -207,6 +211,8 @@ type Snapshot struct {
 	Props             map[string]string          `json:"props,omitempty"`
 	Flags             []string                   `json:"flags,omitempty"`
 	VolumeDefinitions []SnapshotVolumeDefinition `json:"volume_definitions,omitempty"`
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
 }
 
 // SnapshotVolumeDefinition is a struct to store the properties of a volume from a snapshot
