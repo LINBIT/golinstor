@@ -47,6 +47,18 @@ type Resource struct {
 	Uuid string `json:"uuid,omitempty"`
 }
 
+type ResourceDefinitionModify struct {
+	// A string to string property map.
+	OverrideProps    OverrideProps    `json:"override_props,omitempty"`
+	DeleteProps      DeleteProps      `json:"delete_props,omitempty"`
+	DeleteNamespaces DeleteNamespaces `json:"delete_namespaces,omitempty"`
+	// drbd port for resources
+	DrbdPort int32 `json:"drbd_port,omitempty"`
+	// drbd peer slot number
+	DrbdPeerSlots int32       `json:"drbd_peer_slots,omitempty"`
+	LayerStack    []LayerType `json:"layer_stack,omitempty"`
+}
+
 // ResourceCreate is a struct where the properties of a resource are stored to create it
 type ResourceCreate struct {
 	Resource   Resource    `json:"resource,omitempty"`
@@ -231,6 +243,16 @@ type SnapshotRestore struct {
 	Nodes []string `json:"nodes,omitempty"`
 }
 
+type DrbdProxyModify struct {
+	// A string to string property map.
+	OverrideProps OverrideProps `json:"override_props,omitempty"`
+	DeleteProps   DeleteProps   `json:"delete_props,omitempty"`
+	// Compression type used by the proxy.
+	CompressionType string `json:"compression_type,omitempty"`
+	// A string to string property map.
+	CompressionProps map[string]string `json:"compression_props,omitempty"`
+}
+
 // custom code
 
 // volumeLayerIn is a struct for volume-layers
@@ -318,7 +340,7 @@ func (n *ResourceService) Create(ctx context.Context, res ResourceCreate) error 
 }
 
 // Modify gives the ability to modify a resource on a node
-func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, props GenericPropsModify) error {
+func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, props ResourceDefinitionModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, props)
 	return err
 }
@@ -448,7 +470,7 @@ func (n *ResourceService) RollbackSnapshot(ctx context.Context, resName, snapNam
 }
 
 // ModifyDRBDProxy is used to modify drbd-proxy properties
-func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props GenericPropsModify) error {
+func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props DrbdProxyModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/drbd-proxy", props)
 	return err
 }

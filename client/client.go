@@ -355,9 +355,12 @@ type DeleteProps []string
 // OverrideProps is a map of properties to modify (key/value pairs)
 type OverrideProps map[string]string
 
+// Namespaces to delete
+type DeleteNamespaces []string
+
 // GenericPropsModify is a struct combining DeleteProps and OverrideProps
 type GenericPropsModify struct {
-	DeleteProps      DeleteProps   `json:"delete_props,omitempty"`
-	OverrideProps    OverrideProps `json:"override_props,omitempty"`
-	DeleteNamespaces []string      `json:"delete_namespaces,omitempty"`
+	DeleteProps      DeleteProps      `json:"delete_props,omitempty"`
+	OverrideProps    OverrideProps    `json:"override_props,omitempty"`
+	DeleteNamespaces DeleteNamespaces `json:"delete_namespaces,omitempty"`
 }

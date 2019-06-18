@@ -37,6 +37,14 @@ type Node struct {
 	Uuid string `json:"uuid,omitempty"`
 }
 
+type NodeModify struct {
+	NodeType string `json:"node_type,omitempty"`
+	// A string to string property map.
+	OverrideProps    OverrideProps    `json:"override_props,omitempty"`
+	DeleteProps      DeleteProps      `json:"delete_props,omitempty"`
+	DeleteNamespaces DeleteNamespaces `json:"delete_namespaces,omitempty"`
+}
+
 // NetInterface represents a node's network interface.
 type NetInterface struct {
 	Name                    string `json:"name"`
@@ -110,7 +118,7 @@ func (n *NodeService) Create(ctx context.Context, node Node) error {
 }
 
 // Modify modifies the given node and sets/deletes the given properties.
-func (n *NodeService) Modify(ctx context.Context, nodeName string, props GenericPropsModify) error {
+func (n *NodeService) Modify(ctx context.Context, nodeName string, props NodeModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName, props)
 	return err
 }
