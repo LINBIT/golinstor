@@ -221,7 +221,7 @@ func (n *ResourceDefinitionService) Create(ctx context.Context, resDef ResourceD
 }
 
 // Modify allows to modify a resource-definition
-func (n *ResourceDefinitionService) Modify(ctx context.Context, resDefName string, props PropsModify) error {
+func (n *ResourceDefinitionService) Modify(ctx context.Context, resDefName string, props GenericPropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName, props)
 	return err
 }

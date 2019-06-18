@@ -318,7 +318,7 @@ func (n *ResourceService) Create(ctx context.Context, res ResourceCreate) error 
 }
 
 // Modify gives the ability to modify a resource on a node
-func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, props PropsModify) error {
+func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, props GenericPropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, props)
 	return err
 }
@@ -395,7 +395,7 @@ func (n *ResourceService) GetConnections(ctx context.Context, resName, nodeAName
 }
 
 // ModifyConnection allows to modify the connection between two nodes
-func (n *ResourceService) ModifyConnection(ctx context.Context, resName, nodeAName, nodeBName string, props PropsModify) error {
+func (n *ResourceService) ModifyConnection(ctx context.Context, resName, nodeAName, nodeBName string, props GenericPropsModify) error {
 	u := fmt.Sprintf("/v1/resource-definitions/%s/resource-connections/%s/%s", resName, nodeAName, nodeBName)
 	_, err := n.client.doPUT(ctx, u, props)
 	return err
@@ -448,7 +448,7 @@ func (n *ResourceService) RollbackSnapshot(ctx context.Context, resName, snapNam
 }
 
 // ModifyDRBDProxy is used to modify drbd-proxy properties
-func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props PropsModify) error {
+func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props GenericPropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/drbd-proxy", props)
 	return err
 }

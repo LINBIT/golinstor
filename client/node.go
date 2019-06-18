@@ -110,7 +110,7 @@ func (n *NodeService) Create(ctx context.Context, node Node) error {
 }
 
 // Modify modifies the given node and sets/deletes the given properties.
-func (n *NodeService) Modify(ctx context.Context, nodeName string, props PropsModify) error {
+func (n *NodeService) Modify(ctx context.Context, nodeName string, props GenericPropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName, props)
 	return err
 }
