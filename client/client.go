@@ -357,6 +357,7 @@ type OverrideProps map[string]string
 
 // PropsModify is a struct combining DeleteProps and OverrideProps
 type PropsModify struct {
-	DeleteProps   DeleteProps   `json:"delete_props,omitempty"`
-	OverrideProps OverrideProps `json:"override_props,omitempty"`
+	DeleteProps      DeleteProps   `json:"delete_props,omitempty"`
+	OverrideProps    OverrideProps `json:"override_props,omitempty"`
+	DeleteNamespaces []string      `json:"delete_namespaces,omitempty"`
 }
