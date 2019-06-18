@@ -103,6 +103,14 @@ type VolumeDefinition struct {
 	Uuid string `json:"uuid,omitempty"`
 }
 
+type VolumeDefinitionModify struct {
+	SizeKib uint64 `json:"size_kib,omitempty"`
+	// A string to string property map.
+	OverrideProps    OverrideProps `json:"override_props,omitempty"`
+	DeleteProps      DeleteProps   `json:"delete_props,omitempty"`
+	DeleteNamespaces []string      `json:"delete_namespaces,omitempty"`
+}
+
 // VolumeDefinitionLayer is a struct for the layer-type of a volume-definition
 type VolumeDefinitionLayer struct {
 	Type LayerType                 `json:"type"`
@@ -245,7 +253,7 @@ func (n *ResourceDefinitionService) CreateVolumeDefinition(ctx context.Context, 
 }
 
 // ModifyVolumeDefinition give the abilty to modify a specific volume-definition
-func (n *ResourceDefinitionService) ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props PropsModify) error {
+func (n *ResourceDefinitionService) ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props VolumeDefinitionModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), props)
 	return err
 }
