@@ -48,15 +48,12 @@ type Resource struct {
 }
 
 type ResourceDefinitionModify struct {
-	// A string to string property map.
-	OverrideProps    OverrideProps    `json:"override_props,omitempty"`
-	DeleteProps      DeleteProps      `json:"delete_props,omitempty"`
-	DeleteNamespaces DeleteNamespaces `json:"delete_namespaces,omitempty"`
 	// drbd port for resources
 	DrbdPort int32 `json:"drbd_port,omitempty"`
 	// drbd peer slot number
 	DrbdPeerSlots int32       `json:"drbd_peer_slots,omitempty"`
 	LayerStack    []LayerType `json:"layer_stack,omitempty"`
+	GenericPropsModify
 }
 
 // ResourceCreate is a struct where the properties of a resource are stored to create it
@@ -244,13 +241,11 @@ type SnapshotRestore struct {
 }
 
 type DrbdProxyModify struct {
-	// A string to string property map.
-	OverrideProps OverrideProps `json:"override_props,omitempty"`
-	DeleteProps   DeleteProps   `json:"delete_props,omitempty"`
 	// Compression type used by the proxy.
 	CompressionType string `json:"compression_type,omitempty"`
 	// A string to string property map.
 	CompressionProps map[string]string `json:"compression_props,omitempty"`
+	GenericPropsModify
 }
 
 // custom code

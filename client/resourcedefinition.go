@@ -105,10 +105,7 @@ type VolumeDefinition struct {
 
 type VolumeDefinitionModify struct {
 	SizeKib uint64 `json:"size_kib,omitempty"`
-	// A string to string property map.
-	OverrideProps    OverrideProps `json:"override_props,omitempty"`
-	DeleteProps      DeleteProps   `json:"delete_props,omitempty"`
-	DeleteNamespaces []string      `json:"delete_namespaces,omitempty"`
+	GenericPropsModify
 }
 
 // VolumeDefinitionLayer is a struct for the layer-type of a volume-definition

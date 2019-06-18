@@ -40,9 +40,7 @@ type Node struct {
 type NodeModify struct {
 	NodeType string `json:"node_type,omitempty"`
 	// A string to string property map.
-	OverrideProps    OverrideProps    `json:"override_props,omitempty"`
-	DeleteProps      DeleteProps      `json:"delete_props,omitempty"`
-	DeleteNamespaces DeleteNamespaces `json:"delete_namespaces,omitempty"`
+	GenericPropsModify
 }
 
 // NetInterface represents a node's network interface.
