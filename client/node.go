@@ -171,6 +171,13 @@ func (n *NodeService) DeleteNetinterface(ctx context.Context, nodeName, nifName 
 	return err
 }
 
+// GetStoragePoolView gets information about all storage pools in the cluster.
+func (n *NodeService) GetStoragePoolView(ctx context.Context, opts ...*ListOpts) ([]StoragePool, error) {
+	var sps []StoragePool
+	_, err := n.client.doGET(ctx, "/v1/view/storage-pools", &sps, opts...)
+	return sps, err
+}
+
 // GetStoragePools gets information about all storage pools on a given node.
 func (n *NodeService) GetStoragePools(ctx context.Context, nodeName string, opts ...*ListOpts) ([]StoragePool, error) {
 	var sps []StoragePool
