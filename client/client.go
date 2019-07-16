@@ -249,11 +249,20 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		if resp.StatusCode == 404 {
 			return nil, NotFoundError
 		}
+
 		var rets []ApiCallRc
 		if err = json.NewDecoder(resp.Body).Decode(&rets); err != nil {
 			return nil, err
 		}
-		return nil, errors.New(rets[0].String())
+
+		var finalErr string
+		for i, e := range rets {
+			finalErr += e.String()
+			if i < len(rets)-1 {
+				finalErr += "\n"
+			}
+		}
+		return nil, errors.New(finalErr)
 	}
 
 	if v != nil {
