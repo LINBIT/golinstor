@@ -362,6 +362,13 @@ func (n *ResourceService) GetVolume(ctx context.Context, resName, nodeName strin
 	return vol, err
 }
 
+// ModifyVolume modifies an existing volume with the given props
+func (n *ResourceService) ModifyVolume(ctx context.Context, resName, nodeName string, volNr int, props GenericPropsModify) error {
+	u := fmt.Sprintf("/v1/resource-definitions/%s/resources/%s/volumes/%d", resName, nodeName, volNr)
+	_, err := n.client.doPUT(ctx, u, props)
+	return err
+}
+
 // Diskless toggles a resource on a node to diskless - the parameter disklesspool can be set if its needed
 func (n *ResourceService) Diskless(ctx context.Context, resName, nodeName, disklessPoolName string) error {
 	u := "/v1/resource-definitions/" + resName + "/resources/" + nodeName + "/toggle-disk/diskless"
