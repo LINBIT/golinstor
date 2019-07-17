@@ -93,8 +93,8 @@ type DrbdVolume struct {
 	// block device used by drbd
 	BackingDevice    string `json:"backing_device,omitempty"`
 	MetaDisk         string `json:"meta_disk,omitempty"`
-	AllocatedSizeKib uint64 `json:"allocated_size_kib,omitempty"`
-	UsableSizeKib    uint64 `json:"usable_size_kib,omitempty"`
+	AllocatedSizeKib int64  `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    int64  `json:"usable_size_kib,omitempty"`
 	// String describing current volume state
 	DiskState string `json:"disk_state,omitempty"`
 }
@@ -111,8 +111,8 @@ type LuksVolume struct {
 	DevicePath string `json:"device_path,omitempty"`
 	// block device used by luks
 	BackingDevice    string `json:"backing_device,omitempty"`
-	AllocatedSizeKib uint64 `json:"allocated_size_kib,omitempty"`
-	UsableSizeKib    uint64 `json:"usable_size_kib,omitempty"`
+	AllocatedSizeKib int64  `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    int64  `json:"usable_size_kib,omitempty"`
 	// String describing current volume state
 	DiskState string `json:"disk_state,omitempty"`
 	Opened    bool   `json:"opened,omitempty"`
@@ -128,8 +128,8 @@ type StorageVolume struct {
 	VolumeNumber int32 `json:"volume_number,omitempty"`
 	// block device path
 	DevicePath       string `json:"device_path,omitempty"`
-	AllocatedSizeKib uint64 `json:"allocated_size_kib,omitempty"`
-	UsableSizeKib    uint64 `json:"usable_size_kib,omitempty"`
+	AllocatedSizeKib int64  `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    int64  `json:"usable_size_kib,omitempty"`
 	// String describing current volume state
 	DiskState string `json:"disk_state,omitempty"`
 }
@@ -144,8 +144,8 @@ type NvmeVolume struct {
 	DevicePath string `json:"device_path,omitempty"`
 	// block device used by nvme
 	BackingDevice    string `json:"backing_device,omitempty"`
-	AllocatedSizeKib uint64 `json:"allocated_size_kib,omitempty"`
-	UsableSizeKib    uint64 `json:"usable_size_kib,omitempty"`
+	AllocatedSizeKib int64  `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    int64  `json:"usable_size_kib,omitempty"`
 	// String describing current volume state
 	DiskState string `json:"disk_state,omitempty"`
 }
@@ -161,8 +161,8 @@ type Volume struct {
 	StoragePool      string       `json:"storage_pool,omitempty"`
 	ProviderKind     ProviderKind `json:"provider_kind,omitempty"`
 	DevicePath       string       `json:"device_path,omitempty"`
-	AllocatedSizeKib uint64       `json:"allocated_size_kib,omitempty"`
-	UsableSizeKib    uint64       `json:"usable_size_kib,omitempty"`
+	AllocatedSizeKib int64        `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    int64        `json:"usable_size_kib,omitempty"`
 	// A string to string property map.
 	Props         map[string]string `json:"props,omitempty"`
 	Flags         []string          `json:"flags,omitempty"`
