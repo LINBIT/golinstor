@@ -257,9 +257,9 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 
 		var finalErr string
 		for i, e := range rets {
-			finalErr += e.String()
+			finalErr += strings.TrimSpace(e.String())
 			if i < len(rets)-1 {
-				finalErr += "\n"
+				finalErr += " next error: "
 			}
 		}
 		return nil, errors.New(finalErr)
