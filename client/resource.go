@@ -97,6 +97,8 @@ type DrbdVolume struct {
 	UsableSizeKib    int64  `json:"usable_size_kib,omitempty"`
 	// String describing current volume state
 	DiskState string `json:"disk_state,omitempty"`
+	// Storage pool name used for external meta data; null for internal
+	ExtMetaStorPool string `json:"ext_meta_stor_pool,omitempty"`
 }
 
 // LuksResource is a struct to store storage-volumes for a luks-resource
