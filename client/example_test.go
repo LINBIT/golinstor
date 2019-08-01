@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ExampleSimple() {
+func Example_simple() {
 	ctx := context.TODO()
 
 	u, err := url.Parse("http://controller:3370")
@@ -39,7 +39,7 @@ func ExampleSimple() {
 	}
 }
 
-func ExampleHTTPS() {
+func Example_https() {
 	ctx := context.TODO()
 
 	u, err := url.Parse("https://controller:3371")
@@ -72,7 +72,7 @@ func ExampleHTTPS() {
 	}
 }
 
-func ExampleHTTPSLDAP() {
+func Example_httpsauth() {
 	ctx := context.TODO()
 
 	u, err := url.Parse("https://controller:3371")
