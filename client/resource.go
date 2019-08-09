@@ -269,26 +269,34 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 	switch v.Type {
 	case DRBD:
 		dst := new(DrbdVolume)
-		if err := json.Unmarshal(vIn.Data, &dst); err != nil {
-			return err
+		if vIn.Data != nil {
+			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
+				return err
+			}
 		}
 		v.Data = dst
 	case LUKS:
 		dst := new(LuksVolume)
-		if err := json.Unmarshal(vIn.Data, &dst); err != nil {
-			return err
+		if vIn.Data != nil {
+			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
+				return err
+			}
 		}
 		v.Data = dst
 	case STORAGE:
 		dst := new(StorageVolume)
-		if err := json.Unmarshal(vIn.Data, &dst); err != nil {
-			return err
+		if vIn.Data != nil {
+			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
+				return err
+			}
 		}
 		v.Data = dst
 	case NVME:
 		dst := new(NvmeVolume)
-		if err := json.Unmarshal(vIn.Data, &dst); err != nil {
-			return err
+		if vIn.Data != nil {
+			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
+				return err
+			}
 		}
 		v.Data = dst
 	default:
