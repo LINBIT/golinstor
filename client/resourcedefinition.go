@@ -42,6 +42,8 @@ type ResourceDefinition struct {
 	LayerData []ResourceDefinitionLayer `json:"layer_data,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
+	// name of the linked resource group, if there is a link
+	ResourceGroupName string `json:"resource_group_name,omitempty"`
 }
 
 // ResourceDefinitionCreate is a struct for holding the data needed to create a resource-defintion

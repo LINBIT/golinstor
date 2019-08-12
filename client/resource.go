@@ -42,9 +42,13 @@ type Resource struct {
 	Flags       []string          `json:"flags,omitempty"`
 	LayerObject ResourceLayer     `json:"layer_object,omitempty"`
 	State       ResourceState     `json:"state,omitempty"`
-	Volumes     []Volume          `json:"volumes,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
+}
+
+type ResourceWithVolumes struct {
+	Resource
+	Volumes []Volume `json:"volumes,omitempty"`
 }
 
 type ResourceDefinitionModify struct {
@@ -200,6 +204,9 @@ type AutoSelectFilter struct {
 	NotPlaceWithRscRegex string   `json:"not_place_with_rsc_regex,omitempty"`
 	ReplicasOnSame       []string `json:"replicas_on_same,omitempty"`
 	ReplicasOnDifferent  []string `json:"replicas_on_different,omitempty"`
+	LayerStack           []string `json:"layer_stack,omitempty"`
+	ProviderList         []string `json:"provider_list,omitempty"`
+	DisklessOnRemaining  bool     `json:"diskless_on_remaining,omitempty"`
 }
 
 // ResourceConnection is a struct which holds information about a connection between to nodes
@@ -318,8 +325,8 @@ func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume() {}
 func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()    {}
 
 // GetResourceView returns all resources in the cluster. Filters can be set via ListOpts.
-func (n *ResourceService) GetResourceView(ctx context.Context, opts ...*ListOpts) ([]Resource, error) {
-	var reses []Resource
+func (n *ResourceService) GetResourceView(ctx context.Context, opts ...*ListOpts) ([]ResourceWithVolumes, error) {
+	var reses []ResourceWithVolumes
 	_, err := n.client.doGET(ctx, "/v1/view/resources", &reses, opts...)
 	return reses, err
 }

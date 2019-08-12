@@ -48,6 +48,7 @@ type Client struct {
 	Nodes               *NodeService
 	ResourceDefinitions *ResourceDefinitionService
 	Resources           *ResourceService
+	ResourceGroups      *ResourceGroupService
 	Encryption          *EncryptionService
 }
 
@@ -118,6 +119,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 	c.ResourceDefinitions = &ResourceDefinitionService{client: c}
 	c.Resources = &ResourceService{client: c}
 	c.Encryption = &EncryptionService{client: c}
+	c.ResourceGroups = &ResourceGroupService{client: c}
 
 	for _, opt := range options {
 		if err := opt(c); err != nil {
