@@ -192,7 +192,10 @@ func Limit(r rate.Limit, b int) func(*Client) error {
 }
 
 func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
-	rel := &url.URL{Path: path}
+	rel, err := url.Parse(path)
+	if err != nil {
+		return nil, err
+	}
 	u := c.baseURL.ResolveReference(rel)
 
 	var buf io.ReadWriter
