@@ -90,6 +90,14 @@ const (
 	SWORDFISH_INITIATOR ProviderKind = "SWORDFISH_INITIATOR"
 )
 
+// ControllerVersion represents version information of the LINSTOR controller
+type ControllerVersion struct {
+	Version        string `json:"version,omitempty"`
+	GitHash        string `json:"git_hash,omitempty"`
+	BuildTime      string `json:"build_time,omitempty"`
+	RestApiVersion string `json:"rest_api_version,omitempty"`
+}
+
 // custom code
 
 // NodeService is the service that deals with node related tasks.
@@ -210,4 +218,11 @@ func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName st
 func (n *NodeService) DeleteStoragePool(ctx context.Context, nodeName, spName string) error {
 	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil)
 	return err
+}
+
+// Get gets information for a particular node.
+func (n *NodeService) GetControllerVersion(ctx context.Context, opts ...*ListOpts) (ControllerVersion, error) {
+	var vers ControllerVersion
+	_, err := n.client.doGET(ctx, "/v1/controller/version", &vers, opts...)
+	return vers, err
 }
