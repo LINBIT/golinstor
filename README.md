@@ -11,4 +11,4 @@ this package, should you use it.
 [godocs](https://godoc.org/github.com/LINBIT/golinstor)
 
 # License
-GPL2
+Apache-2.0
