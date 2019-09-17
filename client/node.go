@@ -71,6 +71,8 @@ type StoragePool struct {
 	Uuid string `json:"uuid,omitempty"`
 	// Currently known report messages for this storage pool
 	Reports []ApiCallRc `json:"reports,omitempty"`
+	// true if the storage pool supports snapshots. false otherwise
+	SupportsSnapshots bool `json:"supports_snapshots,omitempty"`
 }
 
 // ProviderKind is a type that represents various types of storage.
