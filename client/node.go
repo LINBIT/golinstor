@@ -87,6 +87,8 @@ const (
 	ZFS_THIN            ProviderKind = "ZFS_THIN"
 	SWORDFISH_TARGET    ProviderKind = "SWORDFISH_TARGET"
 	SWORDFISH_INITIATOR ProviderKind = "SWORDFISH_INITIATOR"
+	FILE                ProviderKind = "FILE"
+	FILE_THIN           ProviderKind = "FILE_THIN"
 )
 
 // ControllerVersion represents version information of the LINSTOR controller
