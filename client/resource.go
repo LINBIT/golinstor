@@ -173,7 +173,8 @@ type Volume struct {
 	State         VolumeState       `json:"state,omitempty"`
 	LayerDataList []VolumeLayer     `json:"layer_data_list,omitempty"`
 	// unique object id
-	Uuid string `json:"uuid,omitempty"`
+	Uuid    string      `json:"uuid,omitempty"`
+	Reports []ApiCallRc `json:"reports,omitempty"`
 }
 
 // VolumeLayer is a struct for storing the layer-properties of a linstor-volume
