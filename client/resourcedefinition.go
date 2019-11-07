@@ -243,7 +243,7 @@ func (n *ResourceDefinitionService) GetVolumeDefinitions(ctx context.Context, re
 // GetVolumeDefinition shows the properties of a specific volume-definition
 func (n *ResourceDefinitionService) GetVolumeDefinition(ctx context.Context, resDefName string, volNr int, opts ...*ListOpts) (VolumeDefinition, error) {
 	var volDef VolumeDefinition
-	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions"+strconv.Itoa(volNr), &volDef, opts...)
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), &volDef, opts...)
 	return volDef, err
 }
 
