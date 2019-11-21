@@ -23,7 +23,6 @@ import "context"
 // PhysicalStorageCreate is a configuration struct used to represent pysical storage on a given node.
 type PhysicalStorageCreate struct {
 	ProviderKind ProviderKind `json:"provider_kind"`
-	DevicePath   string       `json:"device_path"`
 	DevicePaths  []string     `json:"device_paths"`
 	// RAID level to use for pool.
 	RaidLevel         string `json:"raid_level,omitempty"`
