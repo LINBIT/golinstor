@@ -51,12 +51,12 @@ type PhysicalStorage struct {
 // GetPhysicalStorage gets a grouped list of physical storage that can be turned into a LINSTOR storage-pool
 func (n *NodeService) GetPhysicalStorage(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorage, error) {
 	var ps []PhysicalStorage
-	_, err := n.client.doGET(ctx, "/v1/pysical-storage/", &ps, opts...)
+	_, err := n.client.doGET(ctx, "/v1/physical-storage/", &ps, opts...)
 	return ps, err
 }
 
 // CreateDevicePool creates an LVM, LVM-thin or ZFS pool, optional VDO under it on a given node.
 func (n *NodeService) CreateDevicePool(ctx context.Context, nodeName string, psc PhysicalStorageCreate) error {
-	_, err := n.client.doPOST(ctx, "/v1/pysical-storage/"+nodeName, psc)
+	_, err := n.client.doPOST(ctx, "/v1/physical-storage/"+nodeName, psc)
 	return err
 }
