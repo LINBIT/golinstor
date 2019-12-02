@@ -225,7 +225,7 @@ func (n *NodeService) DeleteStoragePool(ctx context.Context, nodeName, spName st
 	return err
 }
 
-// Get gets information for a particular node.
+// GetControllerVersion queries version information for the controller.
 func (n *NodeService) GetControllerVersion(ctx context.Context, opts ...*ListOpts) (ControllerVersion, error) {
 	var vers ControllerVersion
 	_, err := n.client.doGET(ctx, "/v1/controller/version", &vers, opts...)
