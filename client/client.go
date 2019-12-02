@@ -344,6 +344,15 @@ func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*h
 	return c.do(ctx, req, nil)
 }
 
+func (c *Client) doOPTIONS(ctx context.Context, url string, ret interface{}, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest("OPTIONS", url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.do(ctx, req, ret)
+}
+
 // ApiCallRc represents the struct returned by LINSTOR, when accessing its REST API.
 type ApiCallRc struct {
 	// A masked error number

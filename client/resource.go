@@ -256,6 +256,21 @@ type DrbdProxyModify struct {
 	GenericPropsModify
 }
 
+// Candidate struct for Candidate
+type Candidate struct {
+	StoragePool string `json:"storage_pool,omitempty"`
+	// maximum size in KiB
+	MaxVolumeSizeKib int64    `json:"max_volume_size_kib,omitempty"`
+	NodeNames        []string `json:"node_names,omitempty"`
+	AllThin          bool     `json:"all_thin,omitempty"`
+}
+
+// MaxVolumeSizes struct for MaxVolumeSizes
+type MaxVolumeSizes struct {
+	Candidates                      []Candidate `json:"candidates,omitempty"`
+	DefaultMaxOversubscriptionRatio float64     `json:"default_max_oversubscription_ratio,omitempty"`
+}
+
 // custom code
 
 // volumeLayerIn is a struct for volume-layers
@@ -508,4 +523,11 @@ func (n *ResourceService) EnableDRBDProxy(ctx context.Context, resName, nodeANam
 // DisableDRBDProxy is used to disable drbd-proxy with the rest-api call from the function enableDisableDRBDProxy
 func (n *ResourceService) DisableDRBDProxy(ctx context.Context, resName, nodeAName, nodeBName string) error {
 	return n.enableDisableDRBDProxy(ctx, "disable", resName, nodeAName, nodeBName)
+}
+
+// QueryMaxVolumeSize finds the maximum size of a volume for a given filter
+func (n *ResourceService) QueryMaxVolumeSize(ctx context.Context, filter AutoSelectFilter) (MaxVolumeSizes, error) {
+	var sizes MaxVolumeSizes
+	_, err := n.client.doOPTIONS(ctx, "/v1/query-max-volume-size", &sizes, filter)
+	return sizes, err
 }
