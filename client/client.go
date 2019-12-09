@@ -24,13 +24,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
 	"github.com/moul/http2curl"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
 
@@ -38,10 +38,9 @@ import (
 type Client struct {
 	httpClient *http.Client
 	baseURL    *url.URL
-	logCfg     *LogCfg
 	basicAuth  *BasicAuthCfg
 	lim        *rate.Limiter
-	log        *logrus.Entry
+	log        interface{} // must be either Logger or LeveledLogger
 
 	Nodes               *NodeService
 	ResourceDefinitions *ResourceDefinitionService
@@ -50,11 +49,17 @@ type Client struct {
 	Encryption          *EncryptionService
 }
 
-// LogCfg is a struct containing the client's logging configuration
-type LogCfg struct {
-	Out       io.Writer
-	Formatter logrus.Formatter
-	Level     string
+// Logger represents a standard logger interface
+type Logger interface {
+	Printf(string, ...interface{})
+}
+
+// LeveledLogger interface implements the basic methods that a logger library needs
+type LeveledLogger interface {
+	Errorf(string, ...interface{})
+	Infof(string, ...interface{})
+	Debugf(string, ...interface{})
+	Warnf(string, ...interface{})
 }
 
 type BasicAuthCfg struct {
@@ -104,13 +109,7 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 		baseURL:    baseURL,
 		basicAuth:  &BasicAuthCfg{},
 		lim:        rate.NewLimiter(rate.Inf, 0),
-		log:        logrus.NewEntry(logrus.New()),
-	}
-	l := &LogCfg{
-		Level: logrus.WarnLevel.String(),
-	}
-	if err := Log(l)(c); err != nil {
-		return nil, err
+		log:        log.New(os.Stdout, "", 0),
 	}
 
 	c.Nodes = &NodeService{client: c}
@@ -157,21 +156,13 @@ func HTTPClient(httpClient *http.Client) func(*Client) error {
 	}
 }
 
-// Log is a client's option to set a LogCfg.
-func Log(logCfg *LogCfg) func(*Client) error {
+func Log(logger interface{}) func(*Client) error {
 	return func(c *Client) error {
-		c.logCfg = logCfg
-		level, err := logrus.ParseLevel(c.logCfg.Level)
-		if err != nil {
-			return err
-		}
-		c.log.Logger.SetLevel(level)
-		if c.logCfg.Out == nil {
-			c.logCfg.Out = os.Stderr
-		}
-		c.log.Logger.SetOutput(c.logCfg.Out)
-		if c.logCfg.Formatter != nil {
-			c.log.Logger.SetFormatter(c.logCfg.Formatter)
+		switch logger.(type) {
+		case Logger, LeveledLogger, nil:
+			c.log = logger
+		default:
+			return errors.New("Invalid logger type, expected Logger or LeveledLogger")
 		}
 		return nil
 	}
@@ -203,7 +194,12 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 		if err != nil {
 			return nil, err
 		}
-		c.log.Debug(body)
+		switch l := c.log.(type) {
+		case LeveledLogger:
+			l.Debugf("%s", buf)
+		case Logger:
+			l.Printf("[DEBUG] %s", body)
+		}
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -231,16 +227,19 @@ func (c *Client) curlify(req *http.Request) (string, error) {
 	return cc.String(), nil
 }
 
-func (c *Client) logCurlify(req *http.Request, lvl logrus.Level) {
-	// allow it to be called unconditionally; make it a noop if level does not match
-	if !c.log.Logger.IsLevelEnabled(lvl) {
-		return
+func (c *Client) logCurlify(req *http.Request) {
+	var msg string
+	if curl, err := c.curlify(req); err != nil {
+		msg = err.Error()
+	} else {
+		msg = curl
 	}
 
-	if curl, err := c.curlify(req); err != nil {
-		c.log.Println(err)
-	} else {
-		c.log.Println(curl)
+	switch l := c.log.(type) {
+	case LeveledLogger:
+		l.Debugf("%s", msg)
+	case Logger:
+		l.Printf("[DEBUG] %s", msg)
 	}
 }
 
@@ -250,7 +249,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 	}
 	req = req.WithContext(ctx)
 
-	c.logCurlify(req, logrus.DebugLevel)
+	c.logCurlify(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -265,8 +264,14 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		c.log.Debugf("Status code not within 200 to 400, but %d (%s)\n",
+		msg := fmt.Sprintf("Status code not within 200 to 400, but %d (%s)\n",
 			resp.StatusCode, http.StatusText(resp.StatusCode))
+		switch l := c.log.(type) {
+		case LeveledLogger:
+			l.Debugf("%s", msg)
+		case Logger:
+			l.Printf("[DEBUG] %s", msg)
+		}
 		if resp.StatusCode == 404 {
 			return nil, NotFoundError
 		}
