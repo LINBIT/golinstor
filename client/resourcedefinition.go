@@ -78,10 +78,11 @@ type LayerType string
 
 // List of LayerType
 const (
-	DRBD    LayerType = "DRBD"
-	LUKS    LayerType = "LUKS"
-	STORAGE LayerType = "STORAGE"
-	NVME    LayerType = "NVME"
+	DRBD       LayerType = "DRBD"
+	LUKS       LayerType = "LUKS"
+	STORAGE    LayerType = "STORAGE"
+	NVME       LayerType = "NVME"
+	WRITECACHE LayerType = "WRITECACHE"
 )
 
 // VolumeDefinitionCreate is a struct used for creating volume-definitions
@@ -106,6 +107,7 @@ type VolumeDefinition struct {
 type VolumeDefinitionModify struct {
 	SizeKib uint64 `json:"size_kib,omitempty"`
 	GenericPropsModify
+	Flags []string `json:"flags,omitempty"`
 }
 
 // VolumeDefinitionLayer is a struct for the layer-type of a volume-definition
@@ -146,7 +148,7 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		rd.Data = dst
-	case LUKS, STORAGE, NVME: // valid types, but do not set data
+	case LUKS, STORAGE, NVME, WRITECACHE: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", rd.Type)
 	}
@@ -185,7 +187,7 @@ func (vd *VolumeDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		vd.Data = dst
-	case LUKS, STORAGE, NVME: // valid types, but do not set data
+	case LUKS, STORAGE, NVME, WRITECACHE: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", vd.Type)
 	}

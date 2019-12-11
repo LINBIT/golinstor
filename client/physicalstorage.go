@@ -20,16 +20,26 @@ import "context"
 
 // copy & paste from generated code
 
+// PhysicalStorageStoragePoolCreate is used for create physical-storage
+type PhysicalStorageStoragePoolCreate struct {
+	// Name of the linstor storage pool
+	Name string `json:"name,omitempty"`
+	// A string to string property map.
+	Props map[string]string `json:"props,omitempty"`
+}
+
 // PhysicalStorageCreate is a configuration struct used to represent pysical storage on a given node.
+// If with_storage_pool is set a linstor storage pool will also be created using this device pool
 type PhysicalStorageCreate struct {
 	ProviderKind ProviderKind `json:"provider_kind"`
 	DevicePaths  []string     `json:"device_paths"`
 	// RAID level to use for pool.
-	RaidLevel         string `json:"raid_level,omitempty"`
-	PoolName          string `json:"pool_name,omitempty"`
-	VdoEnable         bool   `json:"vdo_enable,omitempty"`
-	VdoSlabSizeKib    int32  `json:"vdo_slab_size_kib,omitempty"`
-	VdoLogicalSizeKib int32  `json:"vdo_logical_size_kib,omitempty"`
+	RaidLevel         string                           `json:"raid_level,omitempty"`
+	PoolName          string                           `json:"pool_name,omitempty"`
+	VdoEnable         bool                             `json:"vdo_enable,omitempty"`
+	VdoSlabSizeKib    int32                            `json:"vdo_slab_size_kib,omitempty"`
+	VdoLogicalSizeKib int32                            `json:"vdo_logical_size_kib,omitempty"`
+	WithStoragePool   PhysicalStorageStoragePoolCreate `json:"with_storage_pool,omitempty"`
 }
 
 // PhysicalStorageDevice represents a physical storage device on a a node.

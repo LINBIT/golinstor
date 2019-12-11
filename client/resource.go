@@ -67,13 +67,30 @@ type ResourceCreate struct {
 
 // ResourceLayer is a struct to store layer-information abour a resource
 type ResourceLayer struct {
-	Children           []ResourceLayer `json:"children,omitempty"`
-	ResourceNameSuffix string          `json:"resource_name_suffix,omitempty"`
-	Type               LayerType       `json:"type,omitempty"`
-	Drbd               DrbdResource    `json:"drbd,omitempty"`
-	Luks               LuksResource    `json:"luks,omitempty"`
-	Storage            StorageResource `json:"storage,omitempty"`
-	Nvme               NvmeResource    `json:"nvme,omitempty"`
+	Children           []ResourceLayer    `json:"children,omitempty"`
+	ResourceNameSuffix string             `json:"resource_name_suffix,omitempty"`
+	Type               LayerType          `json:"type,omitempty"`
+	Drbd               DrbdResource       `json:"drbd,omitempty"`
+	Luks               LuksResource       `json:"luks,omitempty"`
+	Storage            StorageResource    `json:"storage,omitempty"`
+	Nvme               NvmeResource       `json:"nvme,omitempty"`
+	Writecache         WritecacheResource `json:"writecache,omitempty"`
+}
+
+type WritecacheResource struct {
+	WritecacheVolumes []WritecacheVolume `json:"writecache_volumes,omitempty"`
+}
+
+type WritecacheVolume struct {
+	VolumeNumber int32 `json:"volume_number,omitempty"`
+	// block device path
+	DevicePath string `json:"device_path,omitempty"`
+	// block device path used as cache device
+	DevicePathCache  string `json:"device_path_cache,omitempty"`
+	AllocatedSizeKib int64  `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    int64  `json:"usable_size_kib,omitempty"`
+	// String describing current volume state
+	DiskState string `json:"disk_state,omitempty"`
 }
 
 // DrbdResource is a struct used to give linstor drbd properties for a resource
@@ -179,8 +196,8 @@ type Volume struct {
 
 // VolumeLayer is a struct for storing the layer-properties of a linstor-volume
 type VolumeLayer struct {
-	Type LayerType                                        `json:"type,omitempty"`
-	Data OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume `json:"data,omitempty"`
+	Type LayerType                                                        `json:"type,omitempty"`
+	Data OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume `json:"data,omitempty"`
 }
 
 // VolumeState is a struct which contains the disk-state for volume
@@ -320,6 +337,14 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		v.Data = dst
+	case WRITECACHE:
+		dst := new(WritecacheVolume)
+		if vIn.Data != nil {
+			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
+				return err
+			}
+		}
+		v.Data = dst
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", v.Type)
 	}
@@ -327,16 +352,17 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume  is used to prevent that other types than drbd- luks- and storage-volume are used for a VolumeLayer
-type OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume interface {
-	isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()
+// OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume is used to prevent that other types than drbd- luks- and storage-volume are used for a VolumeLayer
+type OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume interface {
+	isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume()
 }
 
 // Functions which are used if type is a correct VolumeLayer
-func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()    {}
-func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()    {}
-func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume() {}
-func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolume()    {}
+func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume()       {}
+func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume()       {}
+func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume()    {}
+func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume()       {}
+func (d *WritecacheVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolume() {}
 
 // GetResourceView returns all resources in the cluster. Filters can be set via ListOpts.
 func (n *ResourceService) GetResourceView(ctx context.Context, opts ...*ListOpts) ([]ResourceWithVolumes, error) {
