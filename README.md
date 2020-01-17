@@ -8,7 +8,7 @@ this package, should you use it.
 
 # Documentation
 
-[godocs](https://godoc.org/github.com/LINBIT/golinstor)
+[godocs](https://godoc.org/github.com/LINBIT/golinstor/client)
 
 # License
 Apache-2.0
