@@ -57,7 +57,17 @@ type VolumeGroup struct {
 	// A string to string property map.
 	Props map[string]string `json:"props,omitempty"`
 	// unique object id
-	Uuid string `json:"uuid,omitempty"`
+	Uuid  string   `json:"uuid,omitempty"`
+	Flags []string `json:"flags,omitempty"`
+}
+
+type VolumeGroupModify struct {
+	// A string to string property map.
+	OverrideProps map[string]string `json:"override_props,omitempty"`
+	// To add a flag just specify the flag name, to remove a flag prepend it with a '-'.  Flags:   * GROSS_SIZE
+	Flags            []string `json:"flags,omitempty"`
+	DeleteProps      []string `json:"delete_props,omitempty"`
+	DeleteNamespaces []string `json:"delete_namespaces,omitempty"`
 }
 
 // custom code
@@ -126,7 +136,7 @@ func (n *ResourceGroupService) CreateVolumeGroup(ctx context.Context, resGrpName
 }
 
 // Modify allows to modify a volume-group of a resource-group
-func (n *ResourceGroupService) ModifyVolumeGroup(ctx context.Context, resGrpName string, volNr int, props GenericPropsModify) error {
+func (n *ResourceGroupService) ModifyVolumeGroup(ctx context.Context, resGrpName string, volNr int, props VolumeGroupModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-groups/"+resGrpName+"/volume-groups/"+strconv.Itoa(volNr), props)
 	return err
 }

@@ -107,6 +107,7 @@ type VolumeDefinition struct {
 type VolumeDefinitionModify struct {
 	SizeKib uint64 `json:"size_kib,omitempty"`
 	GenericPropsModify
+	// To add a flag just specify the flag name, to remove a flag prepend it with a '-'.  Flags:   * GROSS_SIZE
 	Flags []string `json:"flags,omitempty"`
 }
 
