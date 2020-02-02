@@ -74,8 +74,64 @@ func (e clientError) Error() string { return string(e) }
 // NotFoundError is the error type returned in case of a 404 error. This is required to test for this kind of error.
 const NotFoundError = clientError("404 Not Found")
 
+// For example:
+// u, _ := url.Parse("http://somehost:3370")
+// c, _ := linstor.NewClient(linstor.BaseURL(u))
+
+// Option configures a LINSTOR Client
+type Option func(*Client) error
+
+// BaseURL is a client's option to set the baseURL of the REST client.
+func BaseURL(URL *url.URL) Option {
+	return func(c *Client) error {
+		c.baseURL = URL
+		return nil
+	}
+}
+
+// BasicAuth is a client's option to set username and password for the REST client.
+func BasicAuth(basicauth *BasicAuthCfg) Option {
+	return func(c *Client) error {
+		c.basicAuth = basicauth
+		return nil
+	}
+}
+
+// HTTPClient is a client's option to set a specific http.Client.
+func HTTPClient(httpClient *http.Client) Option {
+	return func(c *Client) error {
+		c.httpClient = httpClient
+		return nil
+	}
+}
+
+// Log is a client's option to set a Logger
+func Log(logger interface{}) Option {
+	return func(c *Client) error {
+		switch logger.(type) {
+		case Logger, LeveledLogger, nil:
+			c.log = logger
+		default:
+			return errors.New("Invalid logger type, expected Logger or LeveledLogger")
+		}
+		return nil
+	}
+}
+
+// Limit is the client's option to set number of requests per second and
+// max number of bursts.
+func Limit(r rate.Limit, b int) Option {
+	return func(c *Client) error {
+		if b == 0 && r != rate.Inf {
+			return fmt.Errorf("invalid rate limit, burst must not be zero for non-unlimted rates")
+		}
+		c.lim = rate.NewLimiter(r, b)
+		return nil
+	}
+}
+
 // NewClient takes an arbitrary number of options and returns a Client or an error.
-func NewClient(options ...func(*Client) error) (*Client, error) {
+func NewClient(options ...Option) (*Client, error) {
 	httpClient := http.DefaultClient
 
 	hostPort := "localhost:3370"
@@ -125,59 +181,6 @@ func NewClient(options ...func(*Client) error) (*Client, error) {
 	}
 
 	return c, nil
-}
-
-// Options for the Client
-// For example:
-// u, _ := url.Parse("http://somehost:3370")
-// c, _ := linstor.NewClient(linstor.BaseURL(u))
-
-// BaseURL is a client's option to set the baseURL of the REST client.
-func BaseURL(URL *url.URL) func(*Client) error {
-	return func(c *Client) error {
-		c.baseURL = URL
-		return nil
-	}
-}
-
-// BasicAuth is a client's option to set username and password for the REST client.
-func BasicAuth(basicauth *BasicAuthCfg) func(*Client) error {
-	return func(c *Client) error {
-		c.basicAuth = basicauth
-		return nil
-	}
-}
-
-// HTTPClient is a client's option to set a specific http.Client.
-func HTTPClient(httpClient *http.Client) func(*Client) error {
-	return func(c *Client) error {
-		c.httpClient = httpClient
-		return nil
-	}
-}
-
-func Log(logger interface{}) func(*Client) error {
-	return func(c *Client) error {
-		switch logger.(type) {
-		case Logger, LeveledLogger, nil:
-			c.log = logger
-		default:
-			return errors.New("Invalid logger type, expected Logger or LeveledLogger")
-		}
-		return nil
-	}
-}
-
-// Limit is the client's option to set number of requests per second and
-// max number of bursts.
-func Limit(r rate.Limit, b int) func(*Client) error {
-	return func(c *Client) error {
-		if b == 0 && r != rate.Inf {
-			return fmt.Errorf("invalid rate limit, burst must not be zero for non-unlimted rates")
-		}
-		c.lim = rate.NewLimiter(r, b)
-		return nil
-	}
 }
 
 func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
