@@ -17,6 +17,8 @@ import (
 	lapi "github.com/LINBIT/golinstor/client"
 	"github.com/lithammer/shortuuid"
 
+	log "github.com/sirupsen/logrus"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -490,12 +492,16 @@ var _ = BeforeSuite(func() {
 		}
 	}
 
+	lvl, err := log.ParseLevel(conf.ClientConf.LogLevel)
+	if err != nil {
+		panic(err)
+	}
+	log.SetLevel(lvl)
+	log.SetOutput(logFile)
+
 	client, err = lapi.NewClient(
 		lapi.BaseURL(u),
-		lapi.Log(&lapi.LogCfg{
-			Level: conf.ClientConf.LogLevel,
-			Out:   logFile,
-		}),
+		lapi.Log(log.StandardLogger()),
 	)
 	if err != nil {
 		panic(err)
