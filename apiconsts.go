@@ -2,7 +2,7 @@
 
 
 // LINSTOR - management of distributed storage/DRBD9 resources
-// Copyright (C) 2017 - 2019  LINBIT HA-Solutions GmbH
+// Copyright (C) 2017 - 2020  LINBIT HA-Solutions GmbH
 // All Rights Reserved.
 // Author: Robert Altnoeder, Roland Kammerer, Gabor Hernadi
 // 
@@ -37,6 +37,7 @@ const MaskDel = 0x0000000003000000
 
 // ## Type masks (Node, ResDfn, Res, VolDfn, Vol, NetInterface, ...) ###
 const MaskBitsObj = 0x00000000007C0000
+const MaskPhysicalDevice = 0x00000000004C0000
 const MaskVlmGrp = 0x0000000000480000
 const MaskRscGrp = 0x0000000000440000
 const MaskKvs = 0x0000000000400000
@@ -143,6 +144,7 @@ const FailAccDeniedFreeSpaceMgr = (417 | MaskError)
 const FailAccDeniedKvs = (418 | MaskError)
 const FailAccDeniedRscGrp = (419 | MaskError)
 const FailAccDeniedVlmGrp = (420 | MaskError)
+const FailAccDeniedSnapDfn = (421 | MaskError)
 
 // ## Codes 500-599: data already exists failures ###
 const FailExistsNode = (500 | MaskError)
@@ -160,12 +162,10 @@ const FailExistsStltConn = (511 | MaskError)
 const FailExistsCryptPassphrase = (512 | MaskError)
 const FailExistsWatch = (513 | MaskError)
 const FailExistsSnapshotDfn = (514 | MaskError)
-const FailExistsSwordfishTargetPerRscDfn = (515 | MaskError)
 const FailExistsSnapshot = (516 | MaskError)
 const FailExistsExtName = (517 | MaskError)
 const FailExistsNvmeTargetPerRscDfn = (518 | MaskError)
 const FailExistsNvmeInitiatorPerRscDfn = (519 | MaskError)
-const FailExistsSwordfishInitiatorPerRscDfn = (520 | MaskError)
 const FailLostStorPool = (521 | MaskError)
 const FailExistsRscGrp = (522 | MaskError)
 const FailExistsVlmGrp = (523 | MaskError)
@@ -178,8 +178,8 @@ const FailMissingNetcom = (603 | MaskError)
 const FailMissingPropsNetifName = (604 | MaskError)
 const FailMissingStltConn = (605 | MaskError)
 const FailMissingExtName = (606 | MaskError)
-const FailMissingSwordfishTarget = (607 | MaskError)
 const FailMissingNvmeTarget = (608 | MaskError)
+const FailNoStltConnDefined = (609 | MaskError)
 
 // ## Codes 700-799: uuid mismatch failures ###
 const FailUuidNode = (700 | MaskError)
@@ -227,13 +227,20 @@ const WarnRscAlreadyHasDisk = (1007 | MaskWarn)
 const WarnRscAlreadyDiskless = (1008 | MaskWarn)
 const WarnAllDiskless = (1009 | MaskWarn)
 const WarnStorageError = (1010 | MaskWarn)
-const WarnStorageKindAdded = (1012 | MaskWarn)
 const WarnNotFoundCryptKey = (1011 | MaskWarn)
+const WarnStorageKindAdded = (1012 | MaskWarn)
+const WarnNotEnoughNodesForTieBreaker = (1013 | MaskWarn)
+const WarnMixedPmemAndNonPmem = (1014 | MaskWarn)
 const WarnNotFound = (3000 | MaskWarn)
 
-// ## Codes 10000-19999: warnings ###
+// ## Codes 10000-19999: info ###
 const InfoNoRscSpawned = (10000 | MaskInfo)
 const InfoNodeNameMismatch = (10001 | MaskInfo)
+const InfoPropSet = (10002 | MaskInfo)
+const InfoTieBreakerCreated = (10003 | MaskInfo)
+const InfoTieBreakerDeleting = (10004 | MaskInfo)
+const InfoTieBreakerTakeover = (10006 | MaskInfo)
+const InfoPropRemoved = (10005 | MaskInfo)
 
 // ## Special codes ###
 const UnknownApiCall = (0x0FFFFFFFFFFFFFFF | MaskError)
@@ -253,8 +260,6 @@ const ApiEndOfImmediateAnswers = "EndOfImmediateAnswers"
 
 // ## Create object APIs ###
 const ApiCrtNode = "CrtNode"
-const ApiHostname = "Hostname"
-const ApiPrepareDisks = "PrepareDisks"
 const ApiCrtRsc = "CrtRsc"
 const ApiCrtRscDfn = "CrtRscDfn"
 const ApiCrtNetIf = "CrtNetIf"
@@ -267,12 +272,12 @@ const ApiCrtRscConn = "CrtRscConn"
 const ApiCrtVlmConn = "CrtVlmConn"
 const ApiAutoPlaceRsc = "AutoPlaceRsc"
 const ApiCrtCryptPass = "CrtCryptPass"
-const ApiCrtSfTargetNode = "CrtSfTargetNode"
 const ApiRestoreVlmDfn = "RestoreVlmDfn"
 const ApiRestoreSnapshot = "RestoreSnapshot"
 const ApiCrtRscGrp = "CrtRscGrp"
 const ApiCrtVlmGrp = "CrtVlmGrp"
 const ApiSpawnRscDfn = "SpawnRscDfn"
+const ApiCreateDevicePool = "CreateDevicePool"
 
 // ## Modify object APIs ###
 const ApiModNode = "ModNode"
@@ -345,6 +350,7 @@ const ApiLstRscConn = "LstRscConn"
 const ApiLstKvs = "LstKvs"
 const ApiLstRscGrp = "LstRscGrp"
 const ApiLstVlmGrp = "LstVlmGrp"
+const ApiLstPhysStor = "LstPhysicalStorage"
 
 // ## Query APIs ###
 const ApiQryMaxVlmSize = "QryMaxVlmSize"
@@ -416,6 +422,19 @@ const KeyDrbdHistory1Gi = "DrbdHistory1Gi"
 const KeyDrbdHistory2Gi = "DrbdHistory2Gi"
 const KeyDmstats = "DMStats"
 const KeySnapshotDfnSequenceNumber = "SequenceNumber"
+const KeyDrbdAutoQuorum = "auto-quorum"
+const KeyDrbdAutoAddQuorumTiebreaker = "auto-add-quorum-tiebreaker"
+const KeyWritecacheBlocksize = "Blocksize"
+const KeyWritecachePoolName = "PoolName"
+const KeyWritecacheSize = "Size"
+const KeyWritecacheOptionHighWatermark = "HighWatermark"
+const KeyWritecacheOptionLowWatermark = "LowWatermark"
+const KeyWritecacheOptionStartSector = "StartSector"
+const KeyWritecacheOptionWritebackJobs = "WritebackJobs"
+const KeyWritecacheOptionAutocommitBlocks = "AutocommitBlocks"
+const KeyWritecacheOptionAutocommitTime = "AutocommitTime"
+const KeyWritecacheOptionFua = "Fua"
+const KeyWritecacheOptionAdditional = "Additional"
 
 // ## Property namespaces ###
 const NamespcNetcom = "NetCom"
@@ -440,6 +459,8 @@ const NamespcRest = "REST"
 const NamespcFilesystem = "FileSystem"
 const NamespcNvme = "NVMe"
 const NamespcSysFs = "sys/fs"
+const NamespcWritecache = "Writecache"
+const NamespcWritecacheOptions = "Writecache/Options"
 
 // ## Storage pool property keys ###
 const KeyStorPoolVolumeGroup = "LvmVg"
@@ -448,20 +469,6 @@ const KeyStorPoolThinPool = "ThinPool"
 const KeyStorPoolZpool = "ZPool"
 const KeyStorPoolZpoolthin = "ZPoolThin"
 const KeyStorPoolFileDirectory = "FileDir"
-const KeyStorPoolSfUrl = "SwordfishUrl"
-const KeyStorPoolSfStorSvc = "SwordfishStorSvc"
-const KeyStorPoolSfStorPool = "SwordfishStorPool"
-const KeyStorPoolSfUserName = "SwordfishUserName"
-const KeyStorPoolSfUserPw = "SwordfishUserPw"
-const KeyStorPoolSfPollTimeoutVlmCrt = "SwordfishVolumeCreateTimeout"
-const KeyStorPoolSfPollRetriesVlmCrt = "SwordfishVolumeCreateRetries"
-const KeyStorPoolSfPollTimeoutAttachVlm = "SwordfishAttachVolumeTimeout"
-const KeyStorPoolSfPollRetriesAttachVlm = "SwordfishAttachVolumeRetries"
-const KeyStorPoolSfPollTimeoutGrepNvmeUuid = "SwordfishGrepNvmeUuidTimeout"
-const KeyStorPoolSfPollRetriesGrepNvmeUuid = "SwordfishGrepNvmeUuidRetries"
-const KeyStorPoolSfComposedNodeName = "SwordfishComposedNodeName"
-const KeyStorPoolSfRetryCount = "SwordfishRetryCount"
-const KeyStorPoolSfRetryDelay = "SwordfishRetryDelay"
 const KeyStorPoolPrefNic = "PrefNic"
 const KeyStorPoolCryptPasswd = "CryptPasswd"
 const KeyStorPoolOverrideVlmId = "OverrideVlmId"
@@ -498,7 +505,6 @@ const KeySslProto = "SslProto"
 const KeyTcpPortAutoRange = "TcpPortAutoRange"
 const KeyMinorNrAutoRange = "MinorNrAutoRange"
 const KeyGlobalSeqApiCalls = "GlobSeqApiCalls"
-const KeySfTargetPortAutoRange = "SwordfishTargetPortAutoRange"
 const KeyCurStltConnName = "CurStltConnName"
 const KeyPeerSlotsNewResource = "PeerSlotsNewResource"
 const KeyPeerSlots = "PeerSlots"
@@ -528,18 +534,25 @@ const ValNetcomTypeSsl = "SSL"
 const ValNetcomTypePlain = "Plain"
 const ValSslProtoTlsv1 = "TLSv1"
 
-// ## DRBD Proxy compression type property values ###
+// ## DRBD related property values ###
 const ValDrbdProxyCompressionNone = "none"
+const ValDrbdProxyCompressionZstd = "zstd"
 const ValDrbdProxyCompressionZlib = "zlib"
 const ValDrbdProxyCompressionLzma = "lzma"
 const ValDrbdProxyCompressionLz4 = "lz4"
+const ValDrbdAutoQuorumDisabled = "disabled"
+const ValDrbdAutoQuorumIoError = "io-error"
+const ValDrbdAutoQuorumSuspendIo = "suspend-io"
 
 // ## Node Type values ###
 const ValNodeTypeCtrl = "Controller"
 const ValNodeTypeStlt = "Satellite"
 const ValNodeTypeCmbd = "Combined"
 const ValNodeTypeAux = "Auxiliary"
-const ValNodeTypeSwfishTarget = "SWORDFISH_TARGET"
+
+// ## Writecache option values ###
+const ValWritecacheFuaOn = "On"
+const ValWritecacheFuaOff = "Off"
 
 // ## Net interface Type values ###
 const ValNetifTypeIp = "IP"
@@ -552,6 +565,7 @@ const KeySecRole = "SecRole"
 const KeySecType = "SecType"
 const KeySecDomain = "SecDomain"
 const KeySecPassword = "SecPassword"
+const KeyPoolName = "PoolName"
 
 // ## External commands keys ###
 const KeyExtCmdWaitTo = "ExtCmdWaitTimeout"
@@ -572,6 +586,7 @@ const FlagDelete = "DELETE"
 const FlagDiskless = "DISKLESS"
 const FlagQignore = "QIGNORE"
 const FlagEncrypted = "ENCRYPTED"
+const FlagGrossSize = "GROSS_SIZE"
 const FlagSuccessful = "SUCCESSFUL"
 const FlagFailedDeployment = "FAILED_DEPLOYMENT"
 const FlagFailedDisconnect = "FAILED_DISCONNECT"
@@ -580,6 +595,9 @@ const FlagDiskAdding = "DISK_ADDING"
 const FlagDiskAddRequested = "DISK_ADD_REQUESTED"
 const FlagDiskRemoving = "DISK_REMOVING"
 const FlagDiskRemoveRequested = "DISK_REMOVE_REQUESTED"
+const FlagTieBreaker = "TIE_BREAKER"
+const FlagDrbdDiskless = "DRBD_DISKLESS"
+const FlagNvmeInitiator = "NVME_INITIATOR"
 
 // ## Satellite connection statuses ###
 const ConnStatusOffline = 0
