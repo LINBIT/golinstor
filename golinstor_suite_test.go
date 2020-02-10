@@ -266,7 +266,7 @@ var _ = Describe("Resources", func() {
 				By("getting the resource definition")
 
 				resDef, err := client.ResourceDefinitions.Get(testCTX, defName)
-				Ω(err).Should(Equal(lapi.NotFoundError))
+				Ω(err).ShouldNot(BeZero())
 
 				Ω(resDef).Should(BeZero())
 
