@@ -246,6 +246,19 @@ func (c *Client) logCurlify(req *http.Request) {
 	}
 }
 
+type ApiCallError []ApiCallRc
+
+func (e ApiCallError) Error() string {
+	var finalErr string
+	for i, r := range e {
+		finalErr += strings.TrimSpace(r.String())
+		if i < len(e)-1 {
+			finalErr += " next error: "
+		}
+	}
+	return finalErr
+}
+
 func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
 	if err := c.lim.Wait(ctx); err != nil {
 		return nil, err
@@ -279,19 +292,11 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 			return nil, NotFoundError
 		}
 
-		var rets []ApiCallRc
+		var rets ApiCallError
 		if err = json.NewDecoder(resp.Body).Decode(&rets); err != nil {
 			return nil, err
 		}
-
-		var finalErr string
-		for i, e := range rets {
-			finalErr += strings.TrimSpace(e.String())
-			if i < len(rets)-1 {
-				finalErr += " next error: "
-			}
-		}
-		return nil, errors.New(finalErr)
+		return nil, rets
 	}
 
 	if v != nil {

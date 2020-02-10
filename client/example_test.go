@@ -100,3 +100,39 @@ func Example_httpsauth() {
 		fmt.Printf("Resource with name '%s' on node with name '%s'\n", r.Name, r.NodeName)
 	}
 }
+
+func Example_error() {
+	ctx := context.TODO()
+
+	u, err := url.Parse("http://controller:3370")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c, err := client.NewClient(client.BaseURL(u), client.Log(log.StandardLogger()))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rs, err := c.Resources.GetAll(ctx, "foo")
+	if errs, ok := err.(client.ApiCallError); ok {
+		log.Error("A LINSTOR API error occurred:")
+		for i, e := range errs {
+			log.Errorf("  Message #%d:", i)
+			log.Errorf("    Code: %d", e.RetCode)
+			log.Errorf("    Message: %s", e.Message)
+			log.Errorf("    Cause: %s", e.Cause)
+			log.Errorf("    Details: %s", e.Details)
+			log.Errorf("    Correction: %s", e.Correction)
+			log.Errorf("    Error Reports: %v", e.ErrorReportIds)
+		}
+		return
+	}
+	if err != nil {
+		log.Fatalf("Some other error occurred: %s", err.Error())
+	}
+
+	for _, r := range rs {
+		fmt.Printf("Resource with name '%s' on node with name '%s'\n", r.Name, r.NodeName)
+	}
+}
