@@ -4,12 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 
 	"github.com/LINBIT/golinstor/client"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 func Example_simple() {
@@ -20,11 +19,7 @@ func Example_simple() {
 		log.Fatal(err)
 	}
 
-	logCfg := &client.LogCfg{
-		Level: logrus.TraceLevel.String(),
-	}
-
-	c, err := client.NewClient(client.BaseURL(u), client.Log(logCfg))
+	c, err := client.NewClient(client.BaseURL(u), client.Log(log.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}
