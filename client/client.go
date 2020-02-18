@@ -246,19 +246,6 @@ func (c *Client) logCurlify(req *http.Request) {
 	}
 }
 
-type ApiCallError []ApiCallRc
-
-func (e ApiCallError) Error() string {
-	var finalErr string
-	for i, r := range e {
-		finalErr += strings.TrimSpace(r.String())
-		if i < len(e)-1 {
-			finalErr += " next error: "
-		}
-	}
-	return finalErr
-}
-
 func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
 	if err := c.lim.Wait(ctx); err != nil {
 		return nil, err
