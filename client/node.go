@@ -229,3 +229,10 @@ func (n *NodeService) GetControllerVersion(ctx context.Context, opts ...*ListOpt
 	_, err := n.client.doGET(ctx, "/v1/controller/version", &vers, opts...)
 	return vers, err
 }
+
+// GetControllerConfig queries the configuration of a controller
+func (n *NodeService) GetControllerConfig(ctx context.Context, opts ...*ListOpts) (ControllerConfig, error) {
+	var cfg ControllerConfig
+	_, err := n.client.doGET(ctx, "/v1/controller/config", &cfg, opts...)
+	return cfg, err
+}
