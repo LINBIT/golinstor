@@ -56,8 +56,8 @@ type ResourceDefinitionCreate struct {
 
 // ResourceDefinitionLayer is a struct for the storing the layertype of a resource-defintion
 type ResourceDefinitionLayer struct {
-	Type LayerType                        `json:"type,omitempty"`
-	Data OneOfDrbdResourceDefinitionLayer `json:"data,omitempty"`
+	Type LayerType                                                       `json:"type,omitempty"`
+	Data OneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer `json:"data,omitempty"`
 }
 
 // DrbdResourceDefinitionLayer is a struct which contains the information about the layertype of a resource-definition on drbd level
@@ -83,6 +83,7 @@ const (
 	STORAGE    LayerType = "STORAGE"
 	NVME       LayerType = "NVME"
 	WRITECACHE LayerType = "WRITECACHE"
+	OPENFLEX   LayerType = "OPENFLEX"
 )
 
 // VolumeDefinitionCreate is a struct used for creating volume-definitions
@@ -149,6 +150,14 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		rd.Data = dst
+	case OPENFLEX:
+		dst := new(OpenflexResourceDefinitionLayer)
+		if rdIn.Data != nil {
+			if err := json.Unmarshal(rdIn.Data, &dst); err != nil {
+				return err
+			}
+		}
+		rd.Data = dst
 	case LUKS, STORAGE, NVME, WRITECACHE: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", rd.Type)
@@ -157,13 +166,14 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// OneOfDrbdResourceDefinitionLayer is used to prevent other layertypes than drbd-resource-definition
-type OneOfDrbdResourceDefinitionLayer interface {
-	isOneOfDrbdResourceDefinitionLayer()
+// OneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer is used to limit to these layer types
+type OneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer interface {
+	isOneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer()
 }
 
 // Function used if resource-definition-layertype is correct
-func (d *DrbdResourceDefinitionLayer) isOneOfDrbdResourceDefinitionLayer() {}
+func (d *DrbdResourceDefinitionLayer) isOneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer() {
+}
 
 //volumeDefinitionLayerIn is a struct for volume-defintion-layers
 type volumeDefinitionLayerIn struct {

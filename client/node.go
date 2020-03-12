@@ -84,13 +84,14 @@ type ProviderKind string
 
 // List of ProviderKind
 const (
-	DISKLESS  ProviderKind = "DISKLESS"
-	LVM       ProviderKind = "LVM"
-	LVM_THIN  ProviderKind = "LVM_THIN"
-	ZFS       ProviderKind = "ZFS"
-	ZFS_THIN  ProviderKind = "ZFS_THIN"
-	FILE      ProviderKind = "FILE"
-	FILE_THIN ProviderKind = "FILE_THIN"
+	DISKLESS        ProviderKind = "DISKLESS"
+	LVM             ProviderKind = "LVM"
+	LVM_THIN        ProviderKind = "LVM_THIN"
+	ZFS             ProviderKind = "ZFS"
+	ZFS_THIN        ProviderKind = "ZFS_THIN"
+	OPENFLEX_TARGET ProviderKind = "OPENFLEX_TARGET"
+	FILE            ProviderKind = "FILE"
+	FILE_THIN       ProviderKind = "FILE_THIN"
 )
 
 // ControllerVersion represents version information of the LINSTOR controller

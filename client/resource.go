@@ -74,6 +74,7 @@ type ResourceLayer struct {
 	Luks               LuksResource       `json:"luks,omitempty"`
 	Storage            StorageResource    `json:"storage,omitempty"`
 	Nvme               NvmeResource       `json:"nvme,omitempty"`
+	Openflex           OpenflexResource   `json:"openflex,omitempty"`
 	Writecache         WritecacheResource `json:"writecache,omitempty"`
 }
 
@@ -102,6 +103,14 @@ type DrbdResource struct {
 	AlSize                 int64                       `json:"al_size,omitempty"`
 	Flags                  []string                    `json:"flags,omitempty"`
 	DrbdVolumes            []DrbdVolume                `json:"drbd_volumes,omitempty"`
+	Connections            map[string]DrbdConnection   `json:"connections,omitempty"`
+}
+
+// DrbdConnection is a struct representing the DRBD connection status
+type DrbdConnection struct {
+	Connected bool `json:"connected,omitempty"`
+	// DRBD connection status
+	Message string `json:"message,omitempty"`
 }
 
 // DrbdVolume is a struct for linstor to get inormation about a drbd-volume
