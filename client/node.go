@@ -92,6 +92,7 @@ const (
 	OPENFLEX_TARGET ProviderKind = "OPENFLEX_TARGET"
 	FILE            ProviderKind = "FILE"
 	FILE_THIN       ProviderKind = "FILE_THIN"
+	SPDK            ProviderKind = "SPDK"
 )
 
 // ControllerVersion represents version information of the LINSTOR controller
