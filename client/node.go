@@ -238,3 +238,24 @@ func (n *NodeService) GetControllerConfig(ctx context.Context, opts ...*ListOpts
 	_, err := n.client.doGET(ctx, "/v1/controller/config", &cfg, opts...)
 	return cfg, err
 }
+
+// ModifyController modifies the controller node and sets/deletes the given properties.
+func (n *NodeService) ModifyController(ctx context.Context, props GenericPropsModify) error {
+	_, err := n.client.doPOST(ctx, "/v1/controller/properties", props)
+	return err
+}
+
+type ControllerProps map[string]string
+
+// GetControllerProps gets all properties of a controller
+func (n *NodeService) GetControllerProps(ctx context.Context, opts ...*ListOpts) (ControllerProps, error) {
+	var props ControllerProps
+	_, err := n.client.doGET(ctx, "/v1/controller/properties", &props, opts...)
+	return props, err
+}
+
+// DeleteControllerProp deletes the given property/key from the controller object.
+func (n *NodeService) DeleteControllerProp(ctx context.Context, prop string) error {
+	_, err := n.client.doDELETE(ctx, "/v1/controller/properties/"+prop, nil)
+	return err
+}
