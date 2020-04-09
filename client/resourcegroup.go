@@ -100,7 +100,7 @@ func (n *ResourceGroupService) Create(ctx context.Context, resGrp ResourceGroup)
 }
 
 // Modify allows to modify a resource-group
-func (n *ResourceGroupService) Modify(ctx context.Context, resGrpName string, props GenericPropsModify) error {
+func (n *ResourceGroupService) Modify(ctx context.Context, resGrpName string, props ResourceGroupModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-groups/"+resGrpName, props)
 	return err
 }
