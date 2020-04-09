@@ -83,6 +83,7 @@ const (
 	STORAGE    LayerType = "STORAGE"
 	NVME       LayerType = "NVME"
 	WRITECACHE LayerType = "WRITECACHE"
+	CACHE      LayerType = "CACHE"
 	OPENFLEX   LayerType = "OPENFLEX"
 )
 
@@ -158,7 +159,7 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		rd.Data = dst
-	case LUKS, STORAGE, NVME, WRITECACHE: // valid types, but do not set data
+	case LUKS, STORAGE, NVME, WRITECACHE, CACHE: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", rd.Type)
 	}
