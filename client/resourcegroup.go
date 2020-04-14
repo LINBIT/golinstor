@@ -43,7 +43,7 @@ type ResourceGroupModify struct {
 
 type ResourceGroupSpawn struct {
 	// name of the resulting resource-definition
-	ResourceDefinitionName string `json:"resource_definition_name,omitempty"`
+	ResourceDefinitionName string `json:"resource_definition_name"`
 	// External name can be used to have native resource names. If you need to store a non Linstor compatible resource name use this field and Linstor will generate a compatible name.
 	ResourceDefinitionExternalName string `json:"resource_definition_external_name,omitempty"`
 	// sizes (in kib) of the resulting volume-definitions
