@@ -17,64 +17,64 @@
 package client
 
 type ControllerConfig struct {
-	Config ControllerConfigConfig `json:"config,omitempty"`
-	Debug  ControllerConfigDebug  `json:"debug,omitempty"`
-	Log    ControllerConfigLog    `json:"log,omitempty"`
-	Db     ControllerConfigDb     `json:"db,omitempty"`
-	Http   ControllerConfigHttp   `json:"http,omitempty"`
-	Https  ControllerConfigHttps  `json:"https,omitempty"`
-	Ldap   ControllerConfigLdap   `json:"ldap,omitempty"`
+	Config ControllerConfigConfig `json:"config,omitempty" toml:"config,omitempty,omitzero"`
+	Debug  ControllerConfigDebug  `json:"debug,omitempty" toml:"debug,omitempty,omitzero"`
+	Log    ControllerConfigLog    `json:"log,omitempty" toml:"log,omitempty,omitzero"`
+	Db     ControllerConfigDb     `json:"db,omitempty" toml:"db,omitempty,omitzero"`
+	Http   ControllerConfigHttp   `json:"http,omitempty" toml:"http,omitempty,omitzero"`
+	Https  ControllerConfigHttps  `json:"https,omitempty" toml:"https,omitempty,omitzero"`
+	Ldap   ControllerConfigLdap   `json:"ldap,omitempty" toml:"ldap,omitempty,omitzero"`
 }
 
 type ControllerConfigConfig struct {
-	Dir string `json:"dir,omitempty"`
+	Dir string `json:"dir,omitempty" toml:"dir,omitempty,omitzero"`
 }
 
 type ControllerConfigDbEtcd struct {
-	OperationsPerTransaction int32 `json:"operations_per_transaction,omitempty"`
+	OperationsPerTransaction int32 `json:"operations_per_transaction,omitempty" toml:"operations_per_transaction,omitempty,omitzero"`
 }
 
 type ControllerConfigDb struct {
-	ConnectionUrl        string                 `json:"connection_url,omitempty"`
-	CaCertificate        string                 `json:"ca_certificate,omitempty"`
-	ClientCertificate    string                 `json:"client_certificate,omitempty"`
-	InMemory             string                 `json:"in_memory,omitempty"`
-	VersionCheckDisabled bool                   `json:"version_check_disabled,omitempty"`
-	Etcd                 ControllerConfigDbEtcd `json:"etcd,omitempty"`
+	ConnectionUrl        string                 `json:"connection_url,omitempty" toml:"connection_url,omitempty,omitzero"`
+	CaCertificate        string                 `json:"ca_certificate,omitempty" toml:"ca_certificate,omitempty,omitzero"`
+	ClientCertificate    string                 `json:"client_certificate,omitempty" toml:"client_certificate,omitempty,omitzero"`
+	InMemory             string                 `json:"in_memory,omitempty" toml:"in_memory,omitempty,omitzero"`
+	VersionCheckDisabled bool                   `json:"version_check_disabled,omitempty" toml:"version_check_disabled,omitempty,omitzero"`
+	Etcd                 ControllerConfigDbEtcd `json:"etcd,omitempty" toml:"etcd,omitempty,omitzero"`
 }
 
 type ControllerConfigDebug struct {
-	ConsoleEnabled bool `json:"console_enabled,omitempty"`
+	ConsoleEnabled bool `json:"console_enabled,omitempty" toml:"console_enabled,omitempty,omitzero"`
 }
 
 type ControllerConfigHttp struct {
-	Enabled       bool   `json:"enabled,omitempty"`
-	ListenAddress string `json:"listen_address,omitempty"`
-	Port          int32  `json:"port,omitempty"`
+	Enabled       bool   `json:"enabled,omitempty" toml:"enabled,omitempty,omitzero"`
+	ListenAddress string `json:"listen_address,omitempty" toml:"listen_address,omitempty,omitzero"`
+	Port          int32  `json:"port,omitempty" toml:"port,omitempty,omitzero"`
 }
 
 type ControllerConfigHttps struct {
-	Enabled       bool   `json:"enabled,omitempty"`
-	ListenAddress string `json:"listen_address,omitempty"`
-	Port          int32  `json:"port,omitempty"`
+	Enabled       bool   `json:"enabled,omitempty" toml:"enabled,omitempty,omitzero"`
+	ListenAddress string `json:"listen_address,omitempty" toml:"listen_address,omitempty,omitzero"`
+	Port          int32  `json:"port,omitempty" toml:"port,omitempty,omitzero"`
 }
 
 type ControllerConfigLdap struct {
-	Enabled             bool   `json:"enabled,omitempty"`
-	PublicAccessAllowed bool   `json:"public_access_allowed,omitempty"`
-	Uri                 string `json:"uri,omitempty"`
-	Dn                  string `json:"dn,omitempty"`
-	SearchBase          string `json:"search_base,omitempty"`
-	SearchFilter        string `json:"search_filter,omitempty"`
+	Enabled             bool   `json:"enabled,omitempty" toml:"enabled,omitempty,omitzero"`
+	PublicAccessAllowed bool   `json:"public_access_allowed,omitempty" toml:"public_access_allowed,omitempty,omitzero"`
+	Uri                 string `json:"uri,omitempty" toml:"uri,omitempty,omitzero"`
+	Dn                  string `json:"dn,omitempty" toml:"dn,omitempty,omitzero"`
+	SearchBase          string `json:"search_base,omitempty" toml:"search_base,omitempty,omitzero"`
+	SearchFilter        string `json:"search_filter,omitempty" toml:"search_filter,omitempty,omitzero"`
 }
 
 type ControllerConfigLog struct {
-	PrintStackTrace   bool     `json:"print_stack_trace,omitempty"`
-	Directory         string   `json:"directory,omitempty"`
-	Level             LogLevel `json:"level,omitempty"`
-	LevelLinstor      LogLevel `json:"level_linstor,omitempty"`
-	RestAccessLogPath string   `json:"rest_access_log_path,omitempty"`
-	RestAccessMode    string   `json:"rest_access_mode,omitempty"`
+	PrintStackTrace   bool     `json:"print_stack_trace,omitempty" toml:"print_stack_trace,omitempty,omitzero"`
+	Directory         string   `json:"directory,omitempty" toml:"directory,omitempty,omitzero"`
+	Level             LogLevel `json:"level,omitempty" toml:"level,omitempty,omitzero"`
+	LevelLinstor      LogLevel `json:"level_linstor,omitempty" toml:"level_linstor,omitempty,omitzero"`
+	RestAccessLogPath string   `json:"rest_access_log_path,omitempty" toml:"rest_access_log_path,omitempty,omitzero"`
+	RestAccessMode    string   `json:"rest_access_mode,omitempty" toml:"rest_access_mode,omitempty,omitzero"`
 }
 
 type LogLevel string
