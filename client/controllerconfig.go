@@ -38,6 +38,7 @@ type ControllerConfigDb struct {
 	ConnectionUrl        string                 `json:"connection_url,omitempty" toml:"connection_url,omitempty,omitzero"`
 	CaCertificate        string                 `json:"ca_certificate,omitempty" toml:"ca_certificate,omitempty,omitzero"`
 	ClientCertificate    string                 `json:"client_certificate,omitempty" toml:"client_certificate,omitempty,omitzero"`
+	ClientKeyPkcs8Pem    string                 `json:"client_key_pkcs8_pem,omitempty" toml:"client_key_pkcs8_pem,omitempty,omitzero"`
 	InMemory             string                 `json:"in_memory,omitempty" toml:"in_memory,omitempty,omitzero"`
 	VersionCheckDisabled bool                   `json:"version_check_disabled,omitempty" toml:"version_check_disabled,omitempty,omitzero"`
 	Etcd                 ControllerConfigDbEtcd `json:"etcd,omitempty" toml:"etcd,omitempty,omitzero"`
