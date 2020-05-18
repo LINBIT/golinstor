@@ -8,7 +8,6 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/lithammer/shortuuid v3.0.0+incompatible
-	github.com/moul/http2curl v1.0.0
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/satori/go.uuid v1.2.0
@@ -17,4 +16,5 @@ require (
 	golang.org/x/crypto v0.0.0-20190228161510-8dd112bcdc25 // indirect
 	golang.org/x/sys v0.0.0-20190228124157-a34e9553db1e // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
+	moul.io/http2curl v1.0.0
 )
