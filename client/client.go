@@ -42,12 +42,12 @@ type Client struct {
 	lim        *rate.Limiter
 	log        interface{} // must be either Logger or LeveledLogger
 
-	Nodes                 *NodeService
-	ResourceDefinitions   *ResourceDefinitionService
-	Resources             *ResourceService
-	ResourceGroups        *ResourceGroupService
-	StoragPoolDefinitions *StoragePoolDefinitionService
-	Encryption            *EncryptionService
+	Nodes                  *NodeService
+	ResourceDefinitions    *ResourceDefinitionService
+	Resources              *ResourceService
+	ResourceGroups         *ResourceGroupService
+	StoragePoolDefinitions *StoragePoolDefinitionService
+	Encryption             *EncryptionService
 }
 
 // Logger represents a standard logger interface
@@ -174,7 +174,7 @@ func NewClient(options ...Option) (*Client, error) {
 	c.Resources = &ResourceService{client: c}
 	c.Encryption = &EncryptionService{client: c}
 	c.ResourceGroups = &ResourceGroupService{client: c}
-	c.StoragPoolDefinitions = &StoragePoolDefinitionService{client: c}
+	c.StoragePoolDefinitions = &StoragePoolDefinitionService{client: c}
 
 	for _, opt := range options {
 		if err := opt(c); err != nil {
