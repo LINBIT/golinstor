@@ -203,9 +203,12 @@ func NewClient(options ...Option) (*Client, error) {
 	c := &Client{
 		httpClient: httpClient,
 		baseURL:    baseURL,
-		basicAuth:  &BasicAuthCfg{},
-		lim:        rate.NewLimiter(rate.Inf, 0),
-		log:        log.New(os.Stdout, "", 0),
+		basicAuth: &BasicAuthCfg{
+			Username: os.Getenv("LS_USERNAME"),
+			Password: os.Getenv("LS_PASSWORD"),
+		},
+		lim: rate.NewLimiter(rate.Inf, 0),
+		log: log.New(os.Stdout, "", 0),
 	}
 
 	c.Nodes = &NodeService{client: c}
