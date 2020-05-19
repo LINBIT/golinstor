@@ -168,6 +168,20 @@ func buildHttpClient() (*http.Client, error) {
 }
 
 // NewClient takes an arbitrary number of options and returns a Client or an error.
+// It recognizes several environment variables which can be used to configure
+// the client at runtime:
+//
+// - LS_CONTROLLERS: a comma-separated list of LINSTOR controllers to connect to.
+// Currently, golinstor will only use the first one.
+//
+// - LS_USERNAME, LS_PASSWORD: can be used to authenticate against the LINSTOR
+// controller using HTTP basic authentication.
+//
+// - LS_USER_CERTIFICATE, LS_USER_KEY, LS_ROOT_CA: can be used to enable TLS on
+// the HTTP client, enabling encrypted communication with the LINSTOR controller.
+//
+// Options passed to NewClient take precedence over options passed in via
+// environment variables.
 func NewClient(options ...Option) (*Client, error) {
 	httpClient, err := buildHttpClient()
 	if err != nil {
