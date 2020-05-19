@@ -20,6 +20,8 @@ package client
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -131,9 +133,46 @@ func Limit(r rate.Limit, b int) Option {
 	}
 }
 
+// buildHttpClient constructs an HTTP client which will be used to connect to
+// the LINSTOR controller. It recongnizes some environment variables which can
+// be used to configure the HTTP client at runtime. If an invalid key or
+// certificate is passed, an error is returned.
+// If none or not all of the environment variables are passed, the default
+// client is used as a fallback.
+func buildHttpClient() (*http.Client, error) {
+	certPEM, cert := os.LookupEnv("LS_USER_CERTIFICATE")
+	keyPEM, key := os.LookupEnv("LS_USER_KEY")
+	caPEM, ca := os.LookupEnv("LS_ROOT_CA")
+	if !(cert && key && ca) {
+		// not all environment variables found: fall back to default client
+		return http.DefaultClient, nil
+	}
+
+	keyPair, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load keys: %w", err)
+	}
+	caPool := x509.NewCertPool()
+	ok := caPool.AppendCertsFromPEM([]byte(caPEM))
+	if !ok {
+		return nil, fmt.Errorf("failed to get a valid certificate from LS_ROOT_CA")
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				Certificates: []tls.Certificate{keyPair},
+				RootCAs:      caPool,
+			},
+		},
+	}, nil
+}
+
 // NewClient takes an arbitrary number of options and returns a Client or an error.
 func NewClient(options ...Option) (*Client, error) {
-	httpClient := http.DefaultClient
+	httpClient, err := buildHttpClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build http client: %w", err)
+	}
 
 	hostPort := "localhost:3370"
 	controllers := os.Getenv("LS_CONTROLLERS")
