@@ -16,7 +16,12 @@
 
 package client
 
-import "context"
+import (
+	"context"
+	"net/url"
+	"strconv"
+	"time"
+)
 
 // copy & paste from generated code
 
@@ -26,6 +31,32 @@ type ControllerVersion struct {
 	GitHash        string `json:"git_hash,omitempty"`
 	BuildTime      string `json:"build_time,omitempty"`
 	RestApiVersion string `json:"rest_api_version,omitempty"`
+}
+
+// ErrorReport struct for ErrorReport
+type ErrorReport struct {
+	NodeName  string `json:"node_name,omitempty"`
+	ErrorTime int64  `json:"error_time"`
+	// Filename of the error report on the server.  Format is: ```ErrorReport-{instanceid}-{nodeid}-{sequencenumber}.log```
+	Filename string `json:"filename,omitempty"`
+	// Contains the full text of the error report file.
+	Text string `json:"text,omitempty"`
+	// Which module this error occurred.
+	Module string `json:"module,omitempty"`
+	// Linstor version this error report was created.
+	Version string `json:"version,omitempty"`
+	// Peer client that was involved.
+	Peer string `json:"peer,omitempty"`
+	// Exception that occurred
+	Exception string `json:"exception,omitempty"`
+	// Exception message
+	ExceptionMessage string `json:"exception_message,omitempty"`
+	// Origin file of the exception
+	OriginFile string `json:"origin_file,omitempty"`
+	// Origin method where the exception occurred
+	OriginMethod string `json:"origin_method,omitempty"`
+	// Origin line number
+	OriginLine int32 `json:"origin_line,omitempty"`
 }
 
 // custom code
@@ -68,4 +99,33 @@ func (s *ControllerService) GetProps(ctx context.Context, opts ...*ListOpts) (Co
 func (s *ControllerService) DeleteProp(ctx context.Context, prop string) error {
 	_, err := s.client.doDELETE(ctx, "/v1/controller/properties/"+prop, nil)
 	return err
+}
+
+// GetErrorReports returns all error reports. The Text field is not populated,
+// use GetErrorReport to get the text of an error report.
+func (s *ControllerService) GetErrorReports(ctx context.Context, opts ...*ListOpts) ([]ErrorReport, error) {
+	var reports []ErrorReport
+	_, err := s.client.doGET(ctx, "/v1/error-reports", &reports, opts...)
+	return reports, err
+}
+
+// unixMilli returns t formatted as milliseconds since Unix epoch
+func unixMilli(t time.Time) int64 {
+	return t.UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+}
+
+// GetErrorReportsSince returns all error reports created after a certain point in time.
+func (s *ControllerService) GetErrorReportsSince(ctx context.Context, since time.Time, opts ...*ListOpts) ([]ErrorReport, error) {
+	var reports []ErrorReport
+	v := url.Values{}
+	v.Set("since", strconv.FormatInt(unixMilli(since), 10))
+	_, err := s.client.doGET(ctx, "/v1/error-reports/?"+v.Encode(), &reports, opts...)
+	return reports, err
+}
+
+// GetErrorReport returns a specific error report, including its text.
+func (s *ControllerService) GetErrorReport(ctx context.Context, id string, opts ...*ListOpts) (ErrorReport, error) {
+	var report []ErrorReport
+	_, err := s.client.doGET(ctx, "/v1/error-reports/"+id, &report, opts...)
+	return report[0], err
 }
