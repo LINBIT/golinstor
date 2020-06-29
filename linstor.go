@@ -16,7 +16,7 @@
 
 package linstor
 
-//go:generate ./linstor-common/genconsts.py golang apiconsts.go
+//go:generate ./linstor-common/genconsts.py golang ..
 
 import (
 	"encoding/json"
