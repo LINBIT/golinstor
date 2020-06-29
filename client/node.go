@@ -95,14 +95,6 @@ const (
 	SPDK            ProviderKind = "SPDK"
 )
 
-// ControllerVersion represents version information of the LINSTOR controller
-type ControllerVersion struct {
-	Version        string `json:"version,omitempty"`
-	GitHash        string `json:"git_hash,omitempty"`
-	BuildTime      string `json:"build_time,omitempty"`
-	RestApiVersion string `json:"rest_api_version,omitempty"`
-}
-
 // custom code
 
 // NodeService is the service that deals with node related tasks.
@@ -222,40 +214,5 @@ func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName st
 // DeleteStoragePool deletes a storage pool on a given node.
 func (n *NodeService) DeleteStoragePool(ctx context.Context, nodeName, spName string) error {
 	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil)
-	return err
-}
-
-// GetControllerVersion queries version information for the controller.
-func (n *NodeService) GetControllerVersion(ctx context.Context, opts ...*ListOpts) (ControllerVersion, error) {
-	var vers ControllerVersion
-	_, err := n.client.doGET(ctx, "/v1/controller/version", &vers, opts...)
-	return vers, err
-}
-
-// GetControllerConfig queries the configuration of a controller
-func (n *NodeService) GetControllerConfig(ctx context.Context, opts ...*ListOpts) (ControllerConfig, error) {
-	var cfg ControllerConfig
-	_, err := n.client.doGET(ctx, "/v1/controller/config", &cfg, opts...)
-	return cfg, err
-}
-
-// ModifyController modifies the controller node and sets/deletes the given properties.
-func (n *NodeService) ModifyController(ctx context.Context, props GenericPropsModify) error {
-	_, err := n.client.doPOST(ctx, "/v1/controller/properties", props)
-	return err
-}
-
-type ControllerProps map[string]string
-
-// GetControllerProps gets all properties of a controller
-func (n *NodeService) GetControllerProps(ctx context.Context, opts ...*ListOpts) (ControllerProps, error) {
-	var props ControllerProps
-	_, err := n.client.doGET(ctx, "/v1/controller/properties", &props, opts...)
-	return props, err
-}
-
-// DeleteControllerProp deletes the given property/key from the controller object.
-func (n *NodeService) DeleteControllerProp(ctx context.Context, prop string) error {
-	_, err := n.client.doDELETE(ctx, "/v1/controller/properties/"+prop, nil)
 	return err
 }

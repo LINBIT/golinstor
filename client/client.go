@@ -50,6 +50,7 @@ type Client struct {
 	ResourceGroups         *ResourceGroupService
 	StoragePoolDefinitions *StoragePoolDefinitionService
 	Encryption             *EncryptionService
+	Controller             *ControllerService
 }
 
 // Logger represents a standard logger interface
@@ -292,6 +293,7 @@ func NewClient(options ...Option) (*Client, error) {
 	c.Encryption = &EncryptionService{client: c}
 	c.ResourceGroups = &ResourceGroupService{client: c}
 	c.StoragePoolDefinitions = &StoragePoolDefinitionService{client: c}
+	c.Controller = &ControllerService{client: c}
 
 	for _, opt := range options {
 		if err := opt(c); err != nil {
