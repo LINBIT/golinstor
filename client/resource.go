@@ -225,7 +225,9 @@ type AutoPlaceRequest struct {
 // AutoSelectFilter is a struct used to have information about the auto-select function
 type AutoSelectFilter struct {
 	PlaceCount           int32    `json:"place_count,omitempty"`
+	NodeNameList         []string `json:"node_name_list,omitempty"`
 	StoragePool          string   `json:"storage_pool,omitempty"`
+	StoragePoolList      []string `json:"storage_pool_list,omitempty"`
 	NotPlaceWithRsc      []string `json:"not_place_with_rsc,omitempty"`
 	NotPlaceWithRscRegex string   `json:"not_place_with_rsc_regex,omitempty"`
 	ReplicasOnSame       []string `json:"replicas_on_same,omitempty"`
@@ -368,11 +370,14 @@ type OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume
 }
 
 // Functions which are used if type is a correct VolumeLayer
-func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {}
-func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {}
+func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+}
+func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+}
 func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
 }
-func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {}
+func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+}
 func (d *WritecacheVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
 }
 func (d *CacheVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
@@ -501,6 +506,13 @@ func (n *ResourceService) GetSnapshots(ctx context.Context, resName string, opts
 	var snaps []Snapshot
 
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/snapshots", &snaps, opts...)
+	return snaps, err
+}
+
+// GetSnapshotView gets information about all snapshots
+func (r *ResourceService) GetSnapshotView(ctx context.Context, opts ...*ListOpts) ([]Snapshot, error) {
+	var snaps []Snapshot
+	_, err := r.client.doGET(ctx, "/v1/view/snapshots", &snaps, opts...)
 	return snaps, err
 }
 

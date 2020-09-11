@@ -32,6 +32,7 @@ type ListOpts struct {
 	StoragePool []string `url:"storage_pools"`
 	Resource    []string `url:"resources"`
 	Node        []string `url:"nodes"`
+	Prop        []string `url:"props"`
 }
 
 func genOptions(opts ...*ListOpts) *ListOpts {
