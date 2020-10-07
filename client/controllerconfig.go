@@ -74,12 +74,40 @@ type ControllerConfigLdap struct {
 }
 
 type ControllerConfigLog struct {
-	PrintStackTrace   bool     `json:"print_stack_trace,omitempty" toml:"print_stack_trace,omitempty,omitzero"`
-	Directory         string   `json:"directory,omitempty" toml:"directory,omitempty,omitzero"`
-	Level             LogLevel `json:"level,omitempty" toml:"level,omitempty,omitzero"`
-	LevelLinstor      LogLevel `json:"level_linstor,omitempty" toml:"level_linstor,omitempty,omitzero"`
-	RestAccessLogPath string   `json:"rest_access_log_path,omitempty" toml:"rest_access_log_path,omitempty,omitzero"`
-	RestAccessMode    string   `json:"rest_access_mode,omitempty" toml:"rest_access_mode,omitempty,omitzero"`
+	PrintStackTrace    bool     `json:"print_stack_trace,omitempty" toml:"print_stack_trace,omitempty,omitzero"`
+	Directory          string   `json:"directory,omitempty" toml:"directory,omitempty,omitzero"`
+	Level              LogLevel `json:"level,omitempty" toml:"level,omitempty,omitzero"`
+	LevelGlobal        LogLevel `json:"level_global,omitempty"`
+	LevelLinstor       LogLevel `json:"level_linstor,omitempty" toml:"level_linstor,omitempty,omitzero"`
+	LevelLinstorGlobal LogLevel `json:"level_linstor_global,omitempty"`
+	RestAccessLogPath  string   `json:"rest_access_log_path,omitempty" toml:"rest_access_log_path,omitempty,omitzero"`
+	RestAccessMode     string   `json:"rest_access_mode,omitempty" toml:"rest_access_mode,omitempty,omitzero"`
+}
+
+// SatelliteConfig struct for SatelliteConfig
+type SatelliteConfig struct {
+	Config               ControllerConfigConfig `json:"config,omitempty"`
+	Debug                ControllerConfigDebug  `json:"debug,omitempty"`
+	Log                  SatelliteConfigLog     `json:"log,omitempty"`
+	StltOverrideNodeName string                 `json:"stlt_override_node_name,omitempty"`
+	Openflex             bool                   `json:"openflex,omitempty"`
+	DrbdKeepResPattern   string                 `json:"drbd_keep_res_pattern,omitempty"`
+	Net                  SatelliteConfigNet     `json:"net,omitempty"`
+}
+
+// SatelliteConfigLog struct for SatelliteConfigLog
+type SatelliteConfigLog struct {
+	PrintStackTrace bool     `json:"print_stack_trace,omitempty"`
+	Directory       string   `json:"directory,omitempty"`
+	Level           LogLevel `json:"level,omitempty"`
+	LevelLinstor    LogLevel `json:"level_linstor,omitempty"`
+}
+
+// SatelliteConfigNet struct for SatelliteConfigNet
+type SatelliteConfigNet struct {
+	BindAddress string `json:"bind_address,omitempty"`
+	Port        int32  `json:"port,omitempty"`
+	ComType     string `json:"com_type,omitempty"`
 }
 
 type LogLevel string

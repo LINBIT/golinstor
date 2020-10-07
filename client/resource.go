@@ -42,11 +42,15 @@ type Resource struct {
 	State       ResourceState     `json:"state,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
+	// milliseconds since unix epoch in UTC
+	CreateTimestamp int64 `json:"create_timestamp,omitempty"`
 }
 
 type ResourceWithVolumes struct {
 	Resource
-	Volumes []Volume `json:"volumes,omitempty"`
+	// milliseconds since unix epoch in UTC
+	CreateTimestamp int64    `json:"create_timestamp,omitempty"`
+	Volumes         []Volume `json:"volumes,omitempty"`
 }
 
 type ResourceDefinitionModify struct {
@@ -55,6 +59,8 @@ type ResourceDefinitionModify struct {
 	// drbd peer slot number
 	DrbdPeerSlots int32       `json:"drbd_peer_slots,omitempty"`
 	LayerStack    []LayerType `json:"layer_stack,omitempty"`
+	// change resource group to the given group name
+	ResourceGroup string `json:"resource_group,omitempty"`
 	GenericPropsModify
 }
 
@@ -259,7 +265,41 @@ type Snapshot struct {
 	Flags             []string                   `json:"flags,omitempty"`
 	VolumeDefinitions []SnapshotVolumeDefinition `json:"volume_definitions,omitempty"`
 	// unique object id
+	Uuid      string         `json:"uuid,omitempty"`
+	Snapshots []SnapshotNode `json:"snapshots,omitempty"`
+}
+
+// SnapshotNode Actual snapshot data from a node
+type SnapshotNode struct {
+	// Snapshot name this snapshots belongs to
+	SnapshotName string `json:"snapshot_name,omitempty"`
+	// Node name where this snapshot was taken
+	NodeName string `json:"node_name,omitempty"`
+	// milliseconds since unix epoch in UTC
+	CreateTimestamp int64    `json:"create_timestamp,omitempty"`
+	Flags           []string `json:"flags,omitempty"`
+	// unique object id
 	Uuid string `json:"uuid,omitempty"`
+}
+
+// SnapshotShipping struct for SnapshotShipping
+type SnapshotShipping struct {
+	// Node where to ship the snapshot from
+	FromNode string `json:"from_node"`
+	// NetInterface of the source node
+	FromNic string `json:"from_nic,omitempty"`
+	// Node where to ship the snapshot
+	ToNode string `json:"to_node"`
+	// NetInterface of the destination node
+	ToNic string `json:"to_nic,omitempty"`
+}
+
+// SnapshotShippingStatus struct for SnapshotShippingStatus
+type SnapshotShippingStatus struct {
+	Snapshot     Snapshot `json:"snapshot,omitempty"`
+	FromNodeName string   `json:"from_node_name,omitempty"`
+	ToNodeName   string   `json:"to_node_name,omitempty"`
+	Status       string   `json:"status,omitempty"`
 }
 
 // SnapshotVolumeDefinition is a struct to store the properties of a volume from a snapshot
@@ -554,6 +594,12 @@ func (n *ResourceService) RollbackSnapshot(ctx context.Context, resName, snapNam
 	return err
 }
 
+// EnableSnapshotShipping enables snapshot shipping for a resource
+func (n *ResourceService) EnableSnapshotShipping(ctx context.Context, resName string, ship SnapshotShipping) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resName+"/snapshot-shipping", ship)
+	return err
+}
+
 // ModifyDRBDProxy is used to modify drbd-proxy properties
 func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props DrbdProxyModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/drbd-proxy", props)
@@ -582,4 +628,11 @@ func (n *ResourceService) QueryMaxVolumeSize(ctx context.Context, filter AutoSel
 	var sizes MaxVolumeSizes
 	_, err := n.client.doOPTIONS(ctx, "/v1/query-max-volume-size", &sizes, filter)
 	return sizes, err
+}
+
+// GetSnapshotShippings gets a view of all snapshot shippings
+func (n *ResourceService) GetSnapshotShippings(ctx context.Context, opts ...*ListOpts) ([]SnapshotShippingStatus, error) {
+	var shippings []SnapshotShippingStatus
+	_, err := n.client.doGET(ctx, "/v1/view/snapshot-shippings", &shippings, opts...)
+	return shippings, err
 }

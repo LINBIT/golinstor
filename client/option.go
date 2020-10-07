@@ -33,6 +33,8 @@ type ListOpts struct {
 	Resource    []string `url:"resources"`
 	Node        []string `url:"nodes"`
 	Prop        []string `url:"props"`
+	Snapshots   []string `url:"snapshots"`
+	Status      string   `url:"status,omitempty"`
 }
 
 func genOptions(opts ...*ListOpts) *ListOpts {

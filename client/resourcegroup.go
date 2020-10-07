@@ -47,7 +47,8 @@ type ResourceGroupSpawn struct {
 	// External name can be used to have native resource names. If you need to store a non Linstor compatible resource name use this field and Linstor will generate a compatible name.
 	ResourceDefinitionExternalName string `json:"resource_definition_external_name,omitempty"`
 	// sizes (in kib) of the resulting volume-definitions
-	VolumeSizes []int64 `json:"volume_sizes,omitempty"`
+	VolumeSizes  []int64          `json:"volume_sizes,omitempty"`
+	SelectFilter AutoSelectFilter `json:"select_filter,omitempty"`
 	// If false, the length of the vlm_sizes has to match the number of volume-groups or an error is returned.  If true and there are more vlm_sizes than volume-groups, the additional volume-definitions will simply have no pre-set properties (i.e. \"empty\" volume-definitions) If true and there are less vlm_sizes than volume-groups, the additional volume-groups won't be used.  If the count of vlm_sizes matches the number of volume-groups, this \"partial\" parameter has no effect.
 	Partial bool `json:"partial,omitempty"`
 	// If true, the spawn command will only create the resource-definition with the volume-definitions but will not perform an auto-place, even if it is configured.

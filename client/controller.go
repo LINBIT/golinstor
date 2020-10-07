@@ -129,3 +129,26 @@ func (s *ControllerService) GetErrorReport(ctx context.Context, id string, opts 
 	_, err := s.client.doGET(ctx, "/v1/error-reports/"+id, &report, opts...)
 	return report[0], err
 }
+
+// CreateSOSReport creates an SOS report in the log directory of the controller
+func (s *ControllerService) CreateSOSReport(ctx context.Context, opts ...*ListOpts) error {
+	_, err := s.client.doGET(ctx, "/v1/sos-report", nil, opts...)
+	return err
+}
+
+// DownloadSOSReport request sos report to download
+func (s *ControllerService) DownloadSOSReport(ctx context.Context, opts ...*ListOpts) error {
+	_, err := s.client.doGET(ctx, "/v1/sos-report/download", nil, opts...)
+	return err
+}
+
+func (s *ControllerService) GetSatelliteConfig(ctx context.Context, node string) (SatelliteConfig, error) {
+	var cfg SatelliteConfig
+	_, err := s.client.doGET(ctx, "/v1/nodes/"+node+"/config", &cfg)
+	return cfg, err
+}
+
+func (s *ControllerService) ModifySatelliteConfig(ctx context.Context, node string, cfg SatelliteConfig) error {
+	_, err := s.client.doPUT(ctx, "/v1/nodes/"+node+"/config", &cfg)
+	return err
+}
