@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/BurntSushi/toml v0.3.1
+	github.com/donovanhide/eventsource v0.0.0-20171031113327-3ed64d21fb0b
 	github.com/google/go-querystring v1.0.0
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect

@@ -59,6 +59,21 @@ type ErrorReport struct {
 	OriginLine int32 `json:"origin_line,omitempty"`
 }
 
+type ErrorReportDelete struct {
+	// timestamp in millis start date to delete
+	Since int64 `json:"since,omitempty"`
+	// timestamp in millis for the end date to delete
+	To int64 `json:"to,omitempty"`
+	// on which nodes to delete error-reports, if empty/null all nodes
+	Nodes []string `json:"nodes,omitempty"`
+	// delete all error reports with the given exception
+	Exception string `json:"exception,omitempty"`
+	// delete all error reports from the given version
+	Version string `json:"version,omitempty"`
+	// error report ids to delete
+	Ids []string `json:"ids,omitempty"`
+}
+
 // custom code
 
 // ControllerService is the service that deals with the LINSTOR controller.
@@ -107,6 +122,12 @@ func (s *ControllerService) GetErrorReports(ctx context.Context, opts ...*ListOp
 	var reports []ErrorReport
 	_, err := s.client.doGET(ctx, "/v1/error-reports", &reports, opts...)
 	return reports, err
+}
+
+// DeleteErrorReports deletes error reports as specified by the ErrorReportDelete struct.
+func (s *ControllerService) DeleteErrorReports(ctx context.Context, del ErrorReportDelete) error {
+	_, err := s.client.doDELETE(ctx, "/v1/error-reports", del)
+	return err
 }
 
 // unixMilli returns t formatted as milliseconds since Unix epoch

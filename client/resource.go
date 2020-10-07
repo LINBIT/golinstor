@@ -111,6 +111,8 @@ type DrbdResource struct {
 	Flags                  []string                    `json:"flags,omitempty"`
 	DrbdVolumes            []DrbdVolume                `json:"drbd_volumes,omitempty"`
 	Connections            map[string]DrbdConnection   `json:"connections,omitempty"`
+	PromotionScore         int32                       `json:"promotion_score,omitempty"`
+	MayPromote             bool                        `json:"may_promote,omitempty"`
 }
 
 // DrbdConnection is a struct representing the DRBD connection status

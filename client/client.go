@@ -32,6 +32,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/donovanhide/eventsource"
 	"github.com/moul/http2curl"
 	"golang.org/x/time/rate"
 )
@@ -51,6 +52,7 @@ type Client struct {
 	StoragePoolDefinitions *StoragePoolDefinitionService
 	Encryption             *EncryptionService
 	Controller             *ControllerService
+	Events                 *EventService
 }
 
 // Logger represents a standard logger interface
@@ -294,6 +296,7 @@ func NewClient(options ...Option) (*Client, error) {
 	c.ResourceGroups = &ResourceGroupService{client: c}
 	c.StoragePoolDefinitions = &StoragePoolDefinitionService{client: c}
 	c.Controller = &ControllerService{client: c}
+	c.Events = &EventService{client: c}
 
 	for _, opt := range options {
 		if err := opt(c); err != nil {
@@ -427,6 +430,22 @@ func (c *Client) doGET(ctx context.Context, url string, ret interface{}, opts ..
 		return nil, err
 	}
 	return c.do(ctx, req, ret)
+}
+
+func (c *Client) doEvent(ctx context.Context, url string) (*eventsource.Stream, error) {
+	req, err := c.newRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "text/event-stream")
+	req = req.WithContext(ctx)
+
+	stream, err := eventsource.SubscribeWith("", c.httpClient, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }
 
 func (c *Client) doPOST(ctx context.Context, url string, body interface{}) (*http.Response, error) {

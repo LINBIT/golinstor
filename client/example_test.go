@@ -136,3 +136,27 @@ func Example_error() {
 		fmt.Printf("Resource with name '%s' on node with name '%s'\n", r.Name, r.NodeName)
 	}
 }
+
+func Example_events() {
+	ctx := context.TODO()
+
+	u, err := url.Parse("http://controller:3370")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c, err := client.NewClient(client.BaseURL(u))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mayPromoteStream, err := c.Events.DRBDPromotion(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer mayPromoteStream.Close()
+
+	for ev := range mayPromoteStream.Events {
+		fmt.Printf("Resource '%s' on node with name '%s' may promote: %t\n", ev.ResourceName, ev.NodeName, ev.MayPromote)
+	}
+}
