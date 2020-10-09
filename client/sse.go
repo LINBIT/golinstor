@@ -35,8 +35,8 @@ func (dmp *DRBDMayPromoteStream) Close() {
 }
 
 // suscribe handles stream creation, event splitting, and context cancelation
-func (e *EventService) subscribe(ctx context.Context, url, event string) (*eventsource.Stream, chan interface{}, error) {
-	stream, err := e.client.doEvent(ctx, url)
+func (e *EventService) subscribe(ctx context.Context, url, event, lastEventId string) (*eventsource.Stream, chan interface{}, error) {
+	stream, err := e.client.doEvent(ctx, url, lastEventId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,8 +69,8 @@ func (e *EventService) subscribe(ctx context.Context, url, event string) (*event
 }
 
 // DRBDPromotion is used to subscribe to LINSTOR DRBD Promotion events
-func (e *EventService) DRBDPromotion(ctx context.Context) (*DRBDMayPromoteStream, error) {
-	stream, ch, err := e.subscribe(ctx, "/v1/events/drbd/promotion", mayPromoteChange)
+func (e *EventService) DRBDPromotion(ctx context.Context, lastEventId string) (*DRBDMayPromoteStream, error) {
+	stream, ch, err := e.subscribe(ctx, "/v1/events/drbd/promotion", mayPromoteChange, lastEventId)
 	if err != nil {
 		return nil, err
 	}

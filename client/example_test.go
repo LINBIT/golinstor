@@ -150,7 +150,7 @@ func Example_events() {
 		log.Fatal(err)
 	}
 
-	mayPromoteStream, err := c.Events.DRBDPromotion(ctx)
+	mayPromoteStream, err := c.Events.DRBDPromotion(ctx, "")
 	if err != nil {
 		log.Fatal(err)
 	}

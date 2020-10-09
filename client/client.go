@@ -432,7 +432,7 @@ func (c *Client) doGET(ctx context.Context, url string, ret interface{}, opts ..
 	return c.do(ctx, req, ret)
 }
 
-func (c *Client) doEvent(ctx context.Context, url string) (*eventsource.Stream, error) {
+func (c *Client) doEvent(ctx context.Context, url, lastEventId string) (*eventsource.Stream, error) {
 	req, err := c.newRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -440,7 +440,7 @@ func (c *Client) doEvent(ctx context.Context, url string) (*eventsource.Stream, 
 	req.Header.Set("Accept", "text/event-stream")
 	req = req.WithContext(ctx)
 
-	stream, err := eventsource.SubscribeWith("", c.httpClient, req)
+	stream, err := eventsource.SubscribeWith(lastEventId, c.httpClient, req)
 	if err != nil {
 		return nil, err
 	}
