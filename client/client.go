@@ -286,7 +286,7 @@ func NewClient(options ...Option) (*Client, error) {
 			Password: os.Getenv(PasswordEnv),
 		},
 		lim: rate.NewLimiter(rate.Inf, 0),
-		log: log.New(os.Stdout, "", 0),
+		log: log.New(os.Stderr, "", 0),
 	}
 
 	c.Nodes = &NodeService{client: c}
