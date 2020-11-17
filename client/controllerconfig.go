@@ -31,7 +31,8 @@ type ControllerConfigConfig struct {
 }
 
 type ControllerConfigDbEtcd struct {
-	OperationsPerTransaction int32 `json:"operations_per_transaction,omitempty" toml:"operations_per_transaction,omitempty,omitzero"`
+	OperationsPerTransaction int32  `json:"operations_per_transaction,omitempty" toml:"operations_per_transaction,omitempty,omitzero"`
+	Prefix                   string `json:"prefix,omitempty"`
 }
 
 type ControllerConfigDb struct {
