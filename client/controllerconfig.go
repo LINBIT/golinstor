@@ -32,7 +32,7 @@ type ControllerConfigConfig struct {
 
 type ControllerConfigDbEtcd struct {
 	OperationsPerTransaction int32  `json:"operations_per_transaction,omitempty" toml:"operations_per_transaction,omitempty,omitzero"`
-	Prefix                   string `json:"prefix,omitempty"`
+	Prefix                   string `json:"prefix,omitempty" toml:"prefix,omitempty,omitzero"`
 }
 
 type ControllerConfigDb struct {
@@ -78,9 +78,9 @@ type ControllerConfigLog struct {
 	PrintStackTrace    bool     `json:"print_stack_trace,omitempty" toml:"print_stack_trace,omitempty,omitzero"`
 	Directory          string   `json:"directory,omitempty" toml:"directory,omitempty,omitzero"`
 	Level              LogLevel `json:"level,omitempty" toml:"level,omitempty,omitzero"`
-	LevelGlobal        LogLevel `json:"level_global,omitempty"`
+	LevelGlobal        LogLevel `json:"level_global,omitempty" toml:"level_global,omitempty,omitzero"`
 	LevelLinstor       LogLevel `json:"level_linstor,omitempty" toml:"level_linstor,omitempty,omitzero"`
-	LevelLinstorGlobal LogLevel `json:"level_linstor_global,omitempty"`
+	LevelLinstorGlobal LogLevel `json:"level_linstor_global,omitempty" toml:"level_linstor_global,omitempty,omitzero"`
 	RestAccessLogPath  string   `json:"rest_access_log_path,omitempty" toml:"rest_access_log_path,omitempty,omitzero"`
 	RestAccessMode     string   `json:"rest_access_mode,omitempty" toml:"rest_access_mode,omitempty,omitzero"`
 }
