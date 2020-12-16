@@ -26,8 +26,10 @@ import (
 
 // ListOpts is a struct primarily used to define parameters used for pagination. It is also used for filtering (e.g., the /view/ calls)
 type ListOpts struct {
-	Page    int `url:"offset"`
-	PerPage int `url:"limit"`
+	// Number of items to skip. Only used if Limit is a positive value
+	Offset int `url:"offset"`
+	// Maximum number of items to retrieve
+	Limit  int `url:"limit"`
 
 	StoragePool []string `url:"storage_pools"`
 	Resource    []string `url:"resources"`
