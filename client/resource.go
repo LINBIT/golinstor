@@ -197,7 +197,7 @@ type ResourceState struct {
 // Volume is a struct which holds the information about a linstor-volume
 type Volume struct {
 	VolumeNumber     int32        `json:"volume_number,omitempty"`
-	StoragePool      string       `json:"storage_pool,omitempty"`
+	StoragePoolName  string       `json:"storage_pool_name,omitempty"`
 	ProviderKind     ProviderKind `json:"provider_kind,omitempty"`
 	DevicePath       string       `json:"device_path,omitempty"`
 	AllocatedSizeKib int64        `json:"allocated_size_kib,omitempty"`
