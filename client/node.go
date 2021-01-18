@@ -156,7 +156,7 @@ func (n *NodeService) GetNetInterfaces(ctx context.Context, nodeName string, opt
 // GetNetInterface gets information about a particular network interface on a given node.
 func (n *NodeService) GetNetInterface(ctx context.Context, nodeName, nifName string, opts ...*ListOpts) (NetInterface, error) {
 	var nif NetInterface
-	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, nif, opts...)
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/net-interfaces/"+nifName, &nif, opts...)
 	return nif, err
 }
 
