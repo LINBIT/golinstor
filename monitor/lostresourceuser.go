@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/LINBIT/golinstor/client"
+	"github.com/LINBIT/golinstor/devicelayerkind"
 )
 
 type resourceState struct {
@@ -146,7 +147,7 @@ func (lr *LostResourceUser) watch(resName string, dur time.Duration) {
 
 	oneMayPromote := false
 	for _, r := range ress {
-		if r.LayerObject.Type != client.DRBD {
+		if r.LayerObject.Type != devicelayerkind.Drbd {
 			delete(lr.haResources.resources, resName)
 			return
 		}

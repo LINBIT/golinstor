@@ -16,7 +16,11 @@
 
 package client
 
-import "context"
+import (
+	"context"
+
+	"github.com/LINBIT/golinstor/devicelayerkind"
+)
 
 // copy & paste from generated code
 
@@ -31,11 +35,11 @@ type Node struct {
 	// Enum describing the current connection status.
 	ConnectionStatus string `json:"connection_status,omitempty"`
 	// unique object id
-	Uuid                 string                    `json:"uuid,omitempty"`
-	StorageProviders     []ProviderKind            `json:"storage_providers,omitempty"`
-	ResourceLayers       []LayerType               `json:"resource_layers,omitempty"`
-	UnsupportedProviders map[ProviderKind][]string `json:"unsupported_providers,omitempty"`
-	UnsupportedLayers    map[LayerType][]string    `json:"unsupported_layers,omitempty"`
+	Uuid                 string                                       `json:"uuid,omitempty"`
+	StorageProviders     []ProviderKind                               `json:"storage_providers,omitempty"`
+	ResourceLayers       []devicelayerkind.DeviceLayerKind            `json:"resource_layers,omitempty"`
+	UnsupportedProviders map[ProviderKind][]string                    `json:"unsupported_providers,omitempty"`
+	UnsupportedLayers    map[devicelayerkind.DeviceLayerKind][]string `json:"unsupported_layers,omitempty"`
 }
 
 type NodeModify struct {

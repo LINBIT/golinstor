@@ -14,14 +14,14 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	lapi "github.com/LINBIT/golinstor/client"
 	"github.com/lithammer/shortuuid"
-
-	log "github.com/sirupsen/logrus"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	log "github.com/sirupsen/logrus"
+
+	lapi "github.com/LINBIT/golinstor/client"
+	"github.com/LINBIT/golinstor/devicelayerkind"
 )
 
 type Config struct {
@@ -145,7 +145,7 @@ var _ = Describe("Resources", func() {
 										"StorPoolName": pool,
 									},
 								},
-								LayerList: []lapi.LayerType{lapi.DRBD},
+								LayerList: []devicelayerkind.DeviceLayerKind{devicelayerkind.Drbd},
 							})
 							Ω(err).ShouldNot(HaveOccurred())
 						}

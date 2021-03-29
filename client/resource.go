@@ -22,6 +22,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"github.com/LINBIT/golinstor/devicelayerkind"
+	"github.com/LINBIT/golinstor/snapshotshipstatus"
 )
 
 // ResourceService is a struct which contains the pointer of the client
@@ -60,8 +63,8 @@ type ResourceDefinitionModify struct {
 	// drbd port for resources
 	DrbdPort int32 `json:"drbd_port,omitempty"`
 	// drbd peer slot number
-	DrbdPeerSlots int32       `json:"drbd_peer_slots,omitempty"`
-	LayerStack    []LayerType `json:"layer_stack,omitempty"`
+	DrbdPeerSlots int32                             `json:"drbd_peer_slots,omitempty"`
+	LayerStack    []devicelayerkind.DeviceLayerKind `json:"layer_stack,omitempty"`
 	// change resource group to the given group name
 	ResourceGroup string `json:"resource_group,omitempty"`
 	GenericPropsModify
@@ -69,23 +72,23 @@ type ResourceDefinitionModify struct {
 
 // ResourceCreate is a struct where the properties of a resource are stored to create it
 type ResourceCreate struct {
-	Resource   Resource    `json:"resource,omitempty"`
-	LayerList  []LayerType `json:"layer_list,omitempty"`
-	DrbdNodeId int32       `json:"drbd_node_id,omitempty"`
+	Resource   Resource                          `json:"resource,omitempty"`
+	LayerList  []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
+	DrbdNodeId int32                             `json:"drbd_node_id,omitempty"`
 }
 
 // ResourceLayer is a struct to store layer-information abour a resource
 type ResourceLayer struct {
-	Children           []ResourceLayer    `json:"children,omitempty"`
-	ResourceNameSuffix string             `json:"resource_name_suffix,omitempty"`
-	Type               LayerType          `json:"type,omitempty"`
-	Drbd               DrbdResource       `json:"drbd,omitempty"`
-	Luks               LuksResource       `json:"luks,omitempty"`
-	Storage            StorageResource    `json:"storage,omitempty"`
-	Nvme               NvmeResource       `json:"nvme,omitempty"`
-	Openflex           OpenflexResource   `json:"openflex,omitempty"`
-	Writecache         WritecacheResource `json:"writecache,omitempty"`
-	Cache              CacheResource      `json:"cache,omitempty"`
+	Children           []ResourceLayer                 `json:"children,omitempty"`
+	ResourceNameSuffix string                          `json:"resource_name_suffix,omitempty"`
+	Type               devicelayerkind.DeviceLayerKind `json:"type,omitempty"`
+	Drbd               DrbdResource                    `json:"drbd,omitempty"`
+	Luks               LuksResource                    `json:"luks,omitempty"`
+	Storage            StorageResource                 `json:"storage,omitempty"`
+	Nvme               NvmeResource                    `json:"nvme,omitempty"`
+	Openflex           OpenflexResource                `json:"openflex,omitempty"`
+	Writecache         WritecacheResource              `json:"writecache,omitempty"`
+	Cache              CacheResource                   `json:"cache,omitempty"`
 }
 
 type WritecacheResource struct {
@@ -217,7 +220,7 @@ type Volume struct {
 
 // VolumeLayer is a struct for storing the layer-properties of a linstor-volume
 type VolumeLayer struct {
-	Type LayerType                                                                   `json:"type,omitempty"`
+	Type devicelayerkind.DeviceLayerKind                                             `json:"type,omitempty"`
 	Data OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume `json:"data,omitempty"`
 }
 
@@ -228,9 +231,9 @@ type VolumeState struct {
 
 // AutoPlaceRequest is a struct to store the paramters for the linstor auto-place command
 type AutoPlaceRequest struct {
-	DisklessOnRemaining bool             `json:"diskless_on_remaining,omitempty"`
-	SelectFilter        AutoSelectFilter `json:"select_filter,omitempty"`
-	LayerList           []LayerType      `json:"layer_list,omitempty"`
+	DisklessOnRemaining bool                              `json:"diskless_on_remaining,omitempty"`
+	SelectFilter        AutoSelectFilter                  `json:"select_filter,omitempty"`
+	LayerList           []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
 }
 
 // AutoSelectFilter is a struct used to have information about the auto-select function
@@ -304,10 +307,10 @@ type SnapshotShipping struct {
 
 // SnapshotShippingStatus struct for SnapshotShippingStatus
 type SnapshotShippingStatus struct {
-	Snapshot     Snapshot `json:"snapshot,omitempty"`
-	FromNodeName string   `json:"from_node_name,omitempty"`
-	ToNodeName   string   `json:"to_node_name,omitempty"`
-	Status       string   `json:"status,omitempty"`
+	Snapshot     Snapshot                              `json:"snapshot,omitempty"`
+	FromNodeName string                                `json:"from_node_name,omitempty"`
+	ToNodeName   string                                `json:"to_node_name,omitempty"`
+	Status       snapshotshipstatus.SnapshotShipStatus `json:"status,omitempty"`
 }
 
 // SnapshotVolumeDefinition is a struct to store the properties of a volume from a snapshot
@@ -349,7 +352,7 @@ type MaxVolumeSizes struct {
 }
 
 type ResourceMakeAvailable struct {
-	LayerList []LayerType `json:"layer_list,omitempty"`
+	LayerList []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
 	// if true resource will be created as diskful even if diskless would be possible
 	Diskful bool `json:"diskful,omitempty"`
 }
@@ -442,8 +445,8 @@ type ResourceProvider interface {
 
 // volumeLayerIn is a struct for volume-layers
 type volumeLayerIn struct {
-	Type LayerType       `json:"type,omitempty"`
-	Data json.RawMessage `json:"data,omitempty"`
+	Type devicelayerkind.DeviceLayerKind `json:"type,omitempty"`
+	Data json.RawMessage                 `json:"data,omitempty"`
 }
 
 // UnmarshalJSON fulfills the unmarshal interface for the VolumeLayer type
@@ -455,7 +458,7 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 
 	v.Type = vIn.Type
 	switch v.Type {
-	case DRBD:
+	case devicelayerkind.Drbd:
 		dst := new(DrbdVolume)
 		if vIn.Data != nil {
 			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
@@ -463,7 +466,7 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		v.Data = dst
-	case LUKS:
+	case devicelayerkind.Luks:
 		dst := new(LuksVolume)
 		if vIn.Data != nil {
 			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
@@ -471,7 +474,7 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		v.Data = dst
-	case STORAGE:
+	case devicelayerkind.Storage:
 		dst := new(StorageVolume)
 		if vIn.Data != nil {
 			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
@@ -479,7 +482,7 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		v.Data = dst
-	case NVME:
+	case devicelayerkind.Nvme:
 		dst := new(NvmeVolume)
 		if vIn.Data != nil {
 			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
@@ -487,7 +490,7 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		v.Data = dst
-	case WRITECACHE:
+	case devicelayerkind.Writecache:
 		dst := new(WritecacheVolume)
 		if vIn.Data != nil {
 			if err := json.Unmarshal(vIn.Data, &dst); err != nil {
@@ -495,6 +498,9 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		v.Data = dst
+	case devicelayerkind.Cache:
+	case devicelayerkind.Openflex:
+	case devicelayerkind.Exos:
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", v.Type)
 	}
