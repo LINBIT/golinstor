@@ -344,6 +344,70 @@ type MaxVolumeSizes struct {
 
 // custom code
 
+// ResourceProvider acts as an abstraction for an ResourceService. It can be
+// swapped out for another ResourceService implementation, for example for
+// testing.
+type ResourceProvider interface {
+	// GetResourceView returns all resources in the cluster. Filters can be set via ListOpts.
+	GetResourceView(ctx context.Context, opts ...*ListOpts) ([]ResourceWithVolumes, error)
+	// GetAll returns all resources for a resource-definition
+	GetAll(ctx context.Context, resName string, opts ...*ListOpts) ([]Resource, error)
+	// Get returns information about a resource on a specific node
+	Get(ctx context.Context, resName, nodeName string, opts ...*ListOpts) (Resource, error)
+	// Create is used to create a resource on a node
+	Create(ctx context.Context, res ResourceCreate) error
+	// Modify gives the ability to modify a resource on a node
+	Modify(ctx context.Context, resName, nodeName string, props ResourceDefinitionModify) error
+	// Delete deletes a resource on a specific node
+	Delete(ctx context.Context, resName, nodeName string) error
+	// GetVolumes lists als volumes of a resource
+	GetVolumes(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]Volume, error)
+	// GetVolume returns information about a specific volume defined by it resource,node and volume-number
+	GetVolume(ctx context.Context, resName, nodeName string, volNr int, opts ...*ListOpts) (Volume, error)
+	// ModifyVolume modifies an existing volume with the given props
+	ModifyVolume(ctx context.Context, resName, nodeName string, volNr int, props GenericPropsModify) error
+	// Diskless toggles a resource on a node to diskless - the parameter disklesspool can be set if its needed
+	Diskless(ctx context.Context, resName, nodeName, disklessPoolName string) error
+	// Diskful toggles a resource to diskful - the parameter storagepool can be set if its needed
+	Diskful(ctx context.Context, resName, nodeName, storagePoolName string) error
+	// Migrate mirgates a resource from one node to another node
+	Migrate(ctx context.Context, resName, fromNodeName, toNodeName, storagePoolName string) error
+	// Autoplace places a resource on your nodes autmatically
+	Autoplace(ctx context.Context, resName string, apr AutoPlaceRequest) error
+	// GetConnections lists all resource connections if no node-names are given- if two node-names are given it shows the connection between them
+	GetConnections(ctx context.Context, resName, nodeAName, nodeBName string, opts ...*ListOpts) ([]ResourceConnection, error)
+	// ModifyConnection allows to modify the connection between two nodes
+	ModifyConnection(ctx context.Context, resName, nodeAName, nodeBName string, props GenericPropsModify) error
+	// GetSnapshots lists all snapshots of a resource
+	GetSnapshots(ctx context.Context, resName string, opts ...*ListOpts) ([]Snapshot, error)
+	// GetSnapshotView gets information about all snapshots
+	GetSnapshotView(ctx context.Context, opts ...*ListOpts) ([]Snapshot, error)
+	// GetSnapshot returns information about a specific Snapshot by its name
+	GetSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) (Snapshot, error)
+	// CreateSnapshot creates a snapshot of a resource
+	CreateSnapshot(ctx context.Context, snapshot Snapshot) error
+	// DeleteSnapshot deletes a snapshot by its name
+	DeleteSnapshot(ctx context.Context, resName, snapName string) error
+	// RestoreSnapshot restores a snapshot on a resource
+	RestoreSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error
+	// RestoreVolumeDefinitionSnapshot restores a volume-definition-snapshot on a resource
+	RestoreVolumeDefinitionSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error
+	// RollbackSnapshot rolls back a snapshot from a specific resource
+	RollbackSnapshot(ctx context.Context, resName, snapName string) error
+	// EnableSnapshotShipping enables snapshot shipping for a resource
+	EnableSnapshotShipping(ctx context.Context, resName string, ship SnapshotShipping) error
+	// ModifyDRBDProxy is used to modify drbd-proxy properties
+	ModifyDRBDProxy(ctx context.Context, resName string, props DrbdProxyModify) error
+	// EnableDRBDProxy is used to enable drbd-proxy with the rest-api call from the function enableDisableDRBDProxy
+	EnableDRBDProxy(ctx context.Context, resName, nodeAName, nodeBName string) error
+	// DisableDRBDProxy is used to disable drbd-proxy with the rest-api call from the function enableDisableDRBDProxy
+	DisableDRBDProxy(ctx context.Context, resName, nodeAName, nodeBName string) error
+	// QueryMaxVolumeSize finds the maximum size of a volume for a given filter
+	QueryMaxVolumeSize(ctx context.Context, filter AutoSelectFilter) (MaxVolumeSizes, error)
+	// GetSnapshotShippings gets a view of all snapshot shippings
+	GetSnapshotShippings(ctx context.Context, opts ...*ListOpts) ([]SnapshotShippingStatus, error)
+}
+
 // volumeLayerIn is a struct for volume-layers
 type volumeLayerIn struct {
 	Type LayerType       `json:"type,omitempty"`

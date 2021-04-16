@@ -16,6 +16,22 @@ type StoragePoolDefinitionModify struct {
 
 // custom code
 
+// StoragePoolDefinitionProvider acts as an abstraction for a
+// StoragePoolDefinitionService. It can be swapped out for another
+// StoragePoolDefinitionService implementation, for example for testing.
+type StoragePoolDefinitionProvider interface {
+	// GetAll gets information for all existing storage pool definitions.
+	GetAll(ctx context.Context, opts ...*ListOpts) ([]StoragePoolDefinition, error)
+	// Get gets information for a particular storage pool definition.
+	Get(ctx context.Context, spdName string, opts ...*ListOpts) (StoragePoolDefinition, error)
+	// Create creates a new storage pool definition
+	Create(ctx context.Context, spd StoragePoolDefinition) error
+	// Modify modifies the given storage pool definition and sets/deletes the given properties.
+	Modify(ctx context.Context, spdName string, props StoragePoolDefinitionModify) error
+	// Delete deletes the given storage pool definition.
+	Delete(ctx context.Context, spdName string) error
+}
+
 // StoragePoolDefinitionService is the service that deals with storage pool definition related tasks.
 type StoragePoolDefinitionService struct {
 	client *Client

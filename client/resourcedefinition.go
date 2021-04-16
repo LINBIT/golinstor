@@ -128,6 +128,32 @@ type DrbdVolumeDefinition struct {
 
 // custom code
 
+// ResourceDefinitionProvider acts as an abstraction for a
+// ResourceDefinitionService. It can be swapped out for another
+// ResourceDefinitionService implementation, for example for testing.
+type ResourceDefinitionProvider interface {
+	// GetAll lists all resource-definitions
+	GetAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error)
+	// Get return information about a resource-defintion
+	Get(ctx context.Context, resDefName string, opts ...*ListOpts) (ResourceDefinition, error)
+	// Create adds a new resource-definition
+	Create(ctx context.Context, resDef ResourceDefinitionCreate) error
+	// Modify allows to modify a resource-definition
+	Modify(ctx context.Context, resDefName string, props GenericPropsModify) error
+	// Delete completely deletes a resource-definition
+	Delete(ctx context.Context, resDefName string) error
+	// GetVolumeDefinitions returns all volume-definitions of a resource-definition
+	GetVolumeDefinitions(ctx context.Context, resDefName string, opts ...*ListOpts) ([]VolumeDefinition, error)
+	// GetVolumeDefinition shows the properties of a specific volume-definition
+	GetVolumeDefinition(ctx context.Context, resDefName string, volNr int, opts ...*ListOpts) (VolumeDefinition, error)
+	// CreateVolumeDefinition adds a volume-definition to a resource-definition. Only the size is required.
+	CreateVolumeDefinition(ctx context.Context, resDefName string, volDef VolumeDefinitionCreate) error
+	// ModifyVolumeDefinition give the abilty to modify a specific volume-definition
+	ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props VolumeDefinitionModify) error
+	// DeleteVolumeDefinition deletes a specific volume-definition
+	DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error
+}
+
 // resourceDefinitionLayerIn is a struct for resource-definitions
 type resourceDefinitionLayerIn struct {
 	Type LayerType       `json:"type,omitempty"`

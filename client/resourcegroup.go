@@ -75,6 +75,33 @@ type VolumeGroupModify struct {
 
 // custom code
 
+// ResourceGroupProvider acts as an abstraction for a
+// ResourceGroupService. It can be swapped out for another
+// ResourceGroupService implementation, for example for testing.
+type ResourceGroupProvider interface {
+	// GetAll lists all resource-groups
+	GetAll(ctx context.Context, opts ...*ListOpts) ([]ResourceGroup, error)
+	// Get return information about a resource-defintion
+	Get(ctx context.Context, resGrpName string, opts ...*ListOpts) (ResourceGroup, error)
+	// Create adds a new resource-group
+	Create(ctx context.Context, resGrp ResourceGroup) error
+	// Modify allows to modify a resource-group
+	Modify(ctx context.Context, resGrpName string, props ResourceGroupModify) error
+	// Delete deletes a resource-group
+	Delete(ctx context.Context, resGrpName string) error
+	// Spawn creates a new resource-definition and auto-deploys if configured to do so
+	Spawn(ctx context.Context, resGrpName string, resGrpSpwn ResourceGroupSpawn) error
+	// GetVolumeGroups lists all volume-groups for a resource-group
+	GetVolumeGroups(ctx context.Context, resGrpName string, opts ...*ListOpts) ([]VolumeGroup, error)
+	// GetVolumeGroup lists a volume-group for a resource-group
+	GetVolumeGroup(ctx context.Context, resGrpName string, volNr int, opts ...*ListOpts) (VolumeGroup, error)
+	// Create adds a new volume-group to a resource-group
+	CreateVolumeGroup(ctx context.Context, resGrpName string, volGrp VolumeGroup) error
+	// Modify allows to modify a volume-group of a resource-group
+	ModifyVolumeGroup(ctx context.Context, resGrpName string, volNr int, props VolumeGroupModify) error
+	DeleteVolumeGroup(ctx context.Context, resGrpName string, volNr int) error
+}
+
 // ResourceGroupService is the service that deals with resource group related tasks.
 type ResourceGroupService struct {
 	client *Client

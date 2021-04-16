@@ -15,6 +15,13 @@ type EventMayPromoteChange struct {
 
 // custom code
 
+// EventProvider acts as an abstraction for an EventService. It can be swapped
+// out for another EventService implementation, for example for testing.
+type EventProvider interface {
+	// DRBDPromotion is used to subscribe to LINSTOR DRBD Promotion events
+	DRBDPromotion(ctx context.Context, lastEventId string) (*DRBDMayPromoteStream, error)
+}
+
 const mayPromoteChange = "may-promote-change"
 
 // EventService is the service that deals with LINSTOR server side event streams.

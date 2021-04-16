@@ -76,6 +76,37 @@ type ErrorReportDelete struct {
 
 // custom code
 
+// ControllerProvider acts as an abstraction for a ControllerService. It can be
+// swapped out for another ControllerService implementation, for example for
+// testing.
+type ControllerProvider interface {
+	// GetVersion queries version information for the controller.
+	GetVersion(ctx context.Context, opts ...*ListOpts) (ControllerVersion, error)
+	// GetConfig queries the configuration of a controller
+	GetConfig(ctx context.Context, opts ...*ListOpts) (ControllerConfig, error)
+	// Modify modifies the controller node and sets/deletes the given properties.
+	Modify(ctx context.Context, props GenericPropsModify) error
+	// GetProps gets all properties of a controller
+	GetProps(ctx context.Context, opts ...*ListOpts) (ControllerProps, error)
+	// DeleteProp deletes the given property/key from the controller object.
+	DeleteProp(ctx context.Context, prop string) error
+	// GetErrorReports returns all error reports. The Text field is not populated,
+	// use GetErrorReport to get the text of an error report.
+	GetErrorReports(ctx context.Context, opts ...*ListOpts) ([]ErrorReport, error)
+	// DeleteErrorReports deletes error reports as specified by the ErrorReportDelete struct.
+	DeleteErrorReports(ctx context.Context, del ErrorReportDelete) error
+	// GetErrorReportsSince returns all error reports created after a certain point in time.
+	GetErrorReportsSince(ctx context.Context, since time.Time, opts ...*ListOpts) ([]ErrorReport, error)
+	// GetErrorReport returns a specific error report, including its text.
+	GetErrorReport(ctx context.Context, id string, opts ...*ListOpts) (ErrorReport, error)
+	// CreateSOSReport creates an SOS report in the log directory of the controller
+	CreateSOSReport(ctx context.Context, opts ...*ListOpts) error
+	// DownloadSOSReport request sos report to download
+	DownloadSOSReport(ctx context.Context, opts ...*ListOpts) error
+	GetSatelliteConfig(ctx context.Context, node string) (SatelliteConfig, error)
+	ModifySatelliteConfig(ctx context.Context, node string, cfg SatelliteConfig) error
+}
+
 // ControllerService is the service that deals with the LINSTOR controller.
 type ControllerService struct {
 	client *Client

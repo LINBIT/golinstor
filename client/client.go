@@ -45,14 +45,14 @@ type Client struct {
 	lim        *rate.Limiter
 	log        interface{} // must be either Logger or LeveledLogger
 
-	Nodes                  *NodeService
-	ResourceDefinitions    *ResourceDefinitionService
-	Resources              *ResourceService
-	ResourceGroups         *ResourceGroupService
-	StoragePoolDefinitions *StoragePoolDefinitionService
-	Encryption             *EncryptionService
-	Controller             *ControllerService
-	Events                 *EventService
+	Nodes                  NodeProvider
+	ResourceDefinitions    ResourceDefinitionProvider
+	Resources              ResourceProvider
+	ResourceGroups         ResourceGroupProvider
+	StoragePoolDefinitions StoragePoolDefinitionProvider
+	Encryption             EncryptionProvider
+	Controller             ControllerProvider
+	Events                 EventProvider
 }
 
 // Logger represents a standard logger interface

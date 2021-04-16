@@ -97,6 +97,51 @@ const (
 
 // custom code
 
+// NodeProvider acts as an abstraction for a NodeService. It can be swapped out
+// for another NodeService implementation, for example for testing.
+type NodeProvider interface {
+	// GetAll gets information for all registered nodes.
+	GetAll(ctx context.Context, opts ...*ListOpts) ([]Node, error)
+	// Get gets information for a particular node.
+	Get(ctx context.Context, nodeName string, opts ...*ListOpts) (Node, error)
+	// Create creates a new node object.
+	Create(ctx context.Context, node Node) error
+	// Modify modifies the given node and sets/deletes the given properties.
+	Modify(ctx context.Context, nodeName string, props NodeModify) error
+	// Delete deletes the given node.
+	Delete(ctx context.Context, nodeName string) error
+	// Lost marks the given node as lost to delete an unrecoverable node.
+	Lost(ctx context.Context, nodeName string) error
+	// Reconnect reconnects a node to the controller.
+	Reconnect(ctx context.Context, nodeName string) error
+	// GetNetInterfaces gets information about all network interfaces of a given node.
+	GetNetInterfaces(ctx context.Context, nodeName string, opts ...*ListOpts) ([]NetInterface, error)
+	// GetNetInterface gets information about a particular network interface on a given node.
+	GetNetInterface(ctx context.Context, nodeName, nifName string, opts ...*ListOpts) (NetInterface, error)
+	// CreateNetInterface creates the given network interface on a given node.
+	CreateNetInterface(ctx context.Context, nodeName string, nif NetInterface) error
+	// ModifyNetInterface modifies the given network interface on a given node.
+	ModifyNetInterface(ctx context.Context, nodeName, nifName string, nif NetInterface) error
+	// DeleteNetinterface deletes the given network interface on a given node.
+	DeleteNetinterface(ctx context.Context, nodeName, nifName string) error
+	// GetStoragePoolView gets information about all storage pools in the cluster.
+	GetStoragePoolView(ctx context.Context, opts ...*ListOpts) ([]StoragePool, error)
+	// GetStoragePools gets information about all storage pools on a given node.
+	GetStoragePools(ctx context.Context, nodeName string, opts ...*ListOpts) ([]StoragePool, error)
+	// GetStoragePool gets information about a specific storage pool on a given node.
+	GetStoragePool(ctx context.Context, nodeName, spName string, opts ...*ListOpts) (StoragePool, error)
+	// CreateStoragePool creates a storage pool on a given node.
+	CreateStoragePool(ctx context.Context, nodeName string, sp StoragePool) error
+	// ModifyStoragePool modifies a storage pool on a given node.
+	ModifyStoragePool(ctx context.Context, nodeName, spName string, sp StoragePool) error
+	// DeleteStoragePool deletes a storage pool on a given node.
+	DeleteStoragePool(ctx context.Context, nodeName, spName string) error
+	// CreateDevicePool creates an LVM, LVM-thin or ZFS pool, optional VDO under it on a given node.
+	CreateDevicePool(ctx context.Context, nodeName string, psc PhysicalStorageCreate) error
+	// GetPhysicalStorage gets a grouped list of physical storage that can be turned into a LINSTOR storage-pool
+	GetPhysicalStorage(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorage, error)
+}
+
 // NodeService is the service that deals with node related tasks.
 type NodeService struct {
 	client *Client
