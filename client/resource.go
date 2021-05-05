@@ -416,7 +416,7 @@ type ResourceProvider interface {
 	GetVolumeDefinitionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
 	// GetVolumePropsInfos gets meta information about the properties that
 	// can be set on a volume.
-	GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts)
+	GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts) error
 	// GetConnectionPropsInfos gets meta information about the properties
 	// that can be set on a connection.
 	GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
