@@ -233,6 +233,7 @@ type AutoPlaceRequest struct {
 // AutoSelectFilter is a struct used to have information about the auto-select function
 type AutoSelectFilter struct {
 	PlaceCount           int32    `json:"place_count,omitempty"`
+	AdditionalPlaceCount int32    `json:"additional_place_count,omitempty"`
 	NodeNameList         []string `json:"node_name_list,omitempty"`
 	StoragePool          string   `json:"storage_pool,omitempty"`
 	StoragePoolList      []string `json:"storage_pool_list,omitempty"`
@@ -243,6 +244,7 @@ type AutoSelectFilter struct {
 	LayerStack           []string `json:"layer_stack,omitempty"`
 	ProviderList         []string `json:"provider_list,omitempty"`
 	DisklessOnRemaining  bool     `json:"diskless_on_remaining,omitempty"`
+	DisklessType         string   `json:"diskless_type,omitempty"`
 }
 
 // ResourceConnection is a struct which holds information about a connection between to nodes
@@ -406,6 +408,18 @@ type ResourceProvider interface {
 	QueryMaxVolumeSize(ctx context.Context, filter AutoSelectFilter) (MaxVolumeSizes, error)
 	// GetSnapshotShippings gets a view of all snapshot shippings
 	GetSnapshotShippings(ctx context.Context, opts ...*ListOpts) ([]SnapshotShippingStatus, error)
+	// GetPropsInfos gets meta information about the properties that can be
+	// set on a resource.
+	GetPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
+	// GetVolumeDefinitionPropsInfos gets meta information about the
+	// properties that can be set on a volume definition.
+	GetVolumeDefinitionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
+	// GetVolumePropsInfos gets meta information about the properties that
+	// can be set on a volume.
+	GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts)
+	// GetConnectionPropsInfos gets meta information about the properties
+	// that can be set on a connection.
+	GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
 }
 
 // volumeLayerIn is a struct for volume-layers
@@ -701,4 +715,36 @@ func (n *ResourceService) GetSnapshotShippings(ctx context.Context, opts ...*Lis
 	var shippings []SnapshotShippingStatus
 	_, err := n.client.doGET(ctx, "/v1/view/snapshot-shippings", &shippings, opts...)
 	return shippings, err
+}
+
+// GetPropsInfos gets meta information about the properties that can be set on
+// a resource.
+func (n *ResourceService) GetPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/properties/info", &infos, opts...)
+	return err
+}
+
+// GetVolumeDefinitionPropsInfos gets meta information about the properties
+// that can be set on a volume definition.
+func (n *ResourceService) GetVolumeDefinitionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/volume-definitions/properties/info", &infos, opts...)
+	return err
+}
+
+// GetVolumePropsInfos gets meta information about the properties that can be
+// set on a volume.
+func (n *ResourceService) GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes/properties/info", &infos, opts...)
+	return err
+}
+
+// GetConnectionPropsInfos gets meta information about the properties that can
+// be set on a connection.
+func (n *ResourceService) GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resource-connections/properties/info", &infos, opts...)
+	return err
 }

@@ -152,6 +152,12 @@ type ResourceDefinitionProvider interface {
 	ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props VolumeDefinitionModify) error
 	// DeleteVolumeDefinition deletes a specific volume-definition
 	DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error
+	// GetPropsInfos gets meta information about the properties that can be
+	// set on a resource definition.
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) error
+	// GetDRBDProxyPropsInfos gets meta information about the properties
+	// that can be set on a resource definition for drbd proxy.
+	GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) error
 }
 
 // resourceDefinitionLayerIn is a struct for resource-definitions
@@ -302,5 +308,21 @@ func (n *ResourceDefinitionService) ModifyVolumeDefinition(ctx context.Context, 
 // DeleteVolumeDefinition deletes a specific volume-definition
 func (n *ResourceDefinitionService) DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error {
 	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/volume-definitions/"+strconv.Itoa(volNr), nil)
+	return err
+}
+
+// GetPropsInfos gets meta information about the properties that can be set on
+// a resource definition.
+func (n *ResourceDefinitionService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/properties/info", &infos, opts...)
+	return err
+}
+
+// GetDRBDProxyPropsInfos gets meta information about the properties that can
+// be set on a resource definition for drbd proxy.
+func (n *ResourceDefinitionService) GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/drbd-proxy/properties/info", &infos, opts...)
 	return err
 }

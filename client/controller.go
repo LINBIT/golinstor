@@ -74,6 +74,14 @@ type ErrorReportDelete struct {
 	Ids []string `json:"ids,omitempty"`
 }
 
+type PropsInfo struct {
+	Info     string `json:"info,omitempty"`
+	PropType string `json:"prop_type,omitempty"`
+	Value    string `json:"value,omitempty"`
+	Dflt     string `json:"dflt,omitempty"`
+	Unit     string `json:"unit,omitempty"`
+}
+
 // custom code
 
 // ControllerProvider acts as an abstraction for a ControllerService. It can be
@@ -105,6 +113,13 @@ type ControllerProvider interface {
 	DownloadSOSReport(ctx context.Context, opts ...*ListOpts) error
 	GetSatelliteConfig(ctx context.Context, node string) (SatelliteConfig, error)
 	ModifySatelliteConfig(ctx context.Context, node string, cfg SatelliteConfig) error
+	// GetPropsInfos gets meta information about the properties that can be
+	// set on a controller.
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
+	// GetPropsInfosAll gets meta information about all properties that can
+	// be set on a controller and all entities it contains (nodes, resource
+	// definitions, ...).
+	GetPropsInfosAll(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
 }
 
 // ControllerService is the service that deals with the LINSTOR controller.
@@ -145,6 +160,22 @@ func (s *ControllerService) GetProps(ctx context.Context, opts ...*ListOpts) (Co
 func (s *ControllerService) DeleteProp(ctx context.Context, prop string) error {
 	_, err := s.client.doDELETE(ctx, "/v1/controller/properties/"+prop, nil)
 	return err
+}
+
+// GetPropsInfos gets meta information about the properties that can be set on
+// a controller.
+func (s *ControllerService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error) {
+	var infos []PropsInfo
+	_, err := s.client.doGET(ctx, "/v1/controller/properties/info", &infos, opts...)
+	return infos, err
+}
+
+// GetPropsInfosAll gets meta information about all properties that can be set
+// on a controller and all entities it contains (nodes, resource definitions, ...).
+func (s *ControllerService) GetPropsInfosAll(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error) {
+	var infos []PropsInfo
+	_, err := s.client.doGET(ctx, "/v1/controller/properties/info/all", &infos, opts...)
+	return infos, err
 }
 
 // GetErrorReports returns all error reports. The Text field is not populated,

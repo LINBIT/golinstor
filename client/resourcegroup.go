@@ -100,6 +100,12 @@ type ResourceGroupProvider interface {
 	// Modify allows to modify a volume-group of a resource-group
 	ModifyVolumeGroup(ctx context.Context, resGrpName string, volNr int, props VolumeGroupModify) error
 	DeleteVolumeGroup(ctx context.Context, resGrpName string, volNr int) error
+	// GetPropsInfos gets meta information about the properties that can be
+	// set on a resource group.
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) error
+	// GetVolumeGroupPropsInfos gets meta information about the properties
+	// that can be set on a resource group.
+	GetVolumeGroupPropsInfos(ctx context.Context, resGrpName string, opts ...*ListOpts) error
 }
 
 // ResourceGroupService is the service that deals with resource group related tasks.
@@ -173,5 +179,21 @@ func (n *ResourceGroupService) ModifyVolumeGroup(ctx context.Context, resGrpName
 
 func (n *ResourceGroupService) DeleteVolumeGroup(ctx context.Context, resGrpName string, volNr int) error {
 	_, err := n.client.doDELETE(ctx, "/v1/resource-groups/"+resGrpName+"/volume-groups/"+strconv.Itoa(volNr), nil)
+	return err
+}
+
+// GetPropsInfos gets meta information about the properties that can be set on
+// a resource group.
+func (n *ResourceGroupService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-groups/properties/info", &infos, opts...)
+	return err
+}
+
+// GetVolumeGroupPropsInfos gets meta information about the properties that can
+// be set on a resource group.
+func (n *ResourceGroupService) GetVolumeGroupPropsInfos(ctx context.Context, resGrpName string, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/resource-groups/"+resGrpName+"/volume-groups/properties/info", &infos, opts...)
 	return err
 }

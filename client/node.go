@@ -140,6 +140,13 @@ type NodeProvider interface {
 	CreateDevicePool(ctx context.Context, nodeName string, psc PhysicalStorageCreate) error
 	// GetPhysicalStorage gets a grouped list of physical storage that can be turned into a LINSTOR storage-pool
 	GetPhysicalStorage(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorage, error)
+	// GetStoragePoolPropsInfos gets meta information about the properties
+	// that can be set on a storage pool on a particular node.
+	GetStoragePoolPropsInfos(ctx context.Context, nodeName string, opts ...*ListOpts) error
+	// GetPropsInfos gets meta information about the properties that can be
+	// set on a node.
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) error
+	Restore(ctx context.Context, nodeName string) error
 }
 
 // NodeService is the service that deals with node related tasks.
@@ -259,5 +266,26 @@ func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName st
 // DeleteStoragePool deletes a storage pool on a given node.
 func (n *NodeService) DeleteStoragePool(ctx context.Context, nodeName, spName string) error {
 	_, err := n.client.doDELETE(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, nil)
+	return err
+}
+
+// GetStoragePoolPropsInfos gets meta information about the properties that can
+// be set on a storage pool on a particular node.
+func (n *NodeService) GetStoragePoolPropsInfos(ctx context.Context, nodeName string, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools/properties/info", &infos, opts...)
+	return err
+}
+
+// GetPropsInfos gets meta information about the properties that can be set on
+// a node.
+func (n *NodeService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := n.client.doGET(ctx, "/v1/nodes/properties/info", &infos, opts...)
+	return err
+}
+
+func (n *NodeService) Restore(ctx context.Context, nodeName string) error {
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/restore", nil)
 	return err
 }

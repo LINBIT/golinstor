@@ -30,6 +30,9 @@ type StoragePoolDefinitionProvider interface {
 	Modify(ctx context.Context, spdName string, props StoragePoolDefinitionModify) error
 	// Delete deletes the given storage pool definition.
 	Delete(ctx context.Context, spdName string) error
+	// GetPropsInfos gets meta information about the properties that can be
+	// set on a storage pool definition.
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) error
 }
 
 // StoragePoolDefinitionService is the service that deals with storage pool definition related tasks.
@@ -66,5 +69,13 @@ func (s *StoragePoolDefinitionService) Modify(ctx context.Context, spdName strin
 // Delete deletes the given storage pool definition.
 func (s *StoragePoolDefinitionService) Delete(ctx context.Context, spdName string) error {
 	_, err := s.client.doDELETE(ctx, "/v1/storage-pool-definitions/"+spdName, nil)
+	return err
+}
+
+// GetPropsInfos gets meta information about the properties that can be set on
+// a storage pool definition.
+func (s *StoragePoolDefinitionService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) error {
+	var infos []PropsInfo
+	_, err := s.client.doGET(ctx, "/v1/storage-pool-definitions/properties/info", &infos, opts...)
 	return err
 }
