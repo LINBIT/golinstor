@@ -53,6 +53,7 @@ type Client struct {
 	Encryption             EncryptionProvider
 	Controller             ControllerProvider
 	Events                 EventProvider
+	Vendor                 VendorProvider
 }
 
 // Logger represents a standard logger interface
@@ -297,6 +298,7 @@ func NewClient(options ...Option) (*Client, error) {
 	c.StoragePoolDefinitions = &StoragePoolDefinitionService{client: c}
 	c.Controller = &ControllerService{client: c}
 	c.Events = &EventService{client: c}
+	c.Vendor = &VendorService{client: c}
 
 	for _, opt := range options {
 		if err := opt(c); err != nil {

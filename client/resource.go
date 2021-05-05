@@ -51,6 +51,9 @@ type ResourceWithVolumes struct {
 	// milliseconds since unix epoch in UTC
 	CreateTimestamp int64    `json:"create_timestamp,omitempty"`
 	Volumes         []Volume `json:"volumes,omitempty"`
+	// shared space name of the data storage pool of the first volume of
+	// the resource or empty if data storage pool is not shared
+	SharedName string `json:"shared_name,omitempty"`
 }
 
 type ResourceDefinitionModify struct {
@@ -232,19 +235,20 @@ type AutoPlaceRequest struct {
 
 // AutoSelectFilter is a struct used to have information about the auto-select function
 type AutoSelectFilter struct {
-	PlaceCount           int32    `json:"place_count,omitempty"`
-	AdditionalPlaceCount int32    `json:"additional_place_count,omitempty"`
-	NodeNameList         []string `json:"node_name_list,omitempty"`
-	StoragePool          string   `json:"storage_pool,omitempty"`
-	StoragePoolList      []string `json:"storage_pool_list,omitempty"`
-	NotPlaceWithRsc      []string `json:"not_place_with_rsc,omitempty"`
-	NotPlaceWithRscRegex string   `json:"not_place_with_rsc_regex,omitempty"`
-	ReplicasOnSame       []string `json:"replicas_on_same,omitempty"`
-	ReplicasOnDifferent  []string `json:"replicas_on_different,omitempty"`
-	LayerStack           []string `json:"layer_stack,omitempty"`
-	ProviderList         []string `json:"provider_list,omitempty"`
-	DisklessOnRemaining  bool     `json:"diskless_on_remaining,omitempty"`
-	DisklessType         string   `json:"diskless_type,omitempty"`
+	PlaceCount              int32    `json:"place_count,omitempty"`
+	AdditionalPlaceCount    int32    `json:"additional_place_count,omitempty"`
+	NodeNameList            []string `json:"node_name_list,omitempty"`
+	StoragePool             string   `json:"storage_pool,omitempty"`
+	StoragePoolList         []string `json:"storage_pool_list,omitempty"`
+	StoragePoolDisklessList []string `json:"storage_pool_diskless_list,omitempty"`
+	NotPlaceWithRsc         []string `json:"not_place_with_rsc,omitempty"`
+	NotPlaceWithRscRegex    string   `json:"not_place_with_rsc_regex,omitempty"`
+	ReplicasOnSame          []string `json:"replicas_on_same,omitempty"`
+	ReplicasOnDifferent     []string `json:"replicas_on_different,omitempty"`
+	LayerStack              []string `json:"layer_stack,omitempty"`
+	ProviderList            []string `json:"provider_list,omitempty"`
+	DisklessOnRemaining     bool     `json:"diskless_on_remaining,omitempty"`
+	DisklessType            string   `json:"diskless_type,omitempty"`
 }
 
 // ResourceConnection is a struct which holds information about a connection between to nodes
@@ -344,6 +348,12 @@ type MaxVolumeSizes struct {
 	DefaultMaxOversubscriptionRatio float64     `json:"default_max_oversubscription_ratio,omitempty"`
 }
 
+type ResourceMakeAvailable struct {
+	LayerList []LayerType `json:"layer_list,omitempty"`
+	// if true resource will be created as diskful even if diskless would be possible
+	Diskful bool `json:"diskful,omitempty"`
+}
+
 // custom code
 
 // ResourceProvider acts as an abstraction for an ResourceService. It can be
@@ -420,6 +430,14 @@ type ResourceProvider interface {
 	// GetConnectionPropsInfos gets meta information about the properties
 	// that can be set on a connection.
 	GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
+	// MakeAvailable adds a resource on a node if not already deployed.
+	// To use a specific storage pool add the StorPoolName property and use
+	// the storage pool name as value. If the StorPoolName property is not
+	// set, a storage pool will be chosen automatically using the
+	// auto-placer.
+	// To create a diskless resource you have to set the "DISKLESS" flag in
+	// the flags list.
+	MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable ResourceMakeAvailable) error
 }
 
 // volumeLayerIn is a struct for volume-layers
@@ -746,5 +764,18 @@ func (n *ResourceService) GetVolumePropsInfos(ctx context.Context, resName, node
 func (n *ResourceService) GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resource-connections/properties/info", &infos, opts...)
+	return err
+}
+
+// MakeAvailable adds a resource on a node if not already deployed.
+// To use a specific storage pool add the StorPoolName property and use the
+// storage pool name as value. If the StorPoolName property is not set, a
+// storage pool will be chosen automatically using the auto-placer.
+// To create a diskless resource you have to set the "DISKLESS" flag in the
+// flags list.
+func (s *ResourceService) MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable ResourceMakeAvailable) error {
+	u := fmt.Sprintf("/v1/resource-definitions/%s/resources/%s/make-available",
+		resName, nodeName)
+	_, err := s.client.doPOST(ctx, u, nil)
 	return err
 }

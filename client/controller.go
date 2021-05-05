@@ -82,6 +82,12 @@ type PropsInfo struct {
 	Unit     string `json:"unit,omitempty"`
 }
 
+// ExternalFile is an external file which can be configured to be deployed by Linstor
+type ExternalFile struct {
+	Path    string `json:"path,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
 // custom code
 
 // ControllerProvider acts as an abstraction for a ControllerService. It can be
@@ -120,6 +126,17 @@ type ControllerProvider interface {
 	// be set on a controller and all entities it contains (nodes, resource
 	// definitions, ...).
 	GetPropsInfosAll(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
+	// GetExternalFile get a list of previously registered external files.
+	// Content is intentionally skipped, use GetExternalFile to get it.
+	GetExternalFiles(ctx context.Context) ([]ExternalFile, error)
+	// GetExternalFile gets the requested external file including its content
+	GetExternalFile(ctx context.Context, name string) (ExternalFile, error)
+	// ModifyExternalFile registers or modifies a previously registered
+	// external file
+	ModifyExternalFile(ctx context.Context, name string, file ExternalFile) error
+	// DeleteExternalFile deletes the given external file. This effectively
+	// also deletes the file on all satellites
+	DeleteExternalFile(ctx context.Context, name string) error
 }
 
 // ControllerService is the service that deals with the LINSTOR controller.
@@ -233,5 +250,34 @@ func (s *ControllerService) GetSatelliteConfig(ctx context.Context, node string)
 
 func (s *ControllerService) ModifySatelliteConfig(ctx context.Context, node string, cfg SatelliteConfig) error {
 	_, err := s.client.doPUT(ctx, "/v1/nodes/"+node+"/config", &cfg)
+	return err
+}
+
+// GetExternalFile get a list of previously registered external files.  Content
+// is intentionally skipped, use GetExternalFile to get it.
+func (s *ControllerService) GetExternalFiles(ctx context.Context) ([]ExternalFile, error) {
+	var files []ExternalFile
+	_, err := s.client.doGET(ctx, "/v1/files", &files)
+	return files, err
+}
+
+// GetExternalFile gets the requested external file including its content
+func (s *ControllerService) GetExternalFile(ctx context.Context, name string) (ExternalFile, error) {
+	var file ExternalFile
+	_, err := s.client.doGET(ctx, "/v1/files/"+name, &file)
+	return file, err
+}
+
+// ModifyExternalFile registers or modifies a previously registered external
+// file
+func (s *ControllerService) ModifyExternalFile(ctx context.Context, name string, file ExternalFile) error {
+	_, err := s.client.doPUT(ctx, "/v1/files/"+name, file)
+	return err
+}
+
+// DeleteExternalFile deletes the given external file. This effectively also
+// deletes the file on all satellites
+func (s *ControllerService) DeleteExternalFile(ctx context.Context, name string) error {
+	_, err := s.client.doDELETE(ctx, "/v1/files/"+name, nil)
 	return err
 }

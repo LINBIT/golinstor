@@ -77,6 +77,10 @@ type StoragePool struct {
 	Reports []ApiCallRc `json:"reports,omitempty"`
 	// true if the storage pool supports snapshots. false otherwise
 	SupportsSnapshots bool `json:"supports_snapshots,omitempty"`
+	// name of the shared space or null if none given
+	SharedSpace string `json:"shared_space,omitempty"`
+	// true if a shared storage pool uses linstor-external locking, like cLVM
+	ExternalLocking bool `json:"external_locking,omitempty"`
 }
 
 // ProviderKind is a type that represents various types of storage.

@@ -26,6 +26,10 @@ type PhysicalStorageStoragePoolCreate struct {
 	Name string `json:"name,omitempty"`
 	// A string to string property map.
 	Props map[string]string `json:"props,omitempty"`
+	// Name of the shared space
+	SharedSpace string `json:"shared_space,omitempty"`
+	// true if a shared storage pool uses linstor-external locking, like cLVM
+	ExternalLocking bool `json:"external_locking,omitempty"`
 }
 
 // PhysicalStorageCreate is a configuration struct used to represent pysical storage on a given node.
