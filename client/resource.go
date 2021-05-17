@@ -433,6 +433,10 @@ type ResourceProvider interface {
 	// GetConnectionPropsInfos gets meta information about the properties
 	// that can be set on a connection.
 	GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
+	// Activate starts an inactive resource on a given node.
+	Activate(ctx context.Context, resName string, nodeName string) error
+	// Deactivate stops an active resource on given node.
+	Deactivate(ctx context.Context, resName string, nodeName string) error
 	// MakeAvailable adds a resource on a node if not already deployed.
 	// To use a specific storage pool add the StorPoolName property and use
 	// the storage pool name as value. If the StorPoolName property is not
