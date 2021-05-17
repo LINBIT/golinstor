@@ -566,6 +566,16 @@ func (n *ResourceService) Delete(ctx context.Context, resName, nodeName string) 
 	return err
 }
 
+func (n *ResourceService) Activate(ctx context.Context, resName, nodeName string) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/activate", nil)
+	return err
+}
+
+func (n *ResourceService) Deactivate(ctx context.Context, resName, nodeName string) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/deactivate", nil)
+	return err
+}
+
 // GetVolumes lists als volumes of a resource
 func (n *ResourceService) GetVolumes(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]Volume, error) {
 	var vols []Volume
