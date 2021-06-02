@@ -3,12 +3,12 @@ package devicelayerkind
 type DeviceLayerKind string
 
 const (
-	Drbd       DeviceLayerKind = "drbd"
-	Luks       DeviceLayerKind = "luks"
-	Storage    DeviceLayerKind = "storage"
-	Nvme       DeviceLayerKind = "nvme"
-	Openflex   DeviceLayerKind = "openflex"
-	Exos       DeviceLayerKind = "exos"
-	Writecache DeviceLayerKind = "writecache"
-	Cache      DeviceLayerKind = "cache"
+	Drbd       DeviceLayerKind = "DRBD"
+	Luks       DeviceLayerKind = "LUKS"
+	Storage    DeviceLayerKind = "STORAGE"
+	Nvme       DeviceLayerKind = "NVME"
+	Openflex   DeviceLayerKind = "OPENFLEX"
+	Exos       DeviceLayerKind = "EXOS"
+	Writecache DeviceLayerKind = "WRITECACHE"
+	Cache      DeviceLayerKind = "CACHE"
 )

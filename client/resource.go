@@ -609,6 +609,7 @@ func (n *ResourceService) Diskless(ctx context.Context, resName, nodeName, diskl
 	if disklessPoolName != "" {
 		u += "/" + disklessPoolName
 	}
+
 	_, err := n.client.doPUT(ctx, u, nil)
 	return err
 }
