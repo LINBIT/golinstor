@@ -794,9 +794,9 @@ func (n *ResourceService) GetConnectionPropsInfos(ctx context.Context, resName s
 // storage pool will be chosen automatically using the auto-placer.
 // To create a diskless resource you have to set the "DISKLESS" flag in the
 // flags list.
-func (s *ResourceService) MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable ResourceMakeAvailable) error {
+func (n *ResourceService) MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable ResourceMakeAvailable) error {
 	u := fmt.Sprintf("/v1/resource-definitions/%s/resources/%s/make-available",
 		resName, nodeName)
-	_, err := s.client.doPOST(ctx, u, nil)
+	_, err := n.client.doPOST(ctx, u, makeAvailable)
 	return err
 }
