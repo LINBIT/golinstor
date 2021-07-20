@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/LINBIT/golinstor/devicelayerkind"
@@ -146,6 +147,9 @@ type ResourceDefinitionProvider interface {
 	// GetDRBDProxyPropsInfos gets meta information about the properties
 	// that can be set on a resource definition for drbd proxy.
 	GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) error
+	// AttachExternalFile adds an external file to the resource definition. This
+	// means that the file will be deployed to every node the resource is deployed on.
+	AttachExternalFile(ctx context.Context, resDefName string, filePath string) error
 }
 
 // resourceDefinitionLayerIn is a struct for resource-definitions
@@ -312,5 +316,12 @@ func (n *ResourceDefinitionService) GetPropsInfos(ctx context.Context, opts ...*
 func (n *ResourceDefinitionService) GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) error {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/drbd-proxy/properties/info", &infos, opts...)
+	return err
+}
+
+// AttachExternalFile adds an external file to the resource definition. This
+// means that the file will be deployed to every node the resource is deployed on.
+func (n *ResourceDefinitionService) AttachExternalFile(ctx context.Context, resDefName string, filePath string) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/files/"+url.QueryEscape(filePath), nil)
 	return err
 }

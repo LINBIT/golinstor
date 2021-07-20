@@ -276,20 +276,18 @@ func (s *ControllerService) GetExternalFiles(ctx context.Context) ([]ExternalFil
 // GetExternalFile gets the requested external file including its content
 func (s *ControllerService) GetExternalFile(ctx context.Context, name string) (ExternalFile, error) {
 	var b64file externalFileBase64
-	var file ExternalFile
 	_, err := s.client.doGET(ctx, "/v1/files/"+url.QueryEscape(name), &b64file)
 	if err != nil {
-		return file, fmt.Errorf("request failed: %w", err)
+		return ExternalFile{}, fmt.Errorf("request failed: %w", err)
 	}
 	content, err := base64.StdEncoding.DecodeString(b64file.ContentBase64)
 	if err != nil {
-		return file, fmt.Errorf("failed to decode base64: %w", err)
+		return ExternalFile{}, fmt.Errorf("failed to decode base64: %w", err)
 	}
-	file = ExternalFile{
+	return ExternalFile{
 		Path:    b64file.Path,
 		Content: content,
-	}
-	return file, nil
+	}, nil
 }
 
 // ModifyExternalFile registers or modifies a previously registered external
