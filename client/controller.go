@@ -18,6 +18,8 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"net/url"
 	"strconv"
 	"time"
@@ -85,7 +87,17 @@ type PropsInfo struct {
 // ExternalFile is an external file which can be configured to be deployed by Linstor
 type ExternalFile struct {
 	Path    string `json:"path,omitempty"`
-	Content string `json:"content,omitempty"`
+	Content []byte `json:"content,omitempty"`
+}
+
+// externalFileBase64 is a golinstor-internal type which represents an external
+// file as it is handled by the LINSTOR API. The API expects files to come in
+// base64 encoding, and also returns files in base64 encoding. To make golinstor
+// easier to use, we only present the ExternalFile type to our users an
+// transparently handle the base64 encoding/decoding.
+type externalFileBase64 struct {
+	Path          string `json:"path,omitempty"`
+	ContentBase64 string `json:"content,omitempty"`
 }
 
 // custom code
@@ -263,21 +275,37 @@ func (s *ControllerService) GetExternalFiles(ctx context.Context) ([]ExternalFil
 
 // GetExternalFile gets the requested external file including its content
 func (s *ControllerService) GetExternalFile(ctx context.Context, name string) (ExternalFile, error) {
+	var b64file externalFileBase64
 	var file ExternalFile
-	_, err := s.client.doGET(ctx, "/v1/files/"+name, &file)
-	return file, err
+	_, err := s.client.doGET(ctx, "/v1/files/"+url.QueryEscape(name), &b64file)
+	if err != nil {
+		return file, fmt.Errorf("request failed: %w", err)
+	}
+	content, err := base64.StdEncoding.DecodeString(b64file.ContentBase64)
+	if err != nil {
+		return file, fmt.Errorf("failed to decode base64: %w", err)
+	}
+	file = ExternalFile{
+		Path:    b64file.Path,
+		Content: content,
+	}
+	return file, nil
 }
 
 // ModifyExternalFile registers or modifies a previously registered external
 // file
 func (s *ControllerService) ModifyExternalFile(ctx context.Context, name string, file ExternalFile) error {
-	_, err := s.client.doPUT(ctx, "/v1/files/"+name, file)
+	b64file := externalFileBase64{
+		Path:          file.Path,
+		ContentBase64: base64.StdEncoding.EncodeToString(file.Content),
+	}
+	_, err := s.client.doPUT(ctx, "/v1/files/"+url.QueryEscape(name), b64file)
 	return err
 }
 
 // DeleteExternalFile deletes the given external file. This effectively also
 // deletes the file on all satellites
 func (s *ControllerService) DeleteExternalFile(ctx context.Context, name string) error {
-	_, err := s.client.doDELETE(ctx, "/v1/files/"+name, nil)
+	_, err := s.client.doDELETE(ctx, "/v1/files/"+url.QueryEscape(name), nil)
 	return err
 }
