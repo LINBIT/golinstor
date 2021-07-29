@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -86,8 +87,8 @@ type PropsInfo struct {
 
 // ExternalFile is an external file which can be configured to be deployed by Linstor
 type ExternalFile struct {
-	Path    string `json:"path,omitempty"`
-	Content []byte `json:"content,omitempty"`
+	Path    string
+	Content []byte
 }
 
 // externalFileBase64 is a golinstor-internal type which represents an external
@@ -98,6 +99,28 @@ type ExternalFile struct {
 type externalFileBase64 struct {
 	Path          string `json:"path,omitempty"`
 	ContentBase64 string `json:"content,omitempty"`
+}
+
+func (e *ExternalFile) UnmarshalJSON(text []byte) error {
+	v := externalFileBase64{}
+	err := json.Unmarshal(text, &v)
+	if err != nil {
+		return err
+	}
+	e.Path = v.Path
+	e.Content, err = base64.StdEncoding.DecodeString(v.ContentBase64)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *ExternalFile) MarshalJSON() ([]byte, error) {
+	v := externalFileBase64{
+		Path:          e.Path,
+		ContentBase64: base64.StdEncoding.EncodeToString(e.Content),
+	}
+	return json.Marshal(v)
 }
 
 // custom code
@@ -138,9 +161,8 @@ type ControllerProvider interface {
 	// be set on a controller and all entities it contains (nodes, resource
 	// definitions, ...).
 	GetPropsInfosAll(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
-	// GetExternalFile get a list of previously registered external files.
-	// Content is intentionally skipped, use GetExternalFile to get it.
-	GetExternalFiles(ctx context.Context) ([]ExternalFile, error)
+	// GetExternalFiles gets a list of previously registered external files.
+	GetExternalFiles(ctx context.Context, opts ...*ListOpts) ([]ExternalFile, error)
 	// GetExternalFile gets the requested external file including its content
 	GetExternalFile(ctx context.Context, name string) (ExternalFile, error)
 	// ModifyExternalFile registers or modifies a previously registered
@@ -265,29 +287,22 @@ func (s *ControllerService) ModifySatelliteConfig(ctx context.Context, node stri
 	return err
 }
 
-// GetExternalFile get a list of previously registered external files.  Content
-// is intentionally skipped, use GetExternalFile to get it.
-func (s *ControllerService) GetExternalFiles(ctx context.Context) ([]ExternalFile, error) {
+// GetExternalFiles get a list of previously registered external files.
+// File contents are not included, unless ListOpts.Content is true.
+func (s *ControllerService) GetExternalFiles(ctx context.Context, opts ...*ListOpts) ([]ExternalFile, error) {
 	var files []ExternalFile
-	_, err := s.client.doGET(ctx, "/v1/files", &files)
+	_, err := s.client.doGET(ctx, "/v1/files", &files, opts...)
 	return files, err
 }
 
 // GetExternalFile gets the requested external file including its content
 func (s *ControllerService) GetExternalFile(ctx context.Context, name string) (ExternalFile, error) {
-	var b64file externalFileBase64
-	_, err := s.client.doGET(ctx, "/v1/files/"+url.QueryEscape(name), &b64file)
+	file := ExternalFile{}
+	_, err := s.client.doGET(ctx, "/v1/files/"+url.QueryEscape(name), &file)
 	if err != nil {
 		return ExternalFile{}, fmt.Errorf("request failed: %w", err)
 	}
-	content, err := base64.StdEncoding.DecodeString(b64file.ContentBase64)
-	if err != nil {
-		return ExternalFile{}, fmt.Errorf("failed to decode base64: %w", err)
-	}
-	return ExternalFile{
-		Path:    b64file.Path,
-		Content: content,
-	}, nil
+	return file, nil
 }
 
 // ModifyExternalFile registers or modifies a previously registered external
