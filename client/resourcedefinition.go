@@ -150,6 +150,10 @@ type ResourceDefinitionProvider interface {
 	// AttachExternalFile adds an external file to the resource definition. This
 	// means that the file will be deployed to every node the resource is deployed on.
 	AttachExternalFile(ctx context.Context, resDefName string, filePath string) error
+	// DetachExternalFile removes a binding between an external file and a resource definition.
+	// This means that the file will no longer be deployed on every node the resource
+	// is deployed on.
+	DetachExternalFile(ctx context.Context, resDefName string, filePath string) error
 }
 
 // resourceDefinitionLayerIn is a struct for resource-definitions
@@ -323,5 +327,13 @@ func (n *ResourceDefinitionService) GetDRBDProxyPropsInfos(ctx context.Context, 
 // means that the file will be deployed to every node the resource is deployed on.
 func (n *ResourceDefinitionService) AttachExternalFile(ctx context.Context, resDefName string, filePath string) error {
 	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resDefName+"/files/"+url.QueryEscape(filePath), nil)
+	return err
+}
+
+// DetachExternalFile removes a binding between an external file and a resource definition.
+// This means that the file will no longer be deployed on every node the resource
+// is deployed on.
+func (n *ResourceDefinitionService) DetachExternalFile(ctx context.Context, resDefName string, filePath string) error {
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/files/"+url.QueryEscape(filePath), nil)
 	return err
 }
