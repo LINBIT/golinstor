@@ -27,10 +27,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/donovanhide/eventsource"
 	"github.com/moul/http2curl"
@@ -39,11 +42,12 @@ import (
 
 // Client is a struct representing a LINSTOR REST client.
 type Client struct {
-	httpClient *http.Client
-	baseURL    *url.URL
-	basicAuth  *BasicAuthCfg
-	lim        *rate.Limiter
-	log        interface{} // must be either Logger or LeveledLogger
+	httpClient  *http.Client
+	baseURL     *url.URL
+	basicAuth   *BasicAuthCfg
+	controllers []*url.URL
+	lim         *rate.Limiter
+	log         interface{} // must be either Logger or LeveledLogger
 
 	Nodes                  NodeProvider
 	ResourceDefinitions    ResourceDefinitionProvider
@@ -151,6 +155,14 @@ func Limit(r rate.Limit, b int) Option {
 	}
 }
 
+func Controllers(controllers []string) Option {
+	return func(c *Client) error {
+		var err error
+		c.controllers, err = parseURLs(controllers)
+		return err
+	}
+}
+
 // buildHttpClient constructs an HTTP client which will be used to connect to
 // the LINSTOR controller. It recongnizes some environment variables which can
 // be used to configure the HTTP client at runtime. If an invalid key or
@@ -210,6 +222,8 @@ func defaultScheme() string {
 	return "http"
 }
 
+const defaultHost = "localhost"
+
 // Return the default port to access linstor.
 // Defaults are:
 // "https": 3371
@@ -221,41 +235,61 @@ func defaultPort(scheme string) string {
 	return "3370"
 }
 
-// NewClient takes an arbitrary number of options and returns a Client or an error.
-// It recognizes several environment variables which can be used to configure
-// the client at runtime:
-//
-// - LS_CONTROLLERS: a comma-separated list of LINSTOR controllers to connect to.
-// Currently, golinstor will only use the first one.
-//
-// - LS_USERNAME, LS_PASSWORD: can be used to authenticate against the LINSTOR
-// controller using HTTP basic authentication.
-//
-// - LS_USER_CERTIFICATE, LS_USER_KEY, LS_ROOT_CA: can be used to enable TLS on
-// the HTTP client, enabling encrypted communication with the LINSTOR controller.
-//
-// Options passed to NewClient take precedence over options passed in via
-// environment variables.
-func NewClient(options ...Option) (*Client, error) {
-	httpClient, err := buildHttpClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build http client: %w", err)
+// tryConnect takes a slice of urls and tries to Dial each one of the hosts.
+// If a working URL is found, it is returned.
+// If the slice contains no working URL, a list of all connection errors is returned.
+func tryConnect(urls []*url.URL) (*url.URL, []error) {
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	errChan := make(chan error)
+	indexChan := make(chan int)
+	doneChan := make(chan bool)
+	wg.Add(len(urls))
+	for i := range urls {
+		i := i
+		go func() {
+			defer wg.Done()
+			conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", urls[i].Host)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			cancel()
+			conn.Close()
+			indexChan <- i
+		}()
 	}
 
-	controllers := os.Getenv(ControllerUrlEnv)
-	if controllers == "" {
-		controllers = "localhost"
+	go func() {
+		wg.Wait()
+		doneChan <- true
+	}()
+
+	var errs []error
+	for {
+		select {
+		case result := <-indexChan:
+			return urls[result], nil
+		case err := <-errChan:
+			errs = append(errs, err)
+		case <-doneChan:
+			return nil, errs
+		}
 	}
+}
 
-	// only use the first entry
-	urlString := strings.Split(controllers, ",")[0]
-
+func parseBaseURL(urlString string) (*url.URL, error) {
 	// Check scheme
 	urlSplit := strings.Split(urlString, "://")
 
 	if len(urlSplit) == 1 {
+		if urlSplit[0] == "" {
+			urlSplit[0] = defaultHost
+		}
 		urlSplit = []string{defaultScheme(), urlSplit[0]}
 	}
+
 	if len(urlSplit) != 2 {
 		return nil, fmt.Errorf("URL with multiple scheme separators. parts: %v", urlSplit)
 	}
@@ -274,20 +308,78 @@ func NewClient(options ...Option) (*Client, error) {
 	}
 	host, port := endpointSplit[0], endpointSplit[1]
 
-	baseURL, err := url.Parse(fmt.Sprintf("%s://%s:%s", scheme, host, port))
+	return url.Parse(fmt.Sprintf("%s://%s:%s", scheme, host, port))
+}
+
+func parseURLs(urls []string) ([]*url.URL, error) {
+	var result []*url.URL
+	for _, controller := range urls {
+		url, err := parseBaseURL(controller)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, url)
+	}
+
+	return result, nil
+}
+
+// NewClient takes an arbitrary number of options and returns a Client or an error.
+// It recognizes several environment variables which can be used to configure
+// the client at runtime:
+//
+// - LS_CONTROLLERS: a comma-separated list of LINSTOR controllers to connect to.
+//
+// - LS_USERNAME, LS_PASSWORD: can be used to authenticate against the LINSTOR
+// controller using HTTP basic authentication.
+//
+// - LS_USER_CERTIFICATE, LS_USER_KEY, LS_ROOT_CA: can be used to enable TLS on
+// the HTTP client, enabling encrypted communication with the LINSTOR controller.
+//
+// Options passed to NewClient take precedence over options passed in via
+// environment variables.
+func NewClient(options ...Option) (*Client, error) {
+	httpClient, err := buildHttpClient()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build http client: %w", err)
 	}
 
 	c := &Client{
 		httpClient: httpClient,
-		baseURL:    baseURL,
 		basicAuth: &BasicAuthCfg{
 			Username: os.Getenv(UsernameEnv),
 			Password: os.Getenv(PasswordEnv),
 		},
 		lim: rate.NewLimiter(rate.Inf, 0),
 		log: log.New(os.Stderr, "", 0),
+	}
+
+	for _, opt := range options {
+		if err := opt(c); err != nil {
+			return nil, err
+		}
+	}
+
+	if c.baseURL == nil {
+		if len(c.controllers) == 0 {
+			// if not already set by option, get from environment...
+			controllersStr := os.Getenv(ControllerUrlEnv)
+			if controllersStr == "" {
+				// ... or fall back to defaults
+				controllersStr = fmt.Sprintf("%v://%v:%v", defaultScheme(), defaultHost, defaultPort(defaultScheme()))
+			}
+
+			c.controllers, err = parseURLs(strings.Split(controllersStr, ","))
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse controller URLs: %w", err)
+			}
+		}
+
+		// if we have exactly one controller, use that directly, otherwise the
+		// controller will be figured out in findRespondingController().
+		if len(c.controllers) == 1 {
+			c.baseURL = c.controllers[0]
+		}
 	}
 
 	c.Nodes = &NodeService{client: c}
@@ -300,12 +392,6 @@ func NewClient(options ...Option) (*Client, error) {
 	c.Events = &EventService{client: c}
 	c.Vendor = &VendorService{client: c}
 
-	for _, opt := range options {
-		if err := opt(c); err != nil {
-			return nil, err
-		}
-	}
-
 	return c, nil
 }
 
@@ -313,6 +399,17 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	rel, err := url.Parse(path)
 	if err != nil {
 		return nil, err
+	}
+
+	if c.baseURL == nil {
+		if err := c.findRespondingController(); err != nil {
+			return nil, fmt.Errorf("failed to connect: %w", err)
+		}
+		if c.baseURL == nil {
+			// should not happen since findRespondingController()
+			// always either sets baseURL or errors out, but just in case...
+			return nil, fmt.Errorf("failed to determine base URL")
+		}
 	}
 	u := c.baseURL.ResolveReference(rel)
 
@@ -356,6 +453,39 @@ func (c *Client) curlify(req *http.Request) (string, error) {
 	return cc.String(), nil
 }
 
+// findRespondingController scans the list of controllers for a working LINSTOR
+// controller. It sets the baseURL of the client to the first working controller
+// that is found.  If there is only exactly one controller in the controller
+// list, it is used directly.
+func (c *Client) findRespondingController() error {
+	switch num := len(c.controllers); {
+	case num > 1:
+		url, errors := tryConnect(c.controllers)
+		if errors != nil {
+			logError := func(msg string) {
+				switch l := c.log.(type) {
+				case LeveledLogger:
+					l.Errorf(msg)
+				case Logger:
+					l.Printf("[ERROR] %s", msg)
+				}
+			}
+			logError("Unable to connect to any of the given controller hosts:")
+			for _, e := range errors {
+				logError(fmt.Sprintf("   - %v", e))
+			}
+			return fmt.Errorf("could not connect to any controller")
+		}
+		c.baseURL = url
+	case num == 1:
+		c.baseURL = c.controllers[0]
+	default:
+		return fmt.Errorf("no controller to connect to")
+	}
+
+	return nil
+}
+
 func (c *Client) logCurlify(req *http.Request) {
 	var msg string
 	if curl, err := c.curlify(req); err != nil {
@@ -370,6 +500,23 @@ func (c *Client) logCurlify(req *http.Request) {
 	case Logger:
 		l.Printf("[DEBUG] %s", msg)
 	}
+}
+
+func (c *Client) retry(origErr error, req *http.Request) (*http.Response, error) {
+	// only retry on network errors and if we even have another controller to choose from
+	if _, ok := origErr.(net.Error); !ok || len(c.controllers) <= 1 {
+		return nil, origErr
+	}
+
+	prevBaseURL := c.baseURL
+	e := c.findRespondingController()
+	// if findRespondingController failed, or we just got the same base URL, don't bother retrying
+	if e != nil && c.baseURL == prevBaseURL {
+		return nil, origErr
+	}
+
+	req.URL.Host = c.baseURL.Host
+	return c.httpClient.Do(req)
 }
 
 func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
@@ -388,7 +535,11 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		default:
 		}
 
-		return nil, err
+		// if this was a connectivity issue, attempt a retry
+		resp, err = c.retry(err, req)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer resp.Body.Close()
 

@@ -160,3 +160,20 @@ func Example_events() {
 		fmt.Printf("Resource '%s' on node with name '%s' may promote: %t\n", ev.ResourceName, ev.NodeName, ev.MayPromote)
 	}
 }
+
+func Example_multipleControllers() {
+	ctx := context.TODO()
+	controllers := []string{"alfa:3370", "bravo:3370", "charlie:3370"}
+
+	c, err := client.NewClient(client.Controllers(controllers))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// This call will try each of the controllers and use the first one that responds
+	version, err := c.Controller.GetVersion(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Controller Version: %v", version)
+}
