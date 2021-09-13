@@ -89,6 +89,7 @@ type ResourceLayer struct {
 	Openflex           OpenflexResource                `json:"openflex,omitempty"`
 	Writecache         WritecacheResource              `json:"writecache,omitempty"`
 	Cache              CacheResource                   `json:"cache,omitempty"`
+	BCache             BCacheResource                  `json:"bcache,omitempty"`
 }
 
 type WritecacheResource struct {
@@ -96,6 +97,22 @@ type WritecacheResource struct {
 }
 
 type WritecacheVolume struct {
+	VolumeNumber int32 `json:"volume_number,omitempty"`
+	// block device path
+	DevicePath string `json:"device_path,omitempty"`
+	// block device path used as cache device
+	DevicePathCache  string `json:"device_path_cache,omitempty"`
+	AllocatedSizeKib int64  `json:"allocated_size_kib,omitempty"`
+	UsableSizeKib    int64  `json:"usable_size_kib,omitempty"`
+	// String describing current volume state
+	DiskState string `json:"disk_state,omitempty"`
+}
+
+type BCacheResource struct {
+	BCacheVolumes []BCacheVolume `json:"bcache_volumes,omitempty"`
+}
+
+type BCacheVolume struct {
 	VolumeNumber int32 `json:"volume_number,omitempty"`
 	// block device path
 	DevicePath string `json:"device_path,omitempty"`
@@ -220,8 +237,8 @@ type Volume struct {
 
 // VolumeLayer is a struct for storing the layer-properties of a linstor-volume
 type VolumeLayer struct {
-	Type devicelayerkind.DeviceLayerKind                                             `json:"type,omitempty"`
-	Data OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume `json:"data,omitempty"`
+	Type devicelayerkind.DeviceLayerKind                                                         `json:"type,omitempty"`
+	Data OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume `json:"data,omitempty"`
 }
 
 // VolumeState is a struct which contains the disk-state for volume
@@ -513,22 +530,22 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 }
 
 // OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume is used to prevent that other types than drbd- luks- and storage-volume are used for a VolumeLayer
-type OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume interface {
-	isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume()
+type OneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume interface {
+	isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume()
 }
 
 // Functions which are used if type is a correct VolumeLayer
-func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+func (d *DrbdVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume() {
 }
-func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+func (d *LuksVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume() {
 }
-func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+func (d *StorageVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume() {
 }
-func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+func (d *NvmeVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume() {
 }
-func (d *WritecacheVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+func (d *WritecacheVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume() {
 }
-func (d *CacheVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolume() {
+func (d *CacheVolume) isOneOfDrbdVolumeLuksVolumeStorageVolumeNvmeVolumeWritecacheVolumeCacheVolumeBCacheVolume() {
 }
 
 // GetResourceView returns all resources in the cluster. Filters can be set via ListOpts.

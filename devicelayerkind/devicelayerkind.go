@@ -11,4 +11,5 @@ const (
 	Exos       DeviceLayerKind = "EXOS"
 	Writecache DeviceLayerKind = "WRITECACHE"
 	Cache      DeviceLayerKind = "CACHE"
+	BCache     DeviceLayerKind = "BCACHE"
 )
