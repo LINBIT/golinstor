@@ -374,6 +374,10 @@ type ResourceMakeAvailable struct {
 	Diskful bool `json:"diskful,omitempty"`
 }
 
+type ToggleDiskDiskfulProps struct {
+	LayerList []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
+}
+
 // custom code
 
 // ResourceProvider acts as an abstraction for an ResourceService. It can be
@@ -401,7 +405,7 @@ type ResourceProvider interface {
 	// Diskless toggles a resource on a node to diskless - the parameter disklesspool can be set if its needed
 	Diskless(ctx context.Context, resName, nodeName, disklessPoolName string) error
 	// Diskful toggles a resource to diskful - the parameter storagepool can be set if its needed
-	Diskful(ctx context.Context, resName, nodeName, storagePoolName string) error
+	Diskful(ctx context.Context, resName, nodeName, storagePoolName string, props *ToggleDiskDiskfulProps) error
 	// Migrate mirgates a resource from one node to another node
 	Migrate(ctx context.Context, resName, fromNodeName, toNodeName, storagePoolName string) error
 	// Autoplace places a resource on your nodes autmatically
@@ -632,12 +636,12 @@ func (n *ResourceService) Diskless(ctx context.Context, resName, nodeName, diskl
 }
 
 // Diskful toggles a resource to diskful - the parameter storagepool can be set if its needed
-func (n *ResourceService) Diskful(ctx context.Context, resName, nodeName, storagePoolName string) error {
+func (n *ResourceService) Diskful(ctx context.Context, resName, nodeName, storagePoolName string, props *ToggleDiskDiskfulProps) error {
 	u := "/v1/resource-definitions/" + resName + "/resources/" + nodeName + "/toggle-disk/diskful"
 	if storagePoolName != "" {
 		u += "/" + storagePoolName
 	}
-	_, err := n.client.doPUT(ctx, u, nil)
+	_, err := n.client.doPUT(ctx, u, props)
 	return err
 }
 
