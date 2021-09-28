@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/LINBIT/golinstor/clonestatus"
 	"github.com/LINBIT/golinstor/devicelayerkind"
 )
 
@@ -115,6 +116,25 @@ type DrbdVolumeDefinition struct {
 	MinorNumber        int32  `json:"minor_number,omitempty"`
 }
 
+type ResourceDefinitionCloneRequest struct {
+	Name         string `json:"name,omitempty"`
+	ExternalName string `json:"external_name,omitempty"`
+}
+
+type ResourceDefinitionCloneStarted struct {
+	// Path for clone status
+	Location string `json:"location"`
+	// name of the source resource
+	SourceName string `json:"source_name"`
+	// name of the clone resource
+	CloneName string       `json:"clone_name"`
+	Messages  *[]ApiCallRc `json:"messages,omitempty"`
+}
+
+type ResourceDefinitionCloneStatus struct {
+	Status clonestatus.CloneStatus `json:"status"`
+}
+
 // custom code
 
 // ResourceDefinitionProvider acts as an abstraction for a
@@ -143,10 +163,10 @@ type ResourceDefinitionProvider interface {
 	DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error
 	// GetPropsInfos gets meta information about the properties that can be
 	// set on a resource definition.
-	GetPropsInfos(ctx context.Context, opts ...*ListOpts) error
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
 	// GetDRBDProxyPropsInfos gets meta information about the properties
 	// that can be set on a resource definition for drbd proxy.
-	GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) error
+	GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) ([]PropsInfo, error)
 	// AttachExternalFile adds an external file to the resource definition. This
 	// means that the file will be deployed to every node the resource is deployed on.
 	AttachExternalFile(ctx context.Context, resDefName string, filePath string) error
@@ -154,7 +174,13 @@ type ResourceDefinitionProvider interface {
 	// This means that the file will no longer be deployed on every node the resource
 	// is deployed on.
 	DetachExternalFile(ctx context.Context, resDefName string, filePath string) error
+	// Clone starts cloning a resource definition and all resources using a method optimized for the storage driver.
+	Clone(ctx context.Context, srcResDef string, request ResourceDefinitionCloneRequest) (ResourceDefinitionCloneStarted, error)
+	// CloneStatus fetches the current status of a clone operation started by Clone.
+	CloneStatus(ctx context.Context, srcResDef, targetResDef string) (ResourceDefinitionCloneStatus, error)
 }
+
+var _ ResourceDefinitionProvider = &ResourceDefinitionService{}
 
 // resourceDefinitionLayerIn is a struct for resource-definitions
 type resourceDefinitionLayerIn struct {
@@ -309,18 +335,18 @@ func (n *ResourceDefinitionService) DeleteVolumeDefinition(ctx context.Context, 
 
 // GetPropsInfos gets meta information about the properties that can be set on
 // a resource definition.
-func (n *ResourceDefinitionService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) error {
+func (n *ResourceDefinitionService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // GetDRBDProxyPropsInfos gets meta information about the properties that can
 // be set on a resource definition for drbd proxy.
-func (n *ResourceDefinitionService) GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) error {
+func (n *ResourceDefinitionService) GetDRBDProxyPropsInfos(ctx context.Context, resDefName string, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDefName+"/drbd-proxy/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // AttachExternalFile adds an external file to the resource definition. This
@@ -336,4 +362,28 @@ func (n *ResourceDefinitionService) AttachExternalFile(ctx context.Context, resD
 func (n *ResourceDefinitionService) DetachExternalFile(ctx context.Context, resDefName string, filePath string) error {
 	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/files/"+url.QueryEscape(filePath), nil)
 	return err
+}
+
+// Clone starts cloning a resource definition and all resources using a method optimized for the storage driver.
+func (n *ResourceDefinitionService) Clone(ctx context.Context, srcResDef string, request ResourceDefinitionCloneRequest) (ResourceDefinitionCloneStarted, error) {
+	var resp ResourceDefinitionCloneStarted
+
+	req, err := n.client.newRequest("POST", "/v1/resource-definitions/"+srcResDef+"/clone", request)
+	if err != nil {
+		return ResourceDefinitionCloneStarted{}, err
+	}
+
+	_, err = n.client.do(ctx, req, &resp)
+	if err != nil {
+		return ResourceDefinitionCloneStarted{}, err
+	}
+
+	return resp, nil
+}
+
+// CloneStatus fetches the current status of a clone operation started by Clone.
+func (n *ResourceDefinitionService) CloneStatus(ctx context.Context, srcResDef, targetResDef string) (ResourceDefinitionCloneStatus, error) {
+	var status ResourceDefinitionCloneStatus
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+srcResDef+"/clone/"+targetResDef, &status)
+	return status, err
 }

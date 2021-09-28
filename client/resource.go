@@ -46,13 +46,13 @@ type Resource struct {
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
 	// milliseconds since unix epoch in UTC
-	CreateTimestamp int64 `json:"create_timestamp,omitempty"`
+	CreateTimestamp *TimeStampMs `json:"create_timestamp,omitempty"`
 }
 
 type ResourceWithVolumes struct {
 	Resource
 	// milliseconds since unix epoch in UTC
-	CreateTimestamp int64    `json:"create_timestamp,omitempty"`
+	CreateTimestamp *TimeStampMs    `json:"create_timestamp,omitempty"`
 	Volumes         []Volume `json:"volumes,omitempty"`
 	// shared space name of the data storage pool of the first volume of
 	// the resource or empty if data storage pool is not shared
@@ -269,6 +269,7 @@ type AutoSelectFilter struct {
 	ProviderList            []string `json:"provider_list,omitempty"`
 	DisklessOnRemaining     bool     `json:"diskless_on_remaining,omitempty"`
 	DisklessType            string   `json:"diskless_type,omitempty"`
+	Overprovision			*float64 `json:"overprovision,omitempty"`
 }
 
 // ResourceConnection is a struct which holds information about a connection between to nodes
@@ -304,7 +305,7 @@ type SnapshotNode struct {
 	// Node name where this snapshot was taken
 	NodeName string `json:"node_name,omitempty"`
 	// milliseconds since unix epoch in UTC
-	CreateTimestamp int64    `json:"create_timestamp,omitempty"`
+	CreateTimestamp *TimeStampMs    `json:"create_timestamp,omitempty"`
 	Flags           []string `json:"flags,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
@@ -422,8 +423,8 @@ type ResourceProvider interface {
 	GetSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) (Snapshot, error)
 	// CreateSnapshot creates a snapshot of a resource
 	CreateSnapshot(ctx context.Context, snapshot Snapshot) error
-	// DeleteSnapshot deletes a snapshot by its name
-	DeleteSnapshot(ctx context.Context, resName, snapName string) error
+	// DeleteSnapshot deletes a snapshot by its name. Specify nodes to only delete snapshots on specific nodes.
+	DeleteSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) error
 	// RestoreSnapshot restores a snapshot on a resource
 	RestoreSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error
 	// RestoreVolumeDefinitionSnapshot restores a volume-definition-snapshot on a resource
@@ -444,16 +445,16 @@ type ResourceProvider interface {
 	GetSnapshotShippings(ctx context.Context, opts ...*ListOpts) ([]SnapshotShippingStatus, error)
 	// GetPropsInfos gets meta information about the properties that can be
 	// set on a resource.
-	GetPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
+	GetPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) ([]PropsInfo, error)
 	// GetVolumeDefinitionPropsInfos gets meta information about the
 	// properties that can be set on a volume definition.
-	GetVolumeDefinitionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
+	GetVolumeDefinitionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) ([]PropsInfo, error)
 	// GetVolumePropsInfos gets meta information about the properties that
 	// can be set on a volume.
-	GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts) error
+	GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]PropsInfo, error)
 	// GetConnectionPropsInfos gets meta information about the properties
 	// that can be set on a connection.
-	GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error
+	GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) ([]PropsInfo, error)
 	// Activate starts an inactive resource on a given node.
 	Activate(ctx context.Context, resName string, nodeName string) error
 	// Deactivate stops an active resource on given node.
@@ -467,6 +468,8 @@ type ResourceProvider interface {
 	// the flags list.
 	MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable ResourceMakeAvailable) error
 }
+
+var _ ResourceProvider = &ResourceService{}
 
 // volumeLayerIn is a struct for volume-layers
 type volumeLayerIn struct {
@@ -710,9 +713,9 @@ func (n *ResourceService) CreateSnapshot(ctx context.Context, snapshot Snapshot)
 	return err
 }
 
-// DeleteSnapshot deletes a snapshot by its name
-func (n *ResourceService) DeleteSnapshot(ctx context.Context, resName, snapName string) error {
-	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, nil)
+// DeleteSnapshot deletes a snapshot by its name. Specify nodes to only delete snapshots on specific nodes.
+func (n *ResourceService) DeleteSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) error {
+	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, nil, opts...)
 	return err
 }
 
@@ -779,34 +782,34 @@ func (n *ResourceService) GetSnapshotShippings(ctx context.Context, opts ...*Lis
 
 // GetPropsInfos gets meta information about the properties that can be set on
 // a resource.
-func (n *ResourceService) GetPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error {
+func (n *ResourceService) GetPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // GetVolumeDefinitionPropsInfos gets meta information about the properties
 // that can be set on a volume definition.
-func (n *ResourceService) GetVolumeDefinitionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error {
+func (n *ResourceService) GetVolumeDefinitionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/volume-definitions/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // GetVolumePropsInfos gets meta information about the properties that can be
 // set on a volume.
-func (n *ResourceService) GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts) error {
+func (n *ResourceService) GetVolumePropsInfos(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName+"/volumes/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // GetConnectionPropsInfos gets meta information about the properties that can
 // be set on a connection.
-func (n *ResourceService) GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) error {
+func (n *ResourceService) GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resName+"/resource-connections/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // MakeAvailable adds a resource on a node if not already deployed.

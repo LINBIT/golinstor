@@ -38,8 +38,8 @@ type ControllerVersion struct {
 
 // ErrorReport struct for ErrorReport
 type ErrorReport struct {
-	NodeName  string `json:"node_name,omitempty"`
-	ErrorTime int64  `json:"error_time"`
+	NodeName  string      `json:"node_name,omitempty"`
+	ErrorTime TimeStampMs `json:"error_time"`
 	// Filename of the error report on the server.  Format is: ```ErrorReport-{instanceid}-{nodeid}-{sequencenumber}.log```
 	Filename string `json:"filename,omitempty"`
 	// Contains the full text of the error report file.
@@ -63,10 +63,8 @@ type ErrorReport struct {
 }
 
 type ErrorReportDelete struct {
-	// timestamp in millis start date to delete
-	Since int64 `json:"since,omitempty"`
-	// timestamp in millis for the end date to delete
-	To int64 `json:"to,omitempty"`
+	Since *TimeStampMs `json:"since,omitempty"`
+	To    *TimeStampMs `json:"to,omitempty"`
 	// on which nodes to delete error-reports, if empty/null all nodes
 	Nodes []string `json:"nodes,omitempty"`
 	// delete all error reports with the given exception
@@ -239,7 +237,8 @@ func (s *ControllerService) GetErrorReports(ctx context.Context, opts ...*ListOp
 
 // DeleteErrorReports deletes error reports as specified by the ErrorReportDelete struct.
 func (s *ControllerService) DeleteErrorReports(ctx context.Context, del ErrorReportDelete) error {
-	_, err := s.client.doDELETE(ctx, "/v1/error-reports", del)
+	// Yes, this is using PATCH. don't ask me why, its just implemented that way...
+	_, err := s.client.doPATCH(ctx, "/v1/error-reports", del)
 	return err
 }
 

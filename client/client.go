@@ -628,8 +628,13 @@ func (c *Client) doPATCH(ctx context.Context, url string, body interface{}) (*ht
 	return c.do(ctx, req, nil)
 }
 
-func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*http.Response, error) {
-	req, err := c.newRequest("DELETE", url, body)
+func (c *Client) doDELETE(ctx context.Context, url string, body interface{}, opts ...*ListOpts) (*http.Response, error) {
+	u, err := addOptions(url, genOptions(opts...))
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := c.newRequest("DELETE", u, body)
 	if err != nil {
 		return nil, err
 	}

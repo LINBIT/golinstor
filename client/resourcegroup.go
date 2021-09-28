@@ -55,6 +55,10 @@ type ResourceGroupSpawn struct {
 	DefinitionsOnly bool `json:"definitions_only,omitempty"`
 }
 
+type ResourceGroupAdjust struct {
+	SelectFilter *AutoSelectFilter `json:"select_filter,omitempty"`
+}
+
 type VolumeGroup struct {
 	VolumeNumber int32 `json:"volume_number,omitempty"`
 	// A string to string property map.
@@ -102,11 +106,17 @@ type ResourceGroupProvider interface {
 	DeleteVolumeGroup(ctx context.Context, resGrpName string, volNr int) error
 	// GetPropsInfos gets meta information about the properties that can be
 	// set on a resource group.
-	GetPropsInfos(ctx context.Context, opts ...*ListOpts) error
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
 	// GetVolumeGroupPropsInfos gets meta information about the properties
 	// that can be set on a resource group.
-	GetVolumeGroupPropsInfos(ctx context.Context, resGrpName string, opts ...*ListOpts) error
+	GetVolumeGroupPropsInfos(ctx context.Context, resGrpName string, opts ...*ListOpts) ([]PropsInfo, error)
+	// Adjust all resource-definitions (calls autoplace for) of the given resource-group
+	Adjust(ctx context.Context, resGrpName string, adjust ResourceGroupAdjust) error
+	// AdjustAll adjusts all resource-definitions (calls autoplace) according to their associated resource group.
+	AdjustAll(ctx context.Context, adjust ResourceGroupAdjust) error
 }
+
+var _ ResourceGroupProvider = &ResourceGroupService{}
 
 // ResourceGroupService is the service that deals with resource group related tasks.
 type ResourceGroupService struct {
@@ -184,16 +194,28 @@ func (n *ResourceGroupService) DeleteVolumeGroup(ctx context.Context, resGrpName
 
 // GetPropsInfos gets meta information about the properties that can be set on
 // a resource group.
-func (n *ResourceGroupService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) error {
+func (n *ResourceGroupService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-groups/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // GetVolumeGroupPropsInfos gets meta information about the properties that can
 // be set on a resource group.
-func (n *ResourceGroupService) GetVolumeGroupPropsInfos(ctx context.Context, resGrpName string, opts ...*ListOpts) error {
+func (n *ResourceGroupService) GetVolumeGroupPropsInfos(ctx context.Context, resGrpName string, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/resource-groups/"+resGrpName+"/volume-groups/properties/info", &infos, opts...)
+	return infos, err
+}
+
+// Adjust all resource-definitions (calls autoplace for) of the given resource-group
+func (n *ResourceGroupService) Adjust(ctx context.Context, resGrpName string, adjust ResourceGroupAdjust) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-groups/"+resGrpName+"/adjust", adjust)
+	return err
+}
+
+// AdjustAll adjusts all resource-definitions (calls autoplace) according to their associated resource group.
+func (n *ResourceGroupService) AdjustAll(ctx context.Context, adjust ResourceGroupAdjust) error {
+	_, err := n.client.doPOST(ctx, "/v1/resource-groups/adjustall", adjust)
 	return err
 }

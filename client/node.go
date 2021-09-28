@@ -40,12 +40,19 @@ type Node struct {
 	ResourceLayers       []devicelayerkind.DeviceLayerKind            `json:"resource_layers,omitempty"`
 	UnsupportedProviders map[ProviderKind][]string                    `json:"unsupported_providers,omitempty"`
 	UnsupportedLayers    map[devicelayerkind.DeviceLayerKind][]string `json:"unsupported_layers,omitempty"`
+	// milliseconds since unix epoch in UTC
+	EvictionTimestamp *TimeStampMs `json:"eviction_timestamp,omitempty"`
 }
 
 type NodeModify struct {
 	NodeType string `json:"node_type,omitempty"`
 	// A string to string property map.
 	GenericPropsModify
+}
+
+type NodeRestore struct {
+	DeleteResources *bool `json:"delete_resources,omitempty"`
+	DeleteSnapshots *bool `json:"delete_snapshots,omitempty"`
 }
 
 // NetInterface represents a node's network interface.
@@ -150,17 +157,22 @@ type NodeProvider interface {
 	GetPhysicalStorage(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorage, error)
 	// GetStoragePoolPropsInfos gets meta information about the properties
 	// that can be set on a storage pool on a particular node.
-	GetStoragePoolPropsInfos(ctx context.Context, nodeName string, opts ...*ListOpts) error
+	GetStoragePoolPropsInfos(ctx context.Context, nodeName string, opts ...*ListOpts) ([]PropsInfo, error)
 	// GetPropsInfos gets meta information about the properties that can be
 	// set on a node.
-	GetPropsInfos(ctx context.Context, opts ...*ListOpts) error
-	Restore(ctx context.Context, nodeName string) error
+	GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
+	// Evict the given node, migrating resources to the remaining nodes, if possible.
+	Evict(ctx context.Context, nodeName string) error
+	// Restore an evicted node, optionally keeping existing resources.
+	Restore(ctx context.Context, nodeName string, restore NodeRestore) error
 }
 
 // NodeService is the service that deals with node related tasks.
 type NodeService struct {
 	client *Client
 }
+
+var _ NodeProvider = &NodeService{}
 
 // GetAll gets information for all registered nodes.
 func (n *NodeService) GetAll(ctx context.Context, opts ...*ListOpts) ([]Node, error) {
@@ -279,21 +291,28 @@ func (n *NodeService) DeleteStoragePool(ctx context.Context, nodeName, spName st
 
 // GetStoragePoolPropsInfos gets meta information about the properties that can
 // be set on a storage pool on a particular node.
-func (n *NodeService) GetStoragePoolPropsInfos(ctx context.Context, nodeName string, opts ...*ListOpts) error {
+func (n *NodeService) GetStoragePoolPropsInfos(ctx context.Context, nodeName string, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/nodes/"+nodeName+"/storage-pools/properties/info", &infos, opts...)
-	return err
+	return infos, err
 }
 
 // GetPropsInfos gets meta information about the properties that can be set on
 // a node.
-func (n *NodeService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) error {
+func (n *NodeService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error) {
 	var infos []PropsInfo
 	_, err := n.client.doGET(ctx, "/v1/nodes/properties/info", &infos, opts...)
+	return infos, err
+}
+
+// Evict the given node, migrating resources to the remaining nodes, if possible.
+func (n NodeService) Evict(ctx context.Context, nodeName string) error {
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/evict", nil)
 	return err
 }
 
-func (n *NodeService) Restore(ctx context.Context, nodeName string) error {
-	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/restore", nil)
+// Restore an evicted node, optionally keeping existing resources.
+func (n *NodeService) Restore(ctx context.Context, nodeName string, restore NodeRestore) error {
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/restore", restore)
 	return err
 }

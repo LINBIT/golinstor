@@ -55,6 +55,8 @@ const MaskStorPoolDfn = 0x0000000000180000
 const MaskStorPool = 0x0000000000140000
 const MaskCtrlConf = 0x0000000000100000
 const MaskSnapshot = 0x00000000000C0000
+const MaskBackup = 0x0000000000080000
+const MaskRemote = 0x0000000000040000
 
 // ## Codes ###
 const MaskBitsCode = 0x0000000000007FFF
@@ -106,9 +108,13 @@ const FailInvldConf = (230 | MaskError)
 const FailInvldSnapshotShippingSource = (231 | MaskError)
 const FailInvldSnapshotShippingTarget = (232 | MaskError)
 const FailNodeHasUsedRsc = (233 | MaskError)
-const FailInvldRscGrpName = (234 | MaskError)
+const FailInvldRequest = (234 | MaskError)
 const FailInvldExtFileName = (235 | MaskError)
 const FailInvldExtFile = (236 | MaskError)
+const FailInvldRscGrpName = (237 | MaskError)
+const FailInvldBackupConfig = (238 | MaskError)
+const FailInvldRemoteName = (239 | MaskError)
+const FailInvldTimeParam = (240 | MaskError)
 
 // ## Codes 300-399: dependency not found failures ###
 const FailNotFoundNode = (300 | MaskError)
@@ -132,6 +138,8 @@ const FailNotFoundRscGrp = (317 | MaskError)
 const FailNotFoundVlmGrp = (318 | MaskError)
 const FailNotFoundExosEnclosure = (319 | MaskError)
 const FailNotFoundExtFile = (320 | MaskError)
+const FailNotFoundRemote = (321 | MaskError)
+const FailNotFoundBackup = (322 | MaskError)
 
 // ## Codes 400-499: access denied failures ###
 const FailAccDeniedNode = (400 | MaskError)
@@ -157,6 +165,7 @@ const FailAccDeniedRscGrp = (419 | MaskError)
 const FailAccDeniedVlmGrp = (420 | MaskError)
 const FailAccDeniedSnapDfn = (421 | MaskError)
 const FailAccDeniedExtFile = (422 | MaskError)
+const FailAccDeniedRemote = (423 | MaskError)
 
 // ## Codes 500-599: data already exists failures ###
 const FailExistsNode = (500 | MaskError)
@@ -184,6 +193,7 @@ const FailExistsVlmGrp = (523 | MaskError)
 const FailExistsOpenflexTargetPerRscDfn = (524 | MaskError)
 const FailExistsSnapshotShipping = (525 | MaskError)
 const FailExistsExosEnclosure = (526 | MaskError)
+const FailExistsRemote = (527 | MaskError)
 
 // ## Codes 600-699: data missing failures ###
 const FailMissingProps = (600 | MaskError)
@@ -219,8 +229,12 @@ const FailPoolExhaustedNodeId = (803 | MaskError)
 const FailPoolExhaustedRscLayerId = (804 | MaskError)
 const FailPoolExhaustedSpecialSatellteTcpPort = (805 | MaskError)
 const FailPoolExhaustedSnapshotShippingTcpPort = (806 | MaskError)
+const FailPoolExhaustedBackupShippingTcpPort = (807 | MaskError)
 
 // ## Other failures ###
+const FailBackupIncompatibleVersion = (978 | MaskError)
+const FailDependendBackup = (978 | MaskError)
+const FailSnapshotNotUptodate = (979 | MaskError)
 const FailNotEnoughFreeSpace = (980 | MaskError)
 const FailOnlyOneActRscPerSharedStorPoolAllowed = (981 | MaskError)
 const FailCryptInit = (982 | MaskError)
@@ -261,6 +275,7 @@ const WarnUneffectiveProp = (1015 | MaskWarn)
 const WarnInvldSnapshotShippingPrefix = (1016 | MaskWarn)
 const WarnNodeEvicted = (1017 | MaskWarn)
 const WarnRscDeactivated = (1018 | MaskWarn)
+const WarnBackupDlOnly = (1019 | MaskWarn)
 const WarnNotFound = (3000 | MaskWarn)
 
 // ## Codes 10000-19999: info ###
@@ -299,12 +314,15 @@ const ApiCrtRscDfn = "CrtRscDfn"
 const ApiCrtNetIf = "CrtNetIf"
 const ApiCrtVlmDfn = "CrtVlmDfn"
 const ApiCrtSnapshot = "CrtSnapshot"
+const ApiCrtBackup = "CrtBackup"
 const ApiCrtStorPoolDfn = "CrtStorPoolDfn"
 const ApiCrtStorPool = "CrtStorPool"
 const ApiCrtNodeConn = "CrtNodeConn"
 const ApiCrtRscConn = "CrtRscConn"
 const ApiCrtVlmConn = "CrtVlmConn"
 const ApiAutoPlaceRsc = "AutoPlaceRsc"
+const ApiCloneRscdfn = "CloneRscDfn"
+const ApiCloneRscdfnStatus = "CloneRscDfnStatus"
 const ApiCrtCryptPass = "CrtCryptPass"
 const ApiCrtOfTargetNode = "CrtOfTargetNode"
 const ApiRestoreVlmDfn = "RestoreVlmDfn"
@@ -312,9 +330,14 @@ const ApiRestoreSnapshot = "RestoreSnapshot"
 const ApiCrtRscGrp = "CrtRscGrp"
 const ApiCrtVlmGrp = "CrtVlmGrp"
 const ApiSpawnRscDfn = "SpawnRscDfn"
+const ApiAdjustRscGrp = "AdjustRscGrp"
 const ApiCreateDevicePool = "CreateDevicePool"
 const ApiMakeRscAvail = "MakeRscAvail"
 const ApiCrtExosEnclosure = "CrtExosEnclosure"
+const ApiSetRemote = "SetRemote"
+const ApiRestoreBackup = "RstBackup"
+const ApiAbortBackup = "AbortBackup"
+const ApiShipBackup = "ShipBackup"
 
 // ## Modify object APIs ###
 const ApiModNode = "ModNode"
@@ -359,6 +382,7 @@ const ApiDelSnapshot = "DelSnapshot"
 const ApiDelKvs = "DelKvs"
 const ApiDelRscGrp = "DelRscGrp"
 const ApiDelVlmGrp = "DelVlmGrp"
+const ApiDelBackup = "DelBackup"
 const ApiLostNode = "LostNode"
 const ApiLostStorPool = "LostStorPool"
 const ApiDelExosEnclosure = "DelExosEnclosure"
@@ -400,7 +424,10 @@ const ApiLstRscGrp = "LstRscGrp"
 const ApiLstVlmGrp = "LstVlmGrp"
 const ApiLstPhysStor = "LstPhysicalStorage"
 const ApiLstSnapshotShippings = "LstSnapShips"
+const ApiLstBackups = "LstBackups"
+const ApiBackupInfo = "BackupInfo"
 const ApiLstPropsInfo = "LstPropsInfo"
+const ApiLstRemote = "LstRemote"
 const ApiLstExosDflts = "LstExosDefaults"
 const ApiLstExosEnclosures = "LstExosEnclosures"
 const ApiExosEnclosureEvents = "ExosEvents"
@@ -539,6 +566,11 @@ const KeyKeep = "Keep"
 const KeyAutoSnapshotNextId = "NextAutoId"
 const KeyTcpPortRange = "TcpPortRange"
 
+// ## Backup shipping property keys ###
+const KeyBackupTimeout = "BackupTimeout"
+const KeyBackupS3Suffix = "S3KeySuffix"
+const KeyRemote = "Remote"
+
 // ## Property namespaces ###
 const NamespcNetcom = "NetCom"
 const NamespcDflt = "Default"
@@ -575,6 +607,9 @@ const NamespcSnapshotShipping = "SnapshotShipping"
 const NamespcAutoSnapshot = "AutoSnapshot"
 const NamespcStltDevSymlinks = "Satellite/Device/Symlinks"
 const NamespcExos = "StorDriver/Exos"
+const NamespcBackupShipping = "BackupShipping"
+const NamespcCluster = "Cluster"
+const NamespcClusterRemote = "Cluster/Remote"
 
 // ## Storage pool property keys ###
 const KeyStorPoolDfn = "StorPoolDfn"
@@ -614,6 +649,12 @@ const KeyStorPoolExosVlmType = "VolumeType"
 const KeyStorPoolExosCreateVolumeOptions = "CreateVolumeOptions"
 const KeyStorPoolExosEnclosure = "Enclosure"
 const KeyStorPoolExosPoolSn = "PoolSN"
+const KeyStorPoolRemoteSpdkApiHost = "RemoteSpdk/ApiHost"
+const KeyStorPoolRemoteSpdkApiPort = "RemoteSpdk/ApiPort"
+const KeyStorPoolRemoteSpdkApiUserName = "RemoteSpdk/UserName"
+const KeyStorPoolRemoteSpdkApiUserPw = "RemoteSpdk/UserPassword"
+const KeyStorPoolRemoteSpdkApiUserNameEnv = "RemoteSpdk/UserNameEnv"
+const KeyStorPoolRemoteSpdkApiUserPwEnv = "RemoteSpdk/UserPasswordEnv"
 const KeyPrefNic = "PrefNic"
 
 // ## Storage pool traits keys ###
@@ -665,6 +706,7 @@ const ValNodeTypeStlt = "Satellite"
 const ValNodeTypeCmbd = "Combined"
 const ValNodeTypeAux = "Auxiliary"
 const ValNodeTypeOpenflexTarget = "Openflex_Target"
+const ValNodeTypeRemoteSpdk = "Remote_Spdk"
 const ValNodeTypeExosTarget = "Exos_Target"
 
 // ## Writecache option values ###
@@ -718,6 +760,10 @@ const FlagQignore = "QIGNORE"
 const FlagEncrypted = "ENCRYPTED"
 const FlagGrossSize = "GROSS_SIZE"
 const FlagSuccessful = "SUCCESSFUL"
+const FlagShipping = "SHIPPING"
+const FlagBackup = "BACKUP"
+const FlagBackupTarget = "BACKUP_TARGET"
+const FlagBackupSource = "BACKUP_SOURCE"
 const FlagFailedDeployment = "FAILED_DEPLOYMENT"
 const FlagFailedDisconnect = "FAILED_DISCONNECT"
 const FlagResize = "RESIZE"
@@ -740,6 +786,7 @@ const FlagRscInactive = "INACTIVE"
 // devicelayerkind.Exos = "EXOS"
 // devicelayerkind.Writecache = "WRITECACHE"
 // devicelayerkind.Cache = "CACHE"
+// devicelayerkind.Bcache = "BCACHE"
 
 // ## Satellite connection statuses ###
 // enum generated in package -> "golinstor/connectionstatus"
@@ -754,6 +801,12 @@ const FlagRscInactive = "INACTIVE"
 // connectionstatus.OtherController = 8
 // connectionstatus.Authenticated = 9
 // connectionstatus.NoStltConn = 10
+
+// ## Clone states ###
+// enum generated in package -> "golinstor/clonestatus"
+// clonestatus.Failed = "FAILED"
+// clonestatus.Cloning = "CLONING"
+// clonestatus.Complete = "COMPLETE"
 
 // ## Default names ###
 const DefaultNetif = "default"

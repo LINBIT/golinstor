@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -87,7 +88,7 @@ func TestParse(t *testing.T) {
 					},
 				},
 				Uuid:            "78f0d7fe-2b4d-4d5b-afb4-e1b1450c70cb",
-				CreateTimestamp: 1622636098831,
+				CreateTimestamp: &client.TimeStampMs{Time: time.Unix(1622636098, 831_000_000)},
 			},
 		},
 		{
@@ -161,7 +162,7 @@ func TestParse(t *testing.T) {
 					},
 					Uuid: "78f0d7fe-2b4d-4d5b-afb4-e1b1450c70cb",
 				},
-				CreateTimestamp: 1622636098831,
+				CreateTimestamp: &client.TimeStampMs{Time: time.Unix(1622636098, 831_000_000)},
 				Volumes: []client.Volume{
 					{
 						StoragePoolName:  "thinpool",
