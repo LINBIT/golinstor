@@ -58,6 +58,8 @@ type Client struct {
 	Controller             ControllerProvider
 	Events                 EventProvider
 	Vendor                 VendorProvider
+	Remote                 RemoteProvider
+	Backup                 BackupProvider
 }
 
 // Logger represents a standard logger interface
@@ -391,6 +393,8 @@ func NewClient(options ...Option) (*Client, error) {
 	c.Controller = &ControllerService{client: c}
 	c.Events = &EventService{client: c}
 	c.Vendor = &VendorService{client: c}
+	c.Remote = &RemoteService{client: c}
+	c.Backup = &BackupService{client: c}
 
 	return c, nil
 }
@@ -628,13 +632,8 @@ func (c *Client) doPATCH(ctx context.Context, url string, body interface{}) (*ht
 	return c.do(ctx, req, nil)
 }
 
-func (c *Client) doDELETE(ctx context.Context, url string, body interface{}, opts ...*ListOpts) (*http.Response, error) {
-	u, err := addOptions(url, genOptions(opts...))
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := c.newRequest("DELETE", u, body)
+func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest("DELETE", url, body)
 	if err != nil {
 		return nil, err
 	}

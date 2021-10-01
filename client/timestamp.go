@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -22,4 +23,9 @@ func (t *TimeStampMs) UnmarshalJSON(s []byte) (err error) {
 
 func (t TimeStampMs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.Time.Unix() * 1000)
+}
+
+func (t TimeStampMs) EncodeValues(key string, v *url.Values) error {
+	v.Add(key, t.Format("20060102_150405"))
+	return nil
 }

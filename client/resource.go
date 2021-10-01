@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/google/go-querystring/query"
+
 	"github.com/LINBIT/golinstor/devicelayerkind"
 	"github.com/LINBIT/golinstor/snapshotshipstatus"
 )
@@ -52,8 +54,8 @@ type Resource struct {
 type ResourceWithVolumes struct {
 	Resource
 	// milliseconds since unix epoch in UTC
-	CreateTimestamp *TimeStampMs    `json:"create_timestamp,omitempty"`
-	Volumes         []Volume `json:"volumes,omitempty"`
+	CreateTimestamp *TimeStampMs `json:"create_timestamp,omitempty"`
+	Volumes         []Volume     `json:"volumes,omitempty"`
 	// shared space name of the data storage pool of the first volume of
 	// the resource or empty if data storage pool is not shared
 	SharedName string `json:"shared_name,omitempty"`
@@ -269,7 +271,7 @@ type AutoSelectFilter struct {
 	ProviderList            []string `json:"provider_list,omitempty"`
 	DisklessOnRemaining     bool     `json:"diskless_on_remaining,omitempty"`
 	DisklessType            string   `json:"diskless_type,omitempty"`
-	Overprovision			*float64 `json:"overprovision,omitempty"`
+	Overprovision           *float64 `json:"overprovision,omitempty"`
 }
 
 // ResourceConnection is a struct which holds information about a connection between to nodes
@@ -305,8 +307,8 @@ type SnapshotNode struct {
 	// Node name where this snapshot was taken
 	NodeName string `json:"node_name,omitempty"`
 	// milliseconds since unix epoch in UTC
-	CreateTimestamp *TimeStampMs    `json:"create_timestamp,omitempty"`
-	Flags           []string `json:"flags,omitempty"`
+	CreateTimestamp *TimeStampMs `json:"create_timestamp,omitempty"`
+	Flags           []string     `json:"flags,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
 }
@@ -424,7 +426,7 @@ type ResourceProvider interface {
 	// CreateSnapshot creates a snapshot of a resource
 	CreateSnapshot(ctx context.Context, snapshot Snapshot) error
 	// DeleteSnapshot deletes a snapshot by its name. Specify nodes to only delete snapshots on specific nodes.
-	DeleteSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) error
+	DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error
 	// RestoreSnapshot restores a snapshot on a resource
 	RestoreSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error
 	// RestoreVolumeDefinitionSnapshot restores a volume-definition-snapshot on a resource
@@ -714,8 +716,15 @@ func (n *ResourceService) CreateSnapshot(ctx context.Context, snapshot Snapshot)
 }
 
 // DeleteSnapshot deletes a snapshot by its name. Specify nodes to only delete snapshots on specific nodes.
-func (n *ResourceService) DeleteSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) error {
-	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName, nil, opts...)
+func (n *ResourceService) DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error {
+	vals, err := query.Values(struct {
+		Nodes []string `url:"nodes"`
+	}{Nodes: nodes})
+	if err != nil {
+		return fmt.Errorf("failed to encode node names: %w", err)
+	}
+
+	_, err = n.client.doDELETE(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName+"?"+vals.Encode(), nil)
 	return err
 }
 
