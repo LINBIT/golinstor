@@ -24,6 +24,8 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/google/go-querystring/query"
+
 	"github.com/LINBIT/golinstor/clonestatus"
 	"github.com/LINBIT/golinstor/devicelayerkind"
 )
@@ -137,12 +139,28 @@ type ResourceDefinitionCloneStatus struct {
 
 // custom code
 
+type ResourceDefinitionWithVolumeDefinition struct {
+	ResourceDefinition
+	VolumeDefinitions []VolumeDefinition `json:"volume_definitions,omitempty"`
+}
+
+type RDGetAllRequest struct {
+	// ResourceDefinitions filters the returned resource definitions by the given names
+	ResourceDefinitions   []string `url:"resource_definitions,omitempty"`
+	// Props filters the returned resource definitions on their property values (uses key=value syntax)
+	Props                 []string `url:"props,omitempty"`
+	Offset                int      `url:"offset,omitempty"`
+	Limit                 int      `url:"offset,omitempty"`
+	// WithVolumeDefinitions, if set to true, LINSTOR will also include volume definitions in the response.
+	WithVolumeDefinitions bool     `url:"with_volume_definitions,omitempty"`
+}
+
 // ResourceDefinitionProvider acts as an abstraction for a
 // ResourceDefinitionService. It can be swapped out for another
 // ResourceDefinitionService implementation, for example for testing.
 type ResourceDefinitionProvider interface {
 	// GetAll lists all resource-definitions
-	GetAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error)
+	GetAll(ctx context.Context, request RDGetAllRequest) ([]ResourceDefinitionWithVolumeDefinition, error)
 	// Get return information about a resource-defintion
 	Get(ctx context.Context, resDefName string, opts ...*ListOpts) (ResourceDefinition, error)
 	// Create adds a new resource-definition
@@ -270,9 +288,14 @@ type OneOfDrbdVolumeDefinition interface {
 func (d *DrbdVolumeDefinition) isOneOfDrbdVolumeDefinition() {}
 
 // GetAll lists all resource-definitions
-func (n *ResourceDefinitionService) GetAll(ctx context.Context, opts ...*ListOpts) ([]ResourceDefinition, error) {
-	var resDefs []ResourceDefinition
-	_, err := n.client.doGET(ctx, "/v1/resource-definitions", &resDefs, opts...)
+func (n *ResourceDefinitionService) GetAll(ctx context.Context, request RDGetAllRequest) ([]ResourceDefinitionWithVolumeDefinition, error) {
+	val, err := query.Values(request)
+	if err != nil {
+		return nil, err
+	}
+
+	var resDefs []ResourceDefinitionWithVolumeDefinition
+	_, err = n.client.doGET(ctx, "/v1/resource-definitions?"+val.Encode(), &resDefs)
 	return resDefs, err
 }
 

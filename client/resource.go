@@ -396,7 +396,7 @@ type ResourceProvider interface {
 	// Create is used to create a resource on a node
 	Create(ctx context.Context, res ResourceCreate) error
 	// Modify gives the ability to modify a resource on a node
-	Modify(ctx context.Context, resName, nodeName string, props ResourceDefinitionModify) error
+	Modify(ctx context.Context, resName, nodeName string, props GenericPropsModify) error
 	// Delete deletes a resource on a specific node
 	Delete(ctx context.Context, resName, nodeName string) error
 	// GetVolumes lists als volumes of a resource
@@ -585,7 +585,7 @@ func (n *ResourceService) Create(ctx context.Context, res ResourceCreate) error 
 }
 
 // Modify gives the ability to modify a resource on a node
-func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, props ResourceDefinitionModify) error {
+func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, props GenericPropsModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/resources/"+nodeName, props)
 	return err
 }
