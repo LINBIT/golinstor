@@ -14,8 +14,8 @@ require (
 	github.com/onsi/gomega v1.5.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.3.0
-	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/crypto v0.0.0-20190228161510-8dd112bcdc25 // indirect
+	github.com/smartystreets/goconvey v1.7.2 // indirect
+	github.com/stretchr/testify v1.3.0
 	golang.org/x/sys v0.0.0-20190228124157-a34e9553db1e // indirect
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )
