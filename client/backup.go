@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -140,7 +141,7 @@ type BackupProvider interface {
 	// DeleteAll backups that fit the given criteria.
 	DeleteAll(ctx context.Context, remoteName string, filter BackupDeleteOpts) error
 	// Create a new backup operation.
-	Create(ctx context.Context, remoteName string, request BackupCreate) error
+	Create(ctx context.Context, remoteName string, request BackupCreate) (string, error)
 	// Info retrieves information about a specific backup instance.
 	Info(ctx context.Context, remoteName string, request BackupInfoRequest) (BackupInfo, error)
 	// Abort all running backup operations of a resource.
@@ -180,19 +181,25 @@ func (b *BackupService) DeleteAll(ctx context.Context, remoteName string, filter
 	return err
 }
 
-func (b *BackupService) Create(ctx context.Context, remoteName string, request BackupCreate) error {
+func (b *BackupService) Create(ctx context.Context, remoteName string, request BackupCreate) (string, error) {
 	req, err := b.client.newRequest(http.MethodPost, "/v1/remotes/"+remoteName+"/backups", request)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// TODO: extract snapshot key once LINSTOR exposes something like that
-	_, err = b.client.do(ctx, req, nil)
+	var resp []ApiCallRc
+	_, err = b.client.do(ctx, req, &resp)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	for _, rc := range resp {
+		if s, ok := rc.ObjRefs["Snapshot"]; ok {
+			return s, nil
+		}
+	}
+
+	return "", errors.New("missing snapshot reference")
 }
 
 func (b *BackupService) Info(ctx context.Context, remoteName string, request BackupInfoRequest) (BackupInfo, error) {
