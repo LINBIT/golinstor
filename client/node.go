@@ -161,10 +161,13 @@ type NodeProvider interface {
 	// GetPropsInfos gets meta information about the properties that can be
 	// set on a node.
 	GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]PropsInfo, error)
-	// Evict the given node, migrating resources to the remaining nodes, if possible.
+	// Evict the given node, migrating resources to the remaining nodes, if possible. This is meant for offline nodes.
 	Evict(ctx context.Context, nodeName string) error
 	// Restore an evicted node, optionally keeping existing resources.
 	Restore(ctx context.Context, nodeName string, restore NodeRestore) error
+	// Evacuate the given node, migrating resources to remaining nodes. While Evict works only on offline nodes, this
+	// is meant for online nodes.
+	Evacuate(ctx context.Context, nodeName string) error
 }
 
 // NodeService is the service that deals with node related tasks.
@@ -308,6 +311,13 @@ func (n *NodeService) GetPropsInfos(ctx context.Context, opts ...*ListOpts) ([]P
 // Evict the given node, migrating resources to the remaining nodes, if possible.
 func (n NodeService) Evict(ctx context.Context, nodeName string) error {
 	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/evict", nil)
+	return err
+}
+
+// Evacuate the given node, migrating resources to remaining nodes. While Evict works only on offline nodes, this
+// is meant for online nodes.
+func (n NodeService) Evacuate(ctx context.Context, nodeName string) error {
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/evacuate", nil)
 	return err
 }
 
