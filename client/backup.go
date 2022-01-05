@@ -18,6 +18,7 @@ type Backup struct {
 	FinishedTime      string          `json:"finished_time,omitempty"`
 	FinishedTimestamp *TimeStampMs    `json:"finished_timestamp,omitempty"`
 	OriginRsc         string          `json:"origin_rsc"`
+	OriginSnap        string          `json:"origin_snap"`
 	OriginNode        string          `json:"origin_node,omitempty"`
 	FailMessages      string          `json:"fail_messages,omitempty"`
 	Vlms              []BackupVolumes `json:"vlms"`
@@ -30,6 +31,7 @@ type Backup struct {
 
 type BackupInfo struct {
 	Rsc          string               `json:"rsc"`
+	Snap         string               `json:"snap"`
 	Full         string               `json:"full"`
 	Latest       string               `json:"latest"`
 	Count        int32                `json:"count,omitempty"`
@@ -40,6 +42,7 @@ type BackupInfo struct {
 
 type BackupInfoRequest struct {
 	SrcRscName  string            `json:"src_rsc_name,omitempty"`
+	SrcSnapName string            `json:"src_snap_name,omitempty"`
 	LastBackup  string            `json:"last_backup,omitempty"`
 	StorPoolMap map[string]string `json:"stor_pool_map,omitempty"`
 	NodeName    string            `json:"node_name,omitempty"`
@@ -74,6 +77,7 @@ type BackupOther struct {
 
 type BackupRestoreRequest struct {
 	SrcRscName    string            `json:"src_rsc_name,omitempty"`
+	SrcSnapName   string            `json:"src_snap_name,omitempty"`
 	LastBackup    string            `json:"last_backup,omitempty"`
 	StorPoolMap   map[string]string `json:"stor_pool_map,omitempty"`
 	TargetRscName string            `json:"target_rsc_name"`
@@ -94,6 +98,7 @@ type BackupAbortRequest struct {
 
 type BackupCreate struct {
 	RscName     string `json:"rsc_name"`
+	SnapName    string `json:"snap_name,omitempty"`
 	NodeName    string `json:"node_name,omitempty"`
 	Incremental bool   `json:"incremental,omitempty"`
 }
@@ -137,13 +142,13 @@ type BackupDeleteOpts struct {
 type BackupProvider interface {
 	// GetAll fetches information on all backups stored at the given remote. Optionally limited to the given
 	// resource names.
-	GetAll(ctx context.Context, remoteName string, rscNames ...string) (BackupList, error)
+	GetAll(ctx context.Context, remoteName string, rscName string, snapName string) (*BackupList, error)
 	// DeleteAll backups that fit the given criteria.
 	DeleteAll(ctx context.Context, remoteName string, filter BackupDeleteOpts) error
 	// Create a new backup operation.
 	Create(ctx context.Context, remoteName string, request BackupCreate) (string, error)
 	// Info retrieves information about a specific backup instance.
-	Info(ctx context.Context, remoteName string, request BackupInfoRequest) (BackupInfo, error)
+	Info(ctx context.Context, remoteName string, request BackupInfoRequest) (*BackupInfo, error)
 	// Abort all running backup operations of a resource.
 	Abort(ctx context.Context, remoteName string, request BackupAbortRequest) error
 	// Ship ships a backup from one LINSTOR cluster to another.
@@ -158,17 +163,21 @@ type BackupService struct {
 	client *Client
 }
 
-func (b *BackupService) GetAll(ctx context.Context, remoteName string, rscNames ...string) (BackupList, error) {
+func (b *BackupService) GetAll(ctx context.Context, remoteName string, rscName string, snapName string) (*BackupList, error) {
 	vals, err := query.Values(struct {
-		ResourceName []string `url:"rsc_name"`
-	}{ResourceName: rscNames})
+		ResourceName string `url:"rsc_name,omitempty"`
+		SnapshotName string `url:"snap_name,omitempty"`
+	}{ResourceName: rscName, SnapshotName: snapName})
 	if err != nil {
-		return BackupList{}, fmt.Errorf("failed to encode resource names: %w", err)
+		return nil, fmt.Errorf("failed to encode resource names: %w", err)
 	}
 
 	var list BackupList
 	_, err = b.client.doGET(ctx, "/v1/remotes/"+remoteName+"/backups?"+vals.Encode(), &list)
-	return list, err
+	if err != nil {
+		return nil, err
+	}
+	return &list, err
 }
 
 func (b *BackupService) DeleteAll(ctx context.Context, remoteName string, filter BackupDeleteOpts) error {
@@ -202,19 +211,19 @@ func (b *BackupService) Create(ctx context.Context, remoteName string, request B
 	return "", errors.New("missing snapshot reference")
 }
 
-func (b *BackupService) Info(ctx context.Context, remoteName string, request BackupInfoRequest) (BackupInfo, error) {
+func (b *BackupService) Info(ctx context.Context, remoteName string, request BackupInfoRequest) (*BackupInfo, error) {
 	req, err := b.client.newRequest(http.MethodPost, "/v1/remotes/"+remoteName+"/backups/info", request)
 	if err != nil {
-		return BackupInfo{}, err
+		return nil, err
 	}
 
 	var resp BackupInfo
 	_, err = b.client.do(ctx, req, &resp)
 	if err != nil {
-		return BackupInfo{}, err
+		return nil, err
 	}
 
-	return resp, nil
+	return &resp, nil
 }
 
 func (b *BackupService) Abort(ctx context.Context, remoteName string, request BackupAbortRequest) error {

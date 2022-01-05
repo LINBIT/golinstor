@@ -30,6 +30,8 @@ type ListOpts struct {
 	Offset int `url:"offset"`
 	// Maximum number of items to retrieve
 	Limit int `url:"limit"`
+	// Some responses can be cached controller side, such as snapshot lists
+	Cached *bool `url:"cached,omitempty"`
 
 	StoragePool []string `url:"storage_pools"`
 	Resource    []string `url:"resources"`
