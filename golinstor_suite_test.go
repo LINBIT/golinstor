@@ -60,7 +60,7 @@ var _ = Describe("Resources", func() {
 		Context("resources with valid names", func() {
 
 			var (
-				startingResDefs []lapi.ResourceDefinition
+				startingResDefs []lapi.ResourceDefinitionWithVolumeDefinition
 				resDefNames     []string
 				// Set of storage pools and a set of nodes they're present on.
 				storagePools = make(map[string]map[string]bool)
@@ -78,7 +78,7 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should not error", func() {
-				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
+				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				By("Creating resource definitions.")
@@ -96,7 +96,7 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should increase the number of resource definitions", func() {
-				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(currentResDefs).Should(HaveLen(len(startingResDefs) + conf.ResourceDefinitionCreateLimit))
@@ -111,7 +111,7 @@ var _ = Describe("Resources", func() {
 					Ω(resDef.Name).Should(Equal(name))
 
 					By("checking the resource definition list")
-					currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+					currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(currentResDefs).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(name)})))
@@ -242,13 +242,13 @@ var _ = Describe("Resources", func() {
 
 		Context("when an resource definition is created with an invalid name", func() {
 			var (
-				startingResDefs []lapi.ResourceDefinition
+				startingResDefs []lapi.ResourceDefinitionWithVolumeDefinition
 				err             error
 			)
 
 			defName := "กิจวัตรประจำวัน"
 			It("should error on creation", func() {
-				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
+				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{Name: defName}})
@@ -256,7 +256,7 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should not increase the number of resource definitions", func() {
-				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(currentResDefs).Should(HaveLen(len(startingResDefs)))
@@ -271,7 +271,7 @@ var _ = Describe("Resources", func() {
 				Ω(resDef).Should(BeZero())
 
 				By("checking the resource definition list")
-				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(currentResDefs).ShouldNot(ContainElement(MatchFields(IgnoreExtras, Fields{"Name": Equal(defName)})))
@@ -286,14 +286,14 @@ var _ = Describe("Resources", func() {
 		Context("when an resource definition is created with an ExternalName", func() {
 
 			var (
-				startingResDefs []lapi.ResourceDefinition
+				startingResDefs []lapi.ResourceDefinitionWithVolumeDefinition
 				err             error
 				actualName      string
 			)
 
 			defExtName := strings.Repeat("ö", 80)
 			It("should not error", func() {
-				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX)
+				startingResDefs, err = client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				err = client.ResourceDefinitions.Create(testCTX, lapi.ResourceDefinitionCreate{ResourceDefinition: lapi.ResourceDefinition{ExternalName: defExtName}})
@@ -301,7 +301,7 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should increase the number of resource definitions", func() {
-				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(currentResDefs).Should(HaveLen(len(startingResDefs) + 1))
@@ -309,7 +309,7 @@ var _ = Describe("Resources", func() {
 
 			It("should have the requested name", func() {
 				By("checking the resource definition list for the external name")
-				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX)
+				currentResDefs, err := client.ResourceDefinitions.GetAll(testCTX, lapi.RDGetAllRequest{})
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(currentResDefs).Should(ContainElement(MatchFields(IgnoreExtras, Fields{"ExternalName": Equal(defExtName)})))
