@@ -137,6 +137,10 @@ type ResourceDefinitionCloneStatus struct {
 	Status clonestatus.CloneStatus `json:"status"`
 }
 
+type ResourceDefinitionSyncStatus struct {
+	SyncedOnAll bool `json:"synced_on_all"`
+}
+
 // custom code
 
 type ResourceDefinitionWithVolumeDefinition struct {
@@ -146,13 +150,13 @@ type ResourceDefinitionWithVolumeDefinition struct {
 
 type RDGetAllRequest struct {
 	// ResourceDefinitions filters the returned resource definitions by the given names
-	ResourceDefinitions   []string `url:"resource_definitions,omitempty"`
+	ResourceDefinitions []string `url:"resource_definitions,omitempty"`
 	// Props filters the returned resource definitions on their property values (uses key=value syntax)
-	Props                 []string `url:"props,omitempty"`
-	Offset                int      `url:"offset,omitempty"`
-	Limit                 int      `url:"offset,omitempty"`
+	Props  []string `url:"props,omitempty"`
+	Offset int      `url:"offset,omitempty"`
+	Limit  int      `url:"offset,omitempty"`
 	// WithVolumeDefinitions, if set to true, LINSTOR will also include volume definitions in the response.
-	WithVolumeDefinitions bool     `url:"with_volume_definitions,omitempty"`
+	WithVolumeDefinitions bool `url:"with_volume_definitions,omitempty"`
 }
 
 // ResourceDefinitionProvider acts as an abstraction for a
@@ -196,6 +200,8 @@ type ResourceDefinitionProvider interface {
 	Clone(ctx context.Context, srcResDef string, request ResourceDefinitionCloneRequest) (ResourceDefinitionCloneStarted, error)
 	// CloneStatus fetches the current status of a clone operation started by Clone.
 	CloneStatus(ctx context.Context, srcResDef, targetResDef string) (ResourceDefinitionCloneStatus, error)
+	// SyncStatus checks if a resource is currently in sync on all nodes
+	SyncStatus(ctx context.Context, resDef string) (ResourceDefinitionSyncStatus, error)
 }
 
 var _ ResourceDefinitionProvider = &ResourceDefinitionService{}
@@ -408,5 +414,12 @@ func (n *ResourceDefinitionService) Clone(ctx context.Context, srcResDef string,
 func (n *ResourceDefinitionService) CloneStatus(ctx context.Context, srcResDef, targetResDef string) (ResourceDefinitionCloneStatus, error) {
 	var status ResourceDefinitionCloneStatus
 	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+srcResDef+"/clone/"+targetResDef, &status)
+	return status, err
+}
+
+// SyncStatus checks if a resource is currently in sync on all nodes
+func (n *ResourceDefinitionService) SyncStatus(ctx context.Context, resDef string) (ResourceDefinitionSyncStatus, error) {
+	var status ResourceDefinitionSyncStatus
+	_, err := n.client.doGET(ctx, "/v1/resource-definitions/"+resDef+"/sync-status", &status)
 	return status, err
 }
