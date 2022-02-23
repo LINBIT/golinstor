@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/lithammer/shortuuid"
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -444,7 +444,7 @@ var _ = Describe("Snapshots", func() {
 })
 
 func uniqueName(n string) string {
-	return fmt.Sprintf("%s-%s-%s", "e2e", n, shortuuid.New())
+	return fmt.Sprintf("%s-%s-%s", "e2e", n, uuid.New())
 }
 
 func random(min, max int) int {

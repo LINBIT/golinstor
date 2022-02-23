@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/LINBIT/golinstor/connectionstatus"
@@ -94,7 +94,7 @@ func NewResourceDeployment(c ResourceDeploymentConfig) ResourceDeployment {
 	r := ResourceDeployment{ResourceDeploymentConfig: c}
 
 	if r.Name == "" {
-		r.Name = fmt.Sprintf("auto-%s", uuid.NewV4())
+		r.Name = fmt.Sprintf("auto-%s", uuid.New())
 	}
 
 	if len(r.NodeList) == 0 && len(r.ClientList) == 0 && r.AutoPlace == 0 {
@@ -566,7 +566,7 @@ func (r ResourceDeployment) NewResourceFromSnapshot(snapshotID string) error {
 }
 
 func (r ResourceDeployment) NewResourceFromResource(sourceRes ResourceDeployment) error {
-	snap, err := sourceRes.SnapshotCreate(fmt.Sprintf("tmp-%s", uuid.NewV4()))
+	snap, err := sourceRes.SnapshotCreate(fmt.Sprintf("tmp-%s", uuid.New()))
 	if err != nil {
 		return err
 	}
