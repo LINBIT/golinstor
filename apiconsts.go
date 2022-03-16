@@ -561,6 +561,7 @@ const KeyAutoplacePreSelectFileName = "PreSelectScript"
 const KeyAutoplacePreSelectScriptTimeout = "PreSelectScriptTimeout"
 const KeyAutoplaceMaxThroughput = "MaxThroughput"
 const KeySite = "Site"
+const KeyAutoplaceAllowTarget = "AutoplaceTarget"
 
 // ## Auto-Evict property keys ###
 const KeyAutoEvictMinReplicaCount = "AutoEvictMinReplicaCount"
