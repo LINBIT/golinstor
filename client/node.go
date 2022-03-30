@@ -281,8 +281,8 @@ func (n *NodeService) CreateStoragePool(ctx context.Context, nodeName string, sp
 }
 
 // ModifyStoragePool modifies a storage pool on a given node.
-func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName string, gp GenericPropsModify) error {
-	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, gp)
+func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName string, genericProps GenericPropsModify) error {
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, genericProps)
 	return err
 }
 
