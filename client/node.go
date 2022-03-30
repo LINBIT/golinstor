@@ -148,7 +148,7 @@ type NodeProvider interface {
 	// CreateStoragePool creates a storage pool on a given node.
 	CreateStoragePool(ctx context.Context, nodeName string, sp StoragePool) error
 	// ModifyStoragePool modifies a storage pool on a given node.
-	ModifyStoragePool(ctx context.Context, nodeName, spName string, sp StoragePool) error
+	ModifyStoragePool(ctx context.Context, nodeName, spName string, gp GenericPropsModify) error
 	// DeleteStoragePool deletes a storage pool on a given node.
 	DeleteStoragePool(ctx context.Context, nodeName, spName string) error
 	// CreateDevicePool creates an LVM, LVM-thin or ZFS pool, optional VDO under it on a given node.
@@ -281,8 +281,8 @@ func (n *NodeService) CreateStoragePool(ctx context.Context, nodeName string, sp
 }
 
 // ModifyStoragePool modifies a storage pool on a given node.
-func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName string, sp StoragePool) error {
-	_, err := n.client.doPOST(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, sp)
+func (n *NodeService) ModifyStoragePool(ctx context.Context, nodeName, spName string, gp GenericPropsModify) error {
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/storage-pools/"+spName, gp)
 	return err
 }
 
