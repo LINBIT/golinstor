@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/donovanhide/eventsource v0.0.0-20210830082556-c59027999da0
-	github.com/google/go-querystring v1.0.0
+	github.com/google/go-querystring v1.1.0
 	github.com/google/uuid v1.3.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/moul/http2curl v1.0.0
