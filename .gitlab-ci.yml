@@ -1,13 +1,21 @@
 # Use the same image version as the minimum version on go.mod
-image: golang:1.13
+image: golang:1.17
 
 test:
   stage: test
   cache:
     paths:
       - .mygo/pkg/mod
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.mygo
   script:
-    - GOPATH=$(pwd)/.mygo go mod tidy
+    - go mod tidy
     - git diff --exit-code go.mod go.sum || (echo "Run go mod tidy!" >&2 ; exit 1)
-    - GOPATH=$(pwd)/.mygo go test -coverprofile .testCoverage.txt ./client
-    - GOPATH=$(pwd)/.mygo go tool cover -func=.testCoverage.txt
+    - go test -v -coverprofile .testCoverage.txt -covermode count ./client 2>&1 | go run github.com/jstemmer/go-junit-report@latest -set-exit-code > test.xml
+    - go run github.com/boumenot/gocover-cobertura@latest < .testCoverage.txt > coverage.xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+      junit: test.xml
