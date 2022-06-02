@@ -14,6 +14,8 @@ import (
 )
 
 func TestParse(t *testing.T) {
+	no := false
+
 	testcases := []struct {
 		response string
 		actual   interface{}
@@ -21,7 +23,7 @@ func TestParse(t *testing.T) {
 	}{
 		{
 			response: `{"name":"pvc-b5be6893-9892-4278-b2da-51a060fc4624","node_name":"demo1.linstor-days.at.linbit.com","props":{"StorPoolName":"thinpool"},"layer_object":{"children":[{"type":"STORAGE","storage":{"storage_volumes":[{"volume_number":0,"device_path":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":516096,"usable_size_kib":516096,"disk_state":"[]"}]}}],"type":"DRBD","drbd":{"drbd_resource_definition":{"peer_slots":7,"al_stripes":1,"al_stripe_size_kib":32,"port":7000,"transport_type":"IP","secret":"bNvYcSbPFPpbHZ9Gtq00","down":false},"node_id":0,"peer_slots":7,"al_stripes":1,"al_size":32,"drbd_volumes":[{"drbd_volume_definition":{"volume_number":0,"minor_number":1000},"device_path":"/dev/drbd1000","backing_device":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":512148,"usable_size_kib":512000}],"connections":{"demo2.linstor-days.at.linbit.com":{"connected":true,"message":"Connected"},"demo3.linstor-days.at.linbit.com":{"connected":false,"message":"Connecting"}},"promotion_score":10101,"may_promote":true}},"state":{"in_use":false},"uuid":"78f0d7fe-2b4d-4d5b-afb4-e1b1450c70cb","create_timestamp":1622636098831}`,
-			actual: &client.Resource{},
+			actual:   &client.Resource{},
 			expected: &client.Resource{
 				Name:     "pvc-b5be6893-9892-4278-b2da-51a060fc4624",
 				NodeName: "demo1.linstor-days.at.linbit.com",
@@ -87,13 +89,16 @@ func TestParse(t *testing.T) {
 						MayPromote:     true,
 					},
 				},
+				State: &client.ResourceState{
+					InUse: &no,
+				},
 				Uuid:            "78f0d7fe-2b4d-4d5b-afb4-e1b1450c70cb",
 				CreateTimestamp: &client.TimeStampMs{Time: time.Unix(1622636098, 831_000_000)},
 			},
 		},
 		{
-			response: `{"name":"pvc-b5be6893-9892-4278-b2da-51a060fc4624","node_name":"demo1.linstor-days.at.linbit.com","props":{"StorPoolName":"thinpool"},"layer_object":{"children":[{"type":"STORAGE","storage":{"storage_volumes":[{"volume_number":0,"device_path":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":516096,"usable_size_kib":516096,"disk_state":"[]"}]}}],"type":"DRBD","drbd":{"drbd_resource_definition":{"peer_slots":7,"al_stripes":1,"al_stripe_size_kib":32,"port":7000,"transport_type":"IP","secret":"bNvYcSbPFPpbHZ9Gtq00","down":false},"node_id":0,"peer_slots":7,"al_stripes":1,"al_size":32,"drbd_volumes":[{"drbd_volume_definition":{"volume_number":0,"minor_number":1000},"device_path":"/dev/drbd1000","backing_device":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":512148,"usable_size_kib":512000}],"connections":{"demo2.linstor-days.at.linbit.com":{"connected":true,"message":"Connected"},"demo3.linstor-days.at.linbit.com":{"connected":false,"message":"Connecting"}},"promotion_score":10101,"may_promote":true}},"state":{"in_use":false},"uuid":"78f0d7fe-2b4d-4d5b-afb4-e1b1450c70cb","create_timestamp":1622636098831,"volumes":[{"volume_number":0,"storage_pool_name":"thinpool","provider_kind":"LVM_THIN","device_path":"/dev/drbd1000","allocated_size_kib":206,"state":{"disk_state":"UpToDate"},"layer_data_list":[{"type":"DRBD","data":{"drbd_volume_definition":{"volume_number":0,"minor_number":1000},"device_path":"/dev/drbd1000","backing_device":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":512148,"usable_size_kib":512000}},{"type":"STORAGE","data":{"volume_number":0,"device_path":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":516096,"usable_size_kib":516096,"disk_state":"[]"}}],"uuid":"03b8ffd6-dbef-4745-87a0-46b4f8459e1e"}]}`,
-			actual: &client.ResourceWithVolumes{},
+			response: `{"name":"pvc-b5be6893-9892-4278-b2da-51a060fc4624","node_name":"demo1.linstor-days.at.linbit.com","props":{"StorPoolName":"thinpool"},"layer_object":{"children":[{"type":"STORAGE","storage":{"storage_volumes":[{"volume_number":0,"device_path":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":516096,"usable_size_kib":516096,"disk_state":"[]"}]}}],"type":"DRBD","drbd":{"drbd_resource_definition":{"peer_slots":7,"al_stripes":1,"al_stripe_size_kib":32,"port":7000,"transport_type":"IP","secret":"bNvYcSbPFPpbHZ9Gtq00","down":false},"node_id":0,"peer_slots":7,"al_stripes":1,"al_size":32,"drbd_volumes":[{"drbd_volume_definition":{"volume_number":0,"minor_number":1000},"device_path":"/dev/drbd1000","backing_device":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":512148,"usable_size_kib":512000}],"connections":{"demo2.linstor-days.at.linbit.com":{"connected":true,"message":"Connected"},"demo3.linstor-days.at.linbit.com":{"connected":false,"message":"Connecting"}},"promotion_score":10101,"may_promote":true}},"uuid":"78f0d7fe-2b4d-4d5b-afb4-e1b1450c70cb","create_timestamp":1622636098831,"volumes":[{"volume_number":0,"storage_pool_name":"thinpool","provider_kind":"LVM_THIN","device_path":"/dev/drbd1000","allocated_size_kib":206,"state":{"disk_state":"UpToDate"},"layer_data_list":[{"type":"DRBD","data":{"drbd_volume_definition":{"volume_number":0,"minor_number":1000},"device_path":"/dev/drbd1000","backing_device":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":512148,"usable_size_kib":512000}},{"type":"STORAGE","data":{"volume_number":0,"device_path":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":516096,"usable_size_kib":516096,"disk_state":"[]"}}],"uuid":"03b8ffd6-dbef-4745-87a0-46b4f8459e1e"}]}`,
+			actual:   &client.ResourceWithVolumes{},
 			expected: &client.ResourceWithVolumes{
 				Resource: client.Resource{
 					Name:     "pvc-b5be6893-9892-4278-b2da-51a060fc4624",
@@ -202,7 +207,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			response: `{"volume_number":0,"storage_pool_name":"thinpool","provider_kind":"LVM_THIN","device_path":"/dev/drbd1000","allocated_size_kib":206,"state":{"disk_state":"UpToDate"},"layer_data_list":[{"type":"DRBD","data":{"drbd_volume_definition":{"volume_number":0,"minor_number":1000},"device_path":"/dev/drbd1000","backing_device":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":512148,"usable_size_kib":512000}},{"type":"STORAGE","data":{"volume_number":0,"device_path":"/dev/linstor_thinpool/pvc-b5be6893-9892-4278-b2da-51a060fc4624_00000","allocated_size_kib":516096,"usable_size_kib":516096,"disk_state":"[]"}}],"uuid":"03b8ffd6-dbef-4745-87a0-46b4f8459e1e"}`,
-			actual: &client.Volume{},
+			actual:   &client.Volume{},
 			expected: &client.Volume{
 				StoragePoolName:  "thinpool",
 				ProviderKind:     client.LVM_THIN,

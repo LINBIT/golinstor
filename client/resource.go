@@ -44,7 +44,7 @@ type Resource struct {
 	Props       map[string]string `json:"props,omitempty"`
 	Flags       []string          `json:"flags,omitempty"`
 	LayerObject ResourceLayer     `json:"layer_object,omitempty"`
-	State       ResourceState     `json:"state,omitempty"`
+	State       *ResourceState    `json:"state,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
 	// milliseconds since unix epoch in UTC
@@ -216,7 +216,7 @@ type NvmeVolume struct {
 
 // ResourceState is a struct for getting the status of a resource
 type ResourceState struct {
-	InUse bool `json:"in_use,omitempty"`
+	InUse *bool `json:"in_use,omitempty"`
 }
 
 // Volume is a struct which holds the information about a linstor-volume
