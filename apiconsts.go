@@ -280,6 +280,7 @@ const WarnNodeEvicted = (1017 | MaskWarn)
 const WarnRscDeactivated = (1018 | MaskWarn)
 const WarnBackupDlOnly = (1019 | MaskWarn)
 const WarnNotEvacuating = (1020 | MaskWarn)
+const WarnInvldConf = (1021 | MaskWarn)
 const WarnNotFound = (3000 | MaskWarn)
 
 // ## Codes 10000-19999: info ###
@@ -499,6 +500,7 @@ const KeyPeerSlotsNewResource = "PeerSlotsNewResource"
 const KeyPeerSlots = "PeerSlots"
 const KeyRscRollbackTarget = "RollbackTarget"
 const KeyRscMigrateFrom = "MigrateFrom"
+const KeyRscAllowMixingDeviceKind = "AllowMixingStoragePoolDriver"
 
 // ## Volume property keys ###
 const KeyVlmGrp = "VlmGrp"
@@ -586,6 +588,18 @@ const KeyRemote = "Remote"
 
 // ## Clone property keys ###
 const KeyUseZfsClone = "UseZFSClone"
+
+// ## NetCom namespaces ###
+const KeyNetcomEnabled = "Enabled"
+const KeyNetcomBindAddress = "BindAddress"
+const KeyNetcomKeyPasswd = "KeyPasswd"
+const KeyNetcomKeyStore = "KeyStore"
+const KeyNetcomKeyStorePasswd = "KeyStorePasswd"
+const KeyNetcomPort = "Port"
+const KeyNetcomSslProtocol = "SslProtocol"
+const KeyNetcomTrustStore = "TrustStore"
+const KeyNetcomTrustStorePasswd = "TrustStorePasswd"
+const KeyNetcomType = "Type"
 
 // ## Property namespaces ###
 const NamespcNetcom = "NetCom"
@@ -749,8 +763,8 @@ const KeyExtCmdWaitTo = "ExtCmdWaitTimeout"
 const KeyExtFile = "ExtFile"
 
 // ## Default ports ###
-const DfltCtrlPortSsl = 3377
-const DfltCtrlPortPlain = 3376
+const DfltCtrlPortSsl = 3371
+const DfltCtrlPortPlain = 3370
 const DfltStltPortSsl = 3367
 const DfltStltPortPlain = 3366
 
