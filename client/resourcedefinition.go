@@ -87,7 +87,7 @@ type VolumeDefinitionCreate struct {
 
 // VolumeDefinition is a struct which is used to store volume-definition properties
 type VolumeDefinition struct {
-	VolumeNumber int32 `json:"volume_number,omitempty"`
+	VolumeNumber *int32 `json:"volume_number,omitempty"`
 	// Size of the volume in Kibi.
 	SizeKib uint64 `json:"size_kib"`
 	// A string to string property map.
