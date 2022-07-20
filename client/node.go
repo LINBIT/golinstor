@@ -153,8 +153,10 @@ type NodeProvider interface {
 	DeleteStoragePool(ctx context.Context, nodeName, spName string) error
 	// CreateDevicePool creates an LVM, LVM-thin or ZFS pool, optional VDO under it on a given node.
 	CreateDevicePool(ctx context.Context, nodeName string, psc PhysicalStorageCreate) error
-	// GetPhysicalStorage gets a grouped list of physical storage that can be turned into a LINSTOR storage-pool
-	GetPhysicalStorage(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorage, error)
+	// GetPhysicalStorageView gets a grouped list of physical storage that can be turned into a LINSTOR storage-pool
+	GetPhysicalStorageView(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorageViewItem, error)
+	// GetPhysicalStorage gets a list of unconfigured physical storage on a node.
+	GetPhysicalStorage(ctx context.Context, nodeName string) ([]PhysicalStorageNode, error)
 	// GetStoragePoolPropsInfos gets meta information about the properties
 	// that can be set on a storage pool on a particular node.
 	GetStoragePoolPropsInfos(ctx context.Context, nodeName string, opts ...*ListOpts) ([]PropsInfo, error)

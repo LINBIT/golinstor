@@ -46,6 +46,12 @@ type PhysicalStorageCreate struct {
 	WithStoragePool   PhysicalStorageStoragePoolCreate `json:"with_storage_pool,omitempty"`
 }
 
+type PhysicalStorageNode struct {
+	PhysicalStorageDevice
+	Size       int64 `json:"size,omitempty"`
+	Rotational bool  `json:"rotational,omitempty"`
+}
+
 // PhysicalStorageDevice represents a physical storage device on a a node.
 type PhysicalStorageDevice struct {
 	Device string `json:"device,omitempty"`
@@ -54,17 +60,23 @@ type PhysicalStorageDevice struct {
 	Wwn    string `json:"wwn,omitempty"`
 }
 
-// PhysicalStorage is a view on a physical storage on multiple nodes.
-type PhysicalStorage struct {
+// PhysicalStorageViewItem is a view on a physical storage on multiple nodes.
+type PhysicalStorageViewItem struct {
 	Size       int64                              `json:"size,omitempty"`
 	Rotational bool                               `json:"rotational,omitempty"`
 	Nodes      map[string][]PhysicalStorageDevice `json:"nodes,omitempty"`
 }
 
-// GetPhysicalStorage gets a grouped list of physical storage that can be turned into a LINSTOR storage-pool
-func (n *NodeService) GetPhysicalStorage(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorage, error) {
-	var ps []PhysicalStorage
+// GetPhysicalStorageView gets a grouped list of physical storage that can be turned into a LINSTOR storage-pool
+func (n *NodeService) GetPhysicalStorageView(ctx context.Context, opts ...*ListOpts) ([]PhysicalStorageViewItem, error) {
+	var ps []PhysicalStorageViewItem
 	_, err := n.client.doGET(ctx, "/v1/physical-storage/", &ps, opts...)
+	return ps, err
+}
+
+func (n *NodeService) GetPhysicalStorage(ctx context.Context, nodeName string) ([]PhysicalStorageNode, error) {
+	var ps []PhysicalStorageNode
+	_, err := n.client.doGET(ctx, "/v1/physical-storage/"+nodeName, &ps)
 	return ps, err
 }
 
