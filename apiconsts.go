@@ -37,6 +37,7 @@ const MaskDel = 0x0000000003000000
 
 // ## Type masks (Node, ResDfn, Res, VolDfn, Vol, NetInterface, ...) ###
 const MaskBitsObj = 0x00000000007C0000
+const MaskSchedule = 0x0000000000540000
 const MaskExtFiles = 0x0000000000500000
 const MaskPhysicalDevice = 0x00000000004C0000
 const MaskVlmGrp = 0x0000000000480000
@@ -115,6 +116,7 @@ const FailInvldRscGrpName = (237 | MaskError)
 const FailInvldBackupConfig = (238 | MaskError)
 const FailInvldRemoteName = (239 | MaskError)
 const FailInvldTimeParam = (240 | MaskError)
+const FailInvldScheduleName = (241 | MaskError)
 
 // ## Codes 300-399: dependency not found failures ###
 const FailNotFoundNode = (300 | MaskError)
@@ -140,6 +142,7 @@ const FailNotFoundExosEnclosure = (319 | MaskError)
 const FailNotFoundExtFile = (320 | MaskError)
 const FailNotFoundRemote = (321 | MaskError)
 const FailNotFoundBackup = (322 | MaskError)
+const FailNotFoundSchedule = (323 | MaskError)
 
 // ## Codes 400-499: access denied failures ###
 const FailAccDeniedNode = (400 | MaskError)
@@ -166,6 +169,7 @@ const FailAccDeniedVlmGrp = (420 | MaskError)
 const FailAccDeniedSnapDfn = (421 | MaskError)
 const FailAccDeniedExtFile = (422 | MaskError)
 const FailAccDeniedRemote = (423 | MaskError)
+const FailAccDeniedSchedule = (424 | MaskError)
 
 // ## Codes 500-599: data already exists failures ###
 const FailExistsNode = (500 | MaskError)
@@ -194,6 +198,7 @@ const FailExistsOpenflexTargetPerRscDfn = (524 | MaskError)
 const FailExistsSnapshotShipping = (525 | MaskError)
 const FailExistsExosEnclosure = (526 | MaskError)
 const FailExistsRemote = (527 | MaskError)
+const FailExistsSchedule = (528 | MaskError)
 
 // ## Codes 600-699: data missing failures ###
 const FailMissingProps = (600 | MaskError)
@@ -343,6 +348,7 @@ const ApiSetRemote = "SetRemote"
 const ApiRestoreBackup = "RstBackup"
 const ApiAbortBackup = "AbortBackup"
 const ApiShipBackup = "ShipBackup"
+const ApiCrtSchedule = "CrtSchedule"
 
 // ## Modify object APIs ###
 const ApiModNode = "ModNode"
@@ -371,6 +377,7 @@ const ApiActivateRsc = "ActivateRsc"
 const ApiDeactivateRsc = "DeactivateRsc"
 const ApiModExosDflts = "ModifyExosDefaults"
 const ApiModExosEnclosure = "ModExosEnclosure"
+const ApiModSchedule = "ModSchedule"
 
 // ## Delete object APIs ###
 const ApiDelNode = "DelNode"
@@ -391,6 +398,7 @@ const ApiDelBackup = "DelBackup"
 const ApiLostNode = "LostNode"
 const ApiLostStorPool = "LostStorPool"
 const ApiDelExosEnclosure = "DelExosEnclosure"
+const ApiDelSchedule = "DelSchedule"
 
 // ## Authentication APIs ###
 const ApiSignIn = "SignIn"
@@ -446,6 +454,7 @@ const ApiRscDfnStats = "RscDfnStats"
 const ApiRscStats = "RscStats"
 const ApiStorPoolStats = "StorPoolStats"
 const ApiErrReportStats = "ErrReportStats"
+const ApiLstSchedule = "LstSchedule"
 
 // ## Query APIs ###
 const ApiQryMaxVlmSize = "QryMaxVlmSize"
