@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"net"
 
 	"github.com/LINBIT/golinstor/devicelayerkind"
 )
@@ -58,7 +59,7 @@ type NodeRestore struct {
 // NetInterface represents a node's network interface.
 type NetInterface struct {
 	Name                    string `json:"name"`
-	Address                 string `json:"address"`
+	Address                 net.IP `json:"address"`
 	SatellitePort           int32  `json:"satellite_port,omitempty"`
 	SatelliteEncryptionType string `json:"satellite_encryption_type,omitempty"`
 	// Defines if this netinterface should be used for the satellite connection
