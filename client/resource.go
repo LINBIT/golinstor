@@ -311,6 +311,19 @@ type SnapshotNode struct {
 	Flags           []string     `json:"flags,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
+	// SnapshotVolumes holds per-volume information about snapshots on this node.
+	SnapshotVolumes []SnapshotVolumeNode `json:"snapshot_volumes,omitempty"`
+}
+
+type SnapshotVolumeNode struct {
+	// unique object id
+	Uuid string `json:"uuid,omitempty"`
+	// Volume number of the snapshot
+	VlmNr int32 `json:"vlm_nr,omitempty"`
+	// A string to string property map.
+	Props map[string]string `json:"props,omitempty"`
+	// Optional state for the given snapshot
+	State string `json:"state,omitempty"`
 }
 
 // SnapshotShipping struct for SnapshotShipping

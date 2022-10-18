@@ -17,6 +17,7 @@ type LinstorRemote struct {
 type RemoteList struct {
 	S3Remotes      []S3Remote      `json:"s3_remotes,omitempty"`
 	LinstorRemotes []LinstorRemote `json:"linstor_remotes,omitempty"`
+	EbsRemotes     []EbsRemote     `json:"ebs_remotes,omitempty"`
 }
 
 type S3Remote struct {
@@ -29,6 +30,15 @@ type S3Remote struct {
 	UsePathStyle bool   `json:"use_path_style,omitempty"`
 }
 
+type EbsRemote struct {
+	RemoteName       string `json:"remote_name,omitempty"`
+	Endpoint         string `json:"endpoint,omitempty"`
+	Region           string `json:"region,omitempty"`
+	AvailabilityZone string `json:"availability_zone,omitempty"`
+	AccessKey        string `json:"access_key,omitempty"`
+	SecretKey        string `json:"secret_key,omitempty"`
+}
+
 type RemoteProvider interface {
 	// GetAll returns the list of all registered remotes.
 	GetAll(ctx context.Context, opts ...*ListOpts) (RemoteList, error)
@@ -36,16 +46,22 @@ type RemoteProvider interface {
 	GetAllLinstor(ctx context.Context, opts ...*ListOpts) ([]LinstorRemote, error)
 	// GetAllS3 returns the list of S3 remotes.
 	GetAllS3(ctx context.Context, opts ...*ListOpts) ([]S3Remote, error)
+	// GetAllEbs returns the list of EBS remotes.
+	GetAllEbs(ctx context.Context, opts ...*ListOpts) ([]EbsRemote, error)
 	// CreateLinstor creates a new LINSTOR remote.
 	CreateLinstor(ctx context.Context, create LinstorRemote) error
 	// CreateS3 creates a new S3 remote.
 	CreateS3(ctx context.Context, create S3Remote) error
+	// CreateEbs creates a new EBS remote.
+	CreateEbs(ctx context.Context, create EbsRemote) error
 	// Delete a named remote.
 	Delete(ctx context.Context, remoteName string) error
 	// ModifyLinstor modifies the given LINSTOR remote.
 	ModifyLinstor(ctx context.Context, remoteName string, modify LinstorRemote) error
 	// ModifyS3 modifies the given S3 remote.
 	ModifyS3(ctx context.Context, remoteName string, modify S3Remote) error
+	// ModifyEbs modifies the given EBS remote.
+	ModifyEbs(ctx context.Context, remoteName string, modify EbsRemote) error
 }
 
 var _ RemoteProvider = &RemoteService{}
@@ -72,6 +88,12 @@ func (r *RemoteService) GetAllS3(ctx context.Context, opts ...*ListOpts) ([]S3Re
 	return list, err
 }
 
+func (r *RemoteService) GetAllEbs(ctx context.Context, opts ...*ListOpts) ([]EbsRemote, error) {
+	var list []EbsRemote
+	_, err := r.client.doGET(ctx, "/v1/remotes/ebs", &list, opts...)
+	return list, err
+}
+
 func (r *RemoteService) CreateLinstor(ctx context.Context, create LinstorRemote) error {
 	_, err := r.client.doPOST(ctx, "/v1/remotes/linstor", create)
 	return err
@@ -79,6 +101,11 @@ func (r *RemoteService) CreateLinstor(ctx context.Context, create LinstorRemote)
 
 func (r *RemoteService) CreateS3(ctx context.Context, create S3Remote) error {
 	_, err := r.client.doPOST(ctx, "/v1/remotes/s3", create)
+	return err
+}
+
+func (r *RemoteService) CreateEbs(ctx context.Context, create EbsRemote) error {
+	_, err := r.client.doPOST(ctx, "/v1/remotes/ebs", create)
 	return err
 }
 
@@ -95,11 +122,16 @@ func (r *RemoteService) Delete(ctx context.Context, remoteName string) error {
 }
 
 func (r *RemoteService) ModifyLinstor(ctx context.Context, remoteName string, modify LinstorRemote) error {
-	_, err := r.client.doPUT(ctx, "/v1/remotes/linstor/"+ remoteName, modify)
+	_, err := r.client.doPUT(ctx, "/v1/remotes/linstor/"+remoteName, modify)
 	return err
 }
 
 func (r *RemoteService) ModifyS3(ctx context.Context, remoteName string, modify S3Remote) error {
-	_, err := r.client.doPUT(ctx, "/v1/remotes/s3/"+ remoteName, modify)
+	_, err := r.client.doPUT(ctx, "/v1/remotes/s3/"+remoteName, modify)
+	return err
+}
+
+func (r *RemoteService) ModifyEbs(ctx context.Context, remoteName string, modify EbsRemote) error {
+	_, err := r.client.doPUT(ctx, "/v1/remotes/ebs/"+remoteName, modify)
 	return err
 }

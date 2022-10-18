@@ -93,6 +93,7 @@ type SatelliteConfig struct {
 	StltOverrideNodeName string                 `json:"stlt_override_node_name,omitempty"`
 	Openflex             bool                   `json:"openflex,omitempty"`
 	RemoteSpdk           bool                   `json:"remote_spdk,omitempty"`
+	Ebs                  bool                   `json:"ebs,omitempty"`
 	SpecialSatellite     bool                   `json:"special_satellite,omitempty"`
 	DrbdKeepResPattern   string                 `json:"drbd_keep_res_pattern,omitempty"`
 	Net                  SatelliteConfigNet     `json:"net,omitempty"`

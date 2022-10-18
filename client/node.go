@@ -109,6 +109,8 @@ const (
 	FILE            ProviderKind = "FILE"
 	FILE_THIN       ProviderKind = "FILE_THIN"
 	SPDK            ProviderKind = "SPDK"
+	EBS_TARGET      ProviderKind = "EBS_TARGET"
+	EBS_INIT        ProviderKind = "EBS_INIT"
 )
 
 // custom code
@@ -122,6 +124,8 @@ type NodeProvider interface {
 	Get(ctx context.Context, nodeName string, opts ...*ListOpts) (Node, error)
 	// Create creates a new node object.
 	Create(ctx context.Context, node Node) error
+	// CreateEbsNode creates a special virtual satellite for interacting with EBS.
+	CreateEbsNode(ctx context.Context, name string, remoteName string) error
 	// Modify modifies the given node and sets/deletes the given properties.
 	Modify(ctx context.Context, nodeName string, props NodeModify) error
 	// Delete deletes the given node.
@@ -197,6 +201,17 @@ func (n *NodeService) Get(ctx context.Context, nodeName string, opts ...*ListOpt
 // Create creates a new node object.
 func (n *NodeService) Create(ctx context.Context, node Node) error {
 	_, err := n.client.doPOST(ctx, "/v1/nodes", node)
+	return err
+}
+
+func (n *NodeService) CreateEbsNode(ctx context.Context, name, remoteName string) error {
+	_, err := n.client.doPOST(ctx, "/v1/nodes/ebs", struct {
+		Name          string `json:"name"`
+		EbsRemoteName string `json:"ebs_remote_name"`
+	}{
+		Name:          name,
+		EbsRemoteName: remoteName,
+	})
 	return err
 }
 
