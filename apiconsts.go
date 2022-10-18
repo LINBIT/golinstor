@@ -211,6 +211,7 @@ const FailMissingExtName = (606 | MaskError)
 const FailMissingNvmeTarget = (608 | MaskError)
 const FailNoStltConnDefined = (609 | MaskError)
 const FailMissingOpenflexTarget = (610 | MaskError)
+const FailMissingEbsTarget = (611 | MaskError)
 
 // ## Codes 700-799: uuid mismatch failures ###
 const FailUuidNode = (700 | MaskError)
@@ -237,6 +238,7 @@ const FailPoolExhaustedSnapshotShippingTcpPort = (806 | MaskError)
 const FailPoolExhaustedBackupShippingTcpPort = (807 | MaskError)
 
 // ## Other failures ###
+const FailEbsCooldown = (973 | MaskError)
 const FailNotAllUptodate = (974 | MaskError)
 const FailEvacuating = (975 | MaskError)
 const FailBackupUnknownCluster = (976 | MaskError)
@@ -494,6 +496,7 @@ const KeyDrbdAutoDiskful = "auto-diskful"
 const KeyDrbdAutoDiskfulAllowCleanup = "auto-diskful-allow-cleanup"
 const KeyDrbdDisableAutoVerifyAlgo = "auto-verify-algo-disable"
 const KeyDrbdAutoVerifyAlgoAllowedUser = "auto-verify-algo-allowed-user-list"
+const KeyForceInitialSync = "ForceInitialSync"
 
 // ## Node property keys ###
 const KeyNode = "Node"
@@ -510,6 +513,7 @@ const KeyPeerSlots = "PeerSlots"
 const KeyRscRollbackTarget = "RollbackTarget"
 const KeyRscMigrateFrom = "MigrateFrom"
 const KeyRscAllowMixingDeviceKind = "AllowMixingStoragePoolDriver"
+const KeyRscDiskfulBy = "DiskfulBy"
 
 // ## Volume property keys ###
 const KeyVlmGrp = "VlmGrp"
@@ -649,6 +653,9 @@ const NamespcExos = "StorDriver/Exos"
 const NamespcBackupShipping = "BackupShipping"
 const NamespcCluster = "Cluster"
 const NamespcClusterRemote = "Cluster/Remote"
+const NamespcSed = "SED"
+const NamespcEbs = "EBS"
+const NamespcTags = "Tags"
 
 // ## Storage pool property keys ###
 const KeyStorPoolDfn = "StorPoolDfn"
@@ -694,6 +701,7 @@ const KeyStorPoolRemoteSpdkApiUserName = "RemoteSpdk/UserName"
 const KeyStorPoolRemoteSpdkApiUserPw = "RemoteSpdk/UserPassword"
 const KeyStorPoolRemoteSpdkApiUserNameEnv = "RemoteSpdk/UserNameEnv"
 const KeyStorPoolRemoteSpdkApiUserPwEnv = "RemoteSpdk/UserPasswordEnv"
+const KeyEbsVolumeType = "EBS/VolumeType"
 const KeyPrefNic = "PrefNic"
 
 // ## Storage pool traits keys ###
@@ -707,6 +715,8 @@ const KeyStorPoolAllocationUnit = "AllocationUnit"
 const ValStorPoolProvisioningFat = "Fat"
 const ValStorPoolProvisioningThin = "Thin"
 const ValStorPoolDrbdMetaInternal = ".internal"
+const ValStorPoolSpaceNotFound = -1
+const ValStorPoolSpaceEnough = 9223372036854775807
 
 // ## DRBD Proxy keys (other than 'options') ###
 const KeyDrbdProxyCompressionType = "CompressionType"
@@ -820,6 +830,7 @@ const FlagTieBreaker = "TIE_BREAKER"
 const FlagDrbdDiskless = "DRBD_DISKLESS"
 const FlagNvmeInitiator = "NVME_INITIATOR"
 const FlagRscInactive = "INACTIVE"
+const FlagEbsInitiator = "EBS_INITIATOR"
 
 // ## Device layer kinds ###
 // enum generated in package -> "golinstor/devicelayerkind"
