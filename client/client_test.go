@@ -1,8 +1,15 @@
 package client
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const TestCaCert = `-----BEGIN CERTIFICATE-----
@@ -31,58 +38,58 @@ func TestNewClient_ViaEnv(t *testing.T) {
 			expectedUrl: "http://localhost:3370",
 		},
 		{
-			name: "just-domain-name",
-			env:  map[string]string{"LS_CONTROLLERS": "just.domain"},
+			name:        "just-domain-name",
+			env:         map[string]string{"LS_CONTROLLERS": "just.domain"},
 			expectedUrl: "http://just.domain:3370",
 		},
 		{
-			name: "linstor-protocol",
-			env:  map[string]string{"LS_CONTROLLERS": "linstor://just.domain"},
+			name:        "linstor-protocol",
+			env:         map[string]string{"LS_CONTROLLERS": "linstor://just.domain"},
 			expectedUrl: "http://just.domain:3370",
 		},
 		{
-			name: "just-domain-with-port",
-			env:  map[string]string{"LS_CONTROLLERS": "just.domain:4000"},
+			name:        "just-domain-with-port",
+			env:         map[string]string{"LS_CONTROLLERS": "just.domain:4000"},
 			expectedUrl: "http://just.domain:4000",
 		},
 		{
-			name: "domain-with-protocol",
-			env:  map[string]string{"LS_CONTROLLERS": "http://just.domain"},
+			name:        "domain-with-protocol",
+			env:         map[string]string{"LS_CONTROLLERS": "http://just.domain"},
 			expectedUrl: "http://just.domain:3370",
 		},
 		{
-			name: "just-domain-with-https-protocol",
-			env:  map[string]string{"LS_CONTROLLERS": "https://just.domain"},
+			name:        "just-domain-with-https-protocol",
+			env:         map[string]string{"LS_CONTROLLERS": "https://just.domain"},
 			expectedUrl: "https://just.domain:3371",
 		},
 		{
-			name: "just-domain-with-client-secrets",
-			env:  map[string]string{"LS_CONTROLLERS": "just.domain", "LS_ROOT_CA": TestCaCert},
+			name:        "just-domain-with-client-secrets",
+			env:         map[string]string{"LS_CONTROLLERS": "just.domain", "LS_ROOT_CA": TestCaCert},
 			expectedUrl: "https://just.domain:3371",
 		},
 		{
-			name: "just-domain-with-client-secrets-and-port",
-			env:  map[string]string{"LS_CONTROLLERS": "just.domain:4000", "LS_ROOT_CA": TestCaCert},
+			name:        "just-domain-with-client-secrets-and-port",
+			env:         map[string]string{"LS_CONTROLLERS": "just.domain:4000", "LS_ROOT_CA": TestCaCert},
 			expectedUrl: "https://just.domain:4000",
 		},
 		{
-			name: "parse-error-multi-scheme",
-			env:  map[string]string{"LS_CONTROLLERS": "https://http://just.domain:4000"},
+			name:     "parse-error-multi-scheme",
+			env:      map[string]string{"LS_CONTROLLERS": "https://http://just.domain:4000"},
 			hasError: true,
 		},
 		{
-			name: "parse-error-multi-port",
-			env:  map[string]string{"LS_CONTROLLERS": "https://just.domain:4000:5000"},
+			name:     "parse-error-multi-port",
+			env:      map[string]string{"LS_CONTROLLERS": "https://just.domain:4000:5000"},
 			hasError: true,
 		},
 		{
-			name: "parse-error-inconsistent-env",
-			env:  map[string]string{"LS_CONTROLLERS": "https://just.domain:4000", "LS_USER_CERTIFICATE": "stuff"},
+			name:     "parse-error-inconsistent-env",
+			env:      map[string]string{"LS_CONTROLLERS": "https://just.domain:4000", "LS_USER_CERTIFICATE": "stuff"},
 			hasError: true,
 		},
 		{
-			name: "parse-error-inconsistent-env-other",
-			env:  map[string]string{"LS_CONTROLLERS": "https://just.domain:4000", "LS_USER_KEY": "stuff"},
+			name:     "parse-error-inconsistent-env-other",
+			env:      map[string]string{"LS_CONTROLLERS": "https://just.domain:4000", "LS_USER_KEY": "stuff"},
 			hasError: true,
 		},
 	}
@@ -91,6 +98,7 @@ func TestNewClient_ViaEnv(t *testing.T) {
 		test := item
 		t.Run(test.name, func(t *testing.T) {
 			os.Clearenv()
+			defer os.Clearenv()
 			for k, v := range test.env {
 				_ = os.Setenv(k, v)
 			}
@@ -109,4 +117,35 @@ func TestNewClient_ViaEnv(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBearerTokenOpt(t *testing.T) {
+	const Token = "AbCdEfg1234567890"
+	var FakeVersion = ControllerVersion{
+		BuildTime:      "#buildtime",
+		GitHash:        "#git",
+		RestApiVersion: "#rest",
+		Version:        "#v1",
+	}
+
+	fakeHttpServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Header.Get("Authorization") != "Bearer "+Token {
+			writer.WriteHeader(http.StatusUnauthorized)
+		} else {
+			writer.WriteHeader(http.StatusOK)
+			enc := json.NewEncoder(writer)
+			_ = enc.Encode(&FakeVersion)
+		}
+	}))
+	defer fakeHttpServer.Close()
+
+	u, err := url.Parse(fakeHttpServer.URL)
+	assert.NoError(t, err)
+
+	cl, err := NewClient(BearerToken(Token), HTTPClient(fakeHttpServer.Client()), BaseURL(u))
+	assert.NoError(t, err)
+
+	actualVersion, err := cl.Controller.GetVersion(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, FakeVersion, actualVersion)
 }

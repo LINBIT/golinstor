@@ -45,6 +45,7 @@ type Client struct {
 	httpClient  *http.Client
 	baseURL     *url.URL
 	basicAuth   *BasicAuthCfg
+	bearerToken string
 	controllers []*url.URL
 	lim         *rate.Limiter
 	log         interface{} // must be either Logger or LeveledLogger
@@ -100,6 +101,8 @@ const (
 	UsernameEnv = "LS_USERNAME"
 	// Name of the environment variable that holds the password for authentication
 	PasswordEnv = "LS_PASSWORD"
+	// Name of the environment variable that points to the file containing the token for authentication
+	BearerTokenFileEnv = "LS_BEARER_TOKEN_FILE"
 )
 
 // For example:
@@ -163,6 +166,15 @@ func Controllers(controllers []string) Option {
 		var err error
 		c.controllers, err = parseURLs(controllers)
 		return err
+	}
+}
+
+// BearerToken configures authentication via the given token send in the Authorization Header.
+// If set, this will override any authentication happening via Basic Authentication.
+func BearerToken(token string) Option {
+	return func(c *Client) error {
+		c.bearerToken = token
+		return nil
 	}
 }
 
@@ -339,6 +351,9 @@ func parseURLs(urls []string) ([]*url.URL, error) {
 // - LS_USER_CERTIFICATE, LS_USER_KEY, LS_ROOT_CA: can be used to enable TLS on
 // the HTTP client, enabling encrypted communication with the LINSTOR controller.
 //
+// - LS_BEARER_TOKEN_FILE: can be set to a file containing the bearer token used
+// for authentication.
+//
 // Options passed to NewClient take precedence over options passed in via
 // environment variables.
 func NewClient(options ...Option) (*Client, error) {
@@ -355,6 +370,15 @@ func NewClient(options ...Option) (*Client, error) {
 		},
 		lim: rate.NewLimiter(rate.Inf, 0),
 		log: log.New(os.Stderr, "", 0),
+	}
+
+	if path, ok := os.LookupEnv(BearerTokenFileEnv); ok {
+		token, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read token from file: %w", err)
+		}
+
+		c.bearerToken = string(token)
 	}
 
 	for _, opt := range options {
@@ -446,6 +470,10 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	username := c.basicAuth.Username
 	if username != "" {
 		req.SetBasicAuth(username, c.basicAuth.Password)
+	}
+
+	if c.bearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearerToken)
 	}
 
 	return req, nil
