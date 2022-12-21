@@ -46,6 +46,7 @@ type Client struct {
 	baseURL     *url.URL
 	basicAuth   *BasicAuthCfg
 	bearerToken string
+	userAgent   string
 	controllers []*url.URL
 	lim         *rate.Limiter
 	log         interface{} // must be either Logger or LeveledLogger
@@ -174,6 +175,14 @@ func Controllers(controllers []string) Option {
 func BearerToken(token string) Option {
 	return func(c *Client) error {
 		c.bearerToken = token
+		return nil
+	}
+}
+
+// UserAgent sets the User-Agent header for every request to the given string.
+func UserAgent(ua string) Option {
+	return func(c *Client) error {
+		c.userAgent = ua
 		return nil
 	}
 }
@@ -462,11 +471,17 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 	if err != nil {
 		return nil, err
 	}
+
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+
 	req.Header.Set("Accept", "application/json")
-	// req.Header.Set("User-Agent", c.UserAgent)
+
 	username := c.basicAuth.Username
 	if username != "" {
 		req.SetBasicAuth(username, c.basicAuth.Password)
