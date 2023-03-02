@@ -434,6 +434,10 @@ func NewClient(options ...Option) (*Client, error) {
 	return c, nil
 }
 
+func (c *Client) BaseURL() *url.URL {
+	return c.baseURL
+}
+
 func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
 	rel, err := url.Parse(path)
 	if err != nil {
