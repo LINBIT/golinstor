@@ -150,16 +150,24 @@ func Log(logger interface{}) Option {
 	}
 }
 
-// Limit is the client's option to set number of requests per second and
-// max number of bursts.
-func Limit(r rate.Limit, b int) Option {
+// Limiter to use when making queries.
+// Mutually exclusive with Limit, last applied option wins.
+func Limiter(limiter *rate.Limiter) Option {
 	return func(c *Client) error {
-		if b == 0 && r != rate.Inf {
-			return fmt.Errorf("invalid rate limit, burst must not be zero for non-unlimted rates")
+		if limiter.Burst() == 0 && limiter.Limit() != rate.Inf {
+			return fmt.Errorf("invalid rate limit, burst must not be zero for non-unlimited rates")
 		}
-		c.lim = rate.NewLimiter(r, b)
+		c.lim = limiter
 		return nil
 	}
+}
+
+// Limit is the client's option to set number of requests per second and
+// max number of bursts.
+// Mutually exclusive with Limiter, last applied option wins.
+// Deprecated: Use Limiter instead.
+func Limit(r rate.Limit, b int) Option {
+	return Limiter(rate.NewLimiter(r, b))
 }
 
 func Controllers(controllers []string) Option {
