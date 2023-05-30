@@ -3,7 +3,7 @@ module github.com/LINBIT/golinstor
 go 1.17
 
 require (
-	github.com/BurntSushi/toml v1.2.1
+	github.com/BurntSushi/toml v1.3.0
 	github.com/donovanhide/eventsource v0.0.0-20210830082556-c59027999da0
 	github.com/google/go-querystring v1.1.0
 	github.com/sirupsen/logrus v1.9.2
