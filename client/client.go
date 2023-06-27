@@ -63,6 +63,7 @@ type Client struct {
 	Remote                 RemoteProvider
 	Backup                 BackupProvider
 	KeyValueStore          KeyValueStoreProvider
+	Connections            ConnectionProvider
 }
 
 // Logger represents a standard logger interface
@@ -438,6 +439,7 @@ func NewClient(options ...Option) (*Client, error) {
 	c.Remote = &RemoteService{client: c}
 	c.Backup = &BackupService{client: c}
 	c.KeyValueStore = &KeyValueStoreService{client: c}
+	c.Connections = &ConnectionService{client: c}
 
 	return c, nil
 }
