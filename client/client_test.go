@@ -48,6 +48,11 @@ func TestNewClient_ViaEnv(t *testing.T) {
 			expectedUrl: "http://just.domain:3370",
 		},
 		{
+			name:        "linstor-ssl-protocol",
+			env:         map[string]string{"LS_CONTROLLERS": "linstor+ssl://just.domain"},
+			expectedUrl: "https://just.domain:3371",
+		},
+		{
 			name:        "just-domain-with-port",
 			env:         map[string]string{"LS_CONTROLLERS": "just.domain:4000"},
 			expectedUrl: "http://just.domain:4000",
