@@ -327,8 +327,11 @@ func parseBaseURL(urlString string) (*url.URL, error) {
 		return nil, fmt.Errorf("URL with multiple scheme separators. parts: %v", urlSplit)
 	}
 	scheme, endpoint := urlSplit[0], urlSplit[1]
-	if scheme == "linstor" {
+	switch scheme {
+	case "linstor":
 		scheme = defaultScheme()
+	case "linstor+ssl":
+		scheme = "https"
 	}
 
 	// Check port
