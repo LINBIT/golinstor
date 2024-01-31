@@ -30,11 +30,11 @@ func TestParse(t *testing.T) {
 				Props: map[string]string{
 					"StorPoolName": "thinpool",
 				},
-				LayerObject: client.ResourceLayer{
+				LayerObject: &client.ResourceLayer{
 					Children: []client.ResourceLayer{
 						{
 							Type: devicelayerkind.Storage,
-							Storage: client.StorageResource{
+							Storage: &client.StorageResource{
 								StorageVolumes: []client.StorageVolume{
 									{
 										VolumeNumber:     0,
@@ -48,7 +48,7 @@ func TestParse(t *testing.T) {
 						},
 					},
 					Type: devicelayerkind.Drbd,
-					Drbd: client.DrbdResource{
+					Drbd: &client.DrbdResource{
 						DrbdResourceDefinition: client.DrbdResourceDefinitionLayer{
 							PeerSlots:     7,
 							AlStripes:     1,
@@ -106,11 +106,11 @@ func TestParse(t *testing.T) {
 					Props: map[string]string{
 						"StorPoolName": "thinpool",
 					},
-					LayerObject: client.ResourceLayer{
+					LayerObject: &client.ResourceLayer{
 						Children: []client.ResourceLayer{
 							{
 								Type: devicelayerkind.Storage,
-								Storage: client.StorageResource{
+								Storage: &client.StorageResource{
 									StorageVolumes: []client.StorageVolume{
 										{
 											VolumeNumber:     0,
@@ -124,7 +124,7 @@ func TestParse(t *testing.T) {
 							},
 						},
 						Type: devicelayerkind.Drbd,
-						Drbd: client.DrbdResource{
+						Drbd: &client.DrbdResource{
 							DrbdResourceDefinition: client.DrbdResourceDefinitionLayer{
 								PeerSlots:     7,
 								AlStripes:     1,

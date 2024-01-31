@@ -62,8 +62,8 @@ type ResourceDefinitionCreate struct {
 
 // ResourceDefinitionLayer is a struct for the storing the layertype of a resource-defintion
 type ResourceDefinitionLayer struct {
-	Type devicelayerkind.DeviceLayerKind                                 `json:"type,omitempty"`
-	Data OneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer `json:"data,omitempty"`
+	Type devicelayerkind.DeviceLayerKind `json:"type,omitempty"`
+	Data *DrbdResourceDefinitionLayer    `json:"data,omitempty"`
 }
 
 // DrbdResourceDefinitionLayer is a struct which contains the information about the layertype of a resource-definition on drbd level
@@ -229,14 +229,6 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		rd.Data = dst
-	case devicelayerkind.Openflex:
-		dst := new(OpenflexResourceDefinitionLayer)
-		if rdIn.Data != nil {
-			if err := json.Unmarshal(rdIn.Data, &dst); err != nil {
-				return err
-			}
-		}
-		rd.Data = dst
 	case devicelayerkind.Luks, devicelayerkind.Storage, devicelayerkind.Nvme, devicelayerkind.Writecache, devicelayerkind.Cache, devicelayerkind.Exos: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", rd.Type)
@@ -245,16 +237,7 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// OneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer is used to limit to these layer types
-type OneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer interface {
-	isOneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer()
-}
-
-// Function used if resource-definition-layertype is correct
-func (d *DrbdResourceDefinitionLayer) isOneOfDrbdResourceDefinitionLayerOpenflexResourceDefinitionLayer() {
-}
-
-//volumeDefinitionLayerIn is a struct for volume-defintion-layers
+// volumeDefinitionLayerIn is a struct for volume-defintion-layers
 type volumeDefinitionLayerIn struct {
 	Type devicelayerkind.DeviceLayerKind `json:"type,omitempty"`
 	Data json.RawMessage                 `json:"data,omitempty"`
@@ -277,7 +260,7 @@ func (vd *VolumeDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		vd.Data = dst
-	case devicelayerkind.Luks, devicelayerkind.Storage, devicelayerkind.Nvme, devicelayerkind.Writecache, devicelayerkind.Openflex, devicelayerkind.Cache, devicelayerkind.Exos: // valid types, but do not set data
+	case devicelayerkind.Luks, devicelayerkind.Storage, devicelayerkind.Nvme, devicelayerkind.Writecache, devicelayerkind.Cache, devicelayerkind.Exos: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", vd.Type)
 	}

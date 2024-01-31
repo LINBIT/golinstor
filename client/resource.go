@@ -43,7 +43,7 @@ type Resource struct {
 	// A string to string property map.
 	Props       map[string]string `json:"props,omitempty"`
 	Flags       []string          `json:"flags,omitempty"`
-	LayerObject ResourceLayer     `json:"layer_object,omitempty"`
+	LayerObject *ResourceLayer    `json:"layer_object,omitempty"`
 	State       *ResourceState    `json:"state,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
@@ -84,14 +84,13 @@ type ResourceLayer struct {
 	Children           []ResourceLayer                 `json:"children,omitempty"`
 	ResourceNameSuffix string                          `json:"resource_name_suffix,omitempty"`
 	Type               devicelayerkind.DeviceLayerKind `json:"type,omitempty"`
-	Drbd               DrbdResource                    `json:"drbd,omitempty"`
-	Luks               LuksResource                    `json:"luks,omitempty"`
-	Storage            StorageResource                 `json:"storage,omitempty"`
-	Nvme               NvmeResource                    `json:"nvme,omitempty"`
-	Openflex           OpenflexResource                `json:"openflex,omitempty"`
-	Writecache         WritecacheResource              `json:"writecache,omitempty"`
-	Cache              CacheResource                   `json:"cache,omitempty"`
-	BCache             BCacheResource                  `json:"bcache,omitempty"`
+	Drbd               *DrbdResource                   `json:"drbd,omitempty"`
+	Luks               *LuksResource                   `json:"luks,omitempty"`
+	Storage            *StorageResource                `json:"storage,omitempty"`
+	Nvme               *NvmeResource                   `json:"nvme,omitempty"`
+	Writecache         *WritecacheResource             `json:"writecache,omitempty"`
+	Cache              *CacheResource                  `json:"cache,omitempty"`
+	BCache             *BCacheResource                 `json:"bcache,omitempty"`
 }
 
 type WritecacheResource struct {
@@ -542,7 +541,6 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 		}
 		v.Data = dst
 	case devicelayerkind.Cache:
-	case devicelayerkind.Openflex:
 	case devicelayerkind.Exos:
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", v.Type)

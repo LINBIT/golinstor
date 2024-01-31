@@ -91,7 +91,6 @@ type SatelliteConfig struct {
 	Debug                ControllerConfigDebug  `json:"debug,omitempty"`
 	Log                  SatelliteConfigLog     `json:"log,omitempty"`
 	StltOverrideNodeName string                 `json:"stlt_override_node_name,omitempty"`
-	Openflex             bool                   `json:"openflex,omitempty"`
 	RemoteSpdk           bool                   `json:"remote_spdk,omitempty"`
 	Ebs                  bool                   `json:"ebs,omitempty"`
 	SpecialSatellite     bool                   `json:"special_satellite,omitempty"`
