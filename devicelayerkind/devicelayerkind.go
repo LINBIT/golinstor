@@ -7,7 +7,6 @@ const (
 	Luks       DeviceLayerKind = "LUKS"
 	Storage    DeviceLayerKind = "STORAGE"
 	Nvme       DeviceLayerKind = "NVME"
-	Openflex   DeviceLayerKind = "OPENFLEX"
 	Exos       DeviceLayerKind = "EXOS"
 	Writecache DeviceLayerKind = "WRITECACHE"
 	Cache      DeviceLayerKind = "CACHE"
