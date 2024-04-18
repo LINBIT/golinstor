@@ -368,6 +368,7 @@ const ApiModNetIf = "ModNetIf"
 const ApiModStorPool = "ModStorPool"
 const ApiModStorPoolDfn = "ModStorPoolDfn"
 const ApiModVlmDfn = "ModVlmDfn"
+const ApiModVlmDfnPass = "ModVlmDfnPassphrase"
 const ApiModVlm = "ModVlm"
 const ApiModVlmConn = "ModVlmConn"
 const ApiModSnapshot = "ModSnapshot"
@@ -513,12 +514,16 @@ const KeyDrbdAutoVerifyAlgoAllowedUser = "auto-verify-algo-allowed-user-list"
 const KeyDrbdAutoRsDiscardGranularity = "auto-rs-discard-granularity"
 const KeyForceInitialSync = "ForceInitialSync"
 const KeyDrbdSkipDisk = "SkipDisk"
+const KeyDrbdExactSize = "ExactSize"
 
 // ## Node property keys ###
 const KeyNode = "Node"
 const Key1StNode = "FirstNode"
 const Key2NdNode = "SecondNode"
 const KeyCurStltConnName = "CurStltConnName"
+
+// ## Volume-definition property keys ###
+const KeyPassphrase = "Passphrase"
 
 // ## Resource property keys ###
 const KeyRscDfn = "RscDfn"
@@ -619,6 +624,7 @@ const KeyBackupS3Suffix = "S3KeySuffix"
 const KeyRemote = "Remote"
 const KeyMaxConcurrentBackupsPerNode = "MaxConcurrentBackupsPerNode"
 const ValNodeUndecided = "<undecided>"
+const KeyAllowForceRestore = "AllowForceRestore"
 
 // ## Clone property keys ###
 const KeyUseZfsClone = "UseZFSClone"
@@ -677,6 +683,7 @@ const NamespcClusterRemote = "Cluster/Remote"
 const NamespcSed = "SED"
 const NamespcEbs = "EBS"
 const NamespcTags = "Tags"
+const NamespcEncryption = "Encryption"
 
 // ## Storage pool property keys ###
 const KeyStorPoolDfn = "StorPoolDfn"
@@ -874,6 +881,7 @@ const FlagEbsInitiator = "EBS_INITIATOR"
 // connectionstatus.OtherController = 8
 // connectionstatus.Authenticated = 9
 // connectionstatus.NoStltConn = 10
+// connectionstatus.MissingExtTools = 11
 
 // ## Clone states ###
 // enum generated in package -> "golinstor/clonestatus"

@@ -14,4 +14,5 @@ const (
 	OtherController     ConnectionStatus = 8
 	Authenticated       ConnectionStatus = 9
 	NoStltConn          ConnectionStatus = 10
+	MissingExtTools     ConnectionStatus = 11
 )
