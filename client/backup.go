@@ -152,7 +152,7 @@ type BackupProvider interface {
 	// Abort all running backup operations of a resource.
 	Abort(ctx context.Context, remoteName string, request BackupAbortRequest) error
 	// Ship ships a backup from one LINSTOR cluster to another.
-	Ship(ctx context.Context, remoteName string, request BackupShipRequest) error
+	Ship(ctx context.Context, remoteName string, request BackupShipRequest) (string, error)
 	// Restore starts to restore a resource from a backup.
 	Restore(ctx context.Context, remoteName string, request BackupRestoreRequest) error
 }
@@ -231,9 +231,27 @@ func (b *BackupService) Abort(ctx context.Context, remoteName string, request Ba
 	return err
 }
 
-func (b *BackupService) Ship(ctx context.Context, remoteName string, request BackupShipRequest) error {
-	_, err := b.client.doPOST(ctx, "/v1/remotes/"+remoteName+"/backups/ship", request)
-	return err
+func (b *BackupService) Ship(ctx context.Context, remoteName string, request BackupShipRequest) (string, error) {
+	req, err := b.client.newRequest(http.MethodPost, "/v1/remotes/"+remoteName+"/backups/ship", request)
+	if err != nil {
+		return "", err
+	}
+
+	var resp []ApiCallRc
+	_, err = b.client.do(ctx, req, &resp)
+	if err != nil {
+		return "", err
+	}
+
+	for _, rc := range resp {
+		// LINSTOR will report the name of the created (local) snapshot in one of the messages.
+		// There may be multiple such references, but the name of the snapshot stays the same.
+		if s, ok := rc.ObjRefs["Snapshot"]; ok {
+			return s, nil
+		}
+	}
+
+	return "", errors.New("missing snapshot reference")
 }
 
 func (b *BackupService) Restore(ctx context.Context, remoteName string, request BackupRestoreRequest) error {
