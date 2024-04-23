@@ -393,6 +393,20 @@ func NewClient(options ...Option) (*Client, error) {
 		log: log.New(os.Stderr, "", 0),
 	}
 
+	c.Nodes = &NodeService{client: c}
+	c.ResourceDefinitions = &ResourceDefinitionService{client: c}
+	c.Resources = &ResourceService{client: c}
+	c.Encryption = &EncryptionService{client: c}
+	c.ResourceGroups = &ResourceGroupService{client: c}
+	c.StoragePoolDefinitions = &StoragePoolDefinitionService{client: c}
+	c.Controller = &ControllerService{client: c}
+	c.Events = &EventService{client: c}
+	c.Vendor = &VendorService{client: c}
+	c.Remote = &RemoteService{client: c}
+	c.Backup = &BackupService{client: c}
+	c.KeyValueStore = &KeyValueStoreService{client: c}
+	c.Connections = &ConnectionService{client: c}
+
 	if path, ok := os.LookupEnv(BearerTokenFileEnv); ok {
 		token, err := os.ReadFile(path)
 		if err != nil {
@@ -429,20 +443,6 @@ func NewClient(options ...Option) (*Client, error) {
 			c.baseURL = c.controllers[0]
 		}
 	}
-
-	c.Nodes = &NodeService{client: c}
-	c.ResourceDefinitions = &ResourceDefinitionService{client: c}
-	c.Resources = &ResourceService{client: c}
-	c.Encryption = &EncryptionService{client: c}
-	c.ResourceGroups = &ResourceGroupService{client: c}
-	c.StoragePoolDefinitions = &StoragePoolDefinitionService{client: c}
-	c.Controller = &ControllerService{client: c}
-	c.Events = &EventService{client: c}
-	c.Vendor = &VendorService{client: c}
-	c.Remote = &RemoteService{client: c}
-	c.Backup = &BackupService{client: c}
-	c.KeyValueStore = &KeyValueStoreService{client: c}
-	c.Connections = &ConnectionService{client: c}
 
 	return c, nil
 }

@@ -1,5 +1,5 @@
 # Use the same image version as the minimum version on go.mod
-image: golang:1.17
+image: golang:1.18
 
 test:
   stage: test
