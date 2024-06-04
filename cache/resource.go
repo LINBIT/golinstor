@@ -16,10 +16,22 @@ type ResourceCache struct {
 	snapshotCache cache
 }
 
+// backupShim hooks into the backup provider and invalidates the resource cache on certain operations.
+type backupShim struct {
+	client.BackupProvider
+	resourceCache *cache
+	snapshotCache *cache
+}
+
 func (r *ResourceCache) apply(c *client.Client) {
 	c.Resources = &resourceCacheProvider{
 		cl:    c.Resources,
 		cache: r,
+	}
+	c.Backup = backupShim{
+		BackupProvider: c.Backup,
+		resourceCache:  &r.resourceCache,
+		snapshotCache:  &r.snapshotCache,
 	}
 }
 
@@ -29,6 +41,7 @@ type resourceCacheProvider struct {
 }
 
 var _ client.ResourceProvider = &resourceCacheProvider{}
+var _ client.BackupProvider = backupShim{}
 
 func (r *resourceCacheProvider) GetResourceView(ctx context.Context, opts ...*client.ListOpts) ([]client.ResourceWithVolumes, error) {
 	result, err := r.cache.resourceCache.Get(r.cache.Timeout, func() (any, error) {
@@ -280,4 +293,20 @@ func (r *resourceCacheProvider) GetVolumePropsInfos(ctx context.Context, resName
 
 func (r *resourceCacheProvider) GetConnectionPropsInfos(ctx context.Context, resName string, opts ...*client.ListOpts) ([]client.PropsInfo, error) {
 	return r.cl.GetConnectionPropsInfos(ctx, resName, opts...)
+}
+
+func (b backupShim) Restore(ctx context.Context, remoteName string, request client.BackupRestoreRequest) error {
+	b.snapshotCache.Invalidate()
+	b.resourceCache.Invalidate()
+	return b.BackupProvider.Restore(ctx, remoteName, request)
+}
+
+func (b backupShim) Create(ctx context.Context, remoteName string, request client.BackupCreate) (string, error) {
+	b.snapshotCache.Invalidate()
+	return b.BackupProvider.Create(ctx, remoteName, request)
+}
+
+func (b backupShim) Ship(ctx context.Context, remoteName string, request client.BackupShipRequest) (string, error) {
+	b.snapshotCache.Invalidate()
+	return b.BackupProvider.Ship(ctx, remoteName, request)
 }
