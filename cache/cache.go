@@ -17,6 +17,8 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/LINBIT/golinstor/client"
 )
 
@@ -86,6 +88,10 @@ func filterNodeAndPoolOpts[T Filterable](items []T, opts ...*client.ListOpts) []
 	filterPools := make(map[string]struct{})
 	var filterProps []string
 
+	if hasUnsupportedOpts(opts...) {
+		log.WithField("opts", opts).Warn("unsupported filter opts in cache")
+	}
+
 	for _, o := range opts {
 		for _, n := range o.Node {
 			filterNodes[n] = struct{}{}
@@ -131,6 +137,15 @@ outer:
 	}
 
 	return result
+}
+
+func hasUnsupportedOpts(opts ...*client.ListOpts) bool {
+	for _, opt := range opts {
+		if len(opt.Snapshots) > 0 || len(opt.Resource) > 0 || opt.Limit != 0 || opt.Offset != 0 {
+			return true
+		}
+	}
+	return false
 }
 
 type Filterable interface {
