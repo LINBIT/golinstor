@@ -56,6 +56,7 @@ var (
 	Node2 = client.Node{
 		Name: "node2",
 		Props: map[string]string{
+			"Aux/key2": "",
 			"Aux/key3": "val3",
 		},
 		Type: linstor.ValNodeTypeCmbd,
@@ -113,4 +114,51 @@ func TestNodeCache(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, Node1, node1)
 	assert.Equal(t, 3, testSrv.counter[NodesRequest])
+}
+
+func TestNodeCachePropsFiltering(t *testing.T) {
+	testSrv := TestServer{
+		counter: make(map[string]int),
+		responses: map[string]TestResponse{
+			NodesRequest:     {Code: http.StatusOK, Body: AllNodes},
+			ReconnectRequest: {Code: http.StatusOK},
+		},
+	}
+	srv := httptest.NewServer(&testSrv)
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL)
+	assert.NoError(t, err)
+
+	cl, err := client.NewClient(
+		client.HTTPClient(srv.Client()),
+		client.BaseURL(u),
+		cache.WithCaches(&cache.NodeCache{Timeout: 1 * time.Second}),
+	)
+	assert.NoError(t, err)
+
+	// Filtering by presence of key
+	nodes, err := cl.Nodes.GetAll(context.Background(), &client.ListOpts{Prop: []string{"Aux/key2"}})
+	assert.NoError(t, err)
+	assert.Equal(t, AllNodes, nodes)
+
+	// Filtering by presence of key only on one node
+	nodes, err = cl.Nodes.GetAll(context.Background(), &client.ListOpts{Prop: []string{"Aux/key3"}})
+	assert.NoError(t, err)
+	assert.Equal(t, []client.Node{Node2}, nodes)
+
+	// Filtering by presence of key on no node
+	nodes, err = cl.Nodes.GetAll(context.Background(), &client.ListOpts{Prop: []string{"Aux/other"}})
+	assert.NoError(t, err)
+	assert.Empty(t, nodes)
+
+	// Filtering by presence of specific key=value
+	nodes, err = cl.Nodes.GetAll(context.Background(), &client.ListOpts{Prop: []string{"Aux/key2=val2"}})
+	assert.NoError(t, err)
+	assert.Equal(t, []client.Node{Node1}, nodes)
+
+	// Filtering by presence of specific key=""
+	nodes, err = cl.Nodes.GetAll(context.Background(), &client.ListOpts{Prop: []string{"Aux/key2="}})
+	assert.NoError(t, err)
+	assert.Equal(t, []client.Node{Node2}, nodes)
 }

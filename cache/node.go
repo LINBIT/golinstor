@@ -39,9 +39,7 @@ func (n *nodeCacheProvider) GetAll(ctx context.Context, opts ...*client.ListOpts
 		return nil, err
 	}
 
-	return filterNodeAndPoolOpts(c.([]client.Node), func(node *client.Node) ([]string, []string) {
-		return []string{node.Name}, nil
-	}, opts...), nil
+	return filterNodeAndPoolOpts(c.([]client.Node), opts...), nil
 }
 
 func (n *nodeCacheProvider) Get(ctx context.Context, nodeName string, opts ...*client.ListOpts) (client.Node, error) {
@@ -151,9 +149,7 @@ func (n *nodeCacheProvider) GetStoragePoolView(ctx context.Context, opts ...*cli
 		return nil, err
 	}
 
-	return filterNodeAndPoolOpts(result.([]client.StoragePool), func(pool *client.StoragePool) ([]string, []string) {
-		return []string{pool.NodeName}, []string{pool.StoragePoolName}
-	}, opts...), nil
+	return filterNodeAndPoolOpts(result.([]client.StoragePool), opts...), nil
 }
 
 func (n *nodeCacheProvider) GetStoragePools(ctx context.Context, nodeName string, opts ...*client.ListOpts) ([]client.StoragePool, error) {
@@ -211,13 +207,7 @@ func (n *nodeCacheProvider) GetPhysicalStorageView(ctx context.Context, opts ...
 		return nil, err
 	}
 
-	return filterNodeAndPoolOpts(result.([]client.PhysicalStorageViewItem), func(item *client.PhysicalStorageViewItem) ([]string, []string) {
-		var nodes []string
-		for k := range item.Nodes {
-			nodes = append(nodes, k)
-		}
-		return nodes, nil
-	}, opts...), nil
+	return filterNodeAndPoolOpts(result.([]client.PhysicalStorageViewItem), opts...), nil
 }
 
 func (n *nodeCacheProvider) GetPhysicalStorage(ctx context.Context, nodeName string) ([]client.PhysicalStorageNode, error) {

@@ -51,9 +51,7 @@ func (r *resourceCacheProvider) GetResourceView(ctx context.Context, opts ...*cl
 		return nil, err
 	}
 
-	return filterNodeAndPoolOpts(result.([]client.ResourceWithVolumes), func(c *client.ResourceWithVolumes) ([]string, []string) {
-		return []string{c.NodeName}, nil
-	}, opts...), nil
+	return filterNodeAndPoolOpts(result.([]client.ResourceWithVolumes), opts...), nil
 }
 
 func (r *resourceCacheProvider) GetAll(ctx context.Context, resName string, opts ...*client.ListOpts) ([]client.Resource, error) {
@@ -185,9 +183,7 @@ func (r *resourceCacheProvider) GetSnapshotView(ctx context.Context, opts ...*cl
 		return nil, err
 	}
 
-	return filterNodeAndPoolOpts(result.([]client.Snapshot), func(c *client.Snapshot) ([]string, []string) {
-		return c.Nodes, nil
-	}, opts...), nil
+	return filterNodeAndPoolOpts(result.([]client.Snapshot), opts...), nil
 }
 
 func (r *resourceCacheProvider) GetSnapshots(ctx context.Context, resName string, opts ...*client.ListOpts) ([]client.Snapshot, error) {

@@ -12,6 +12,8 @@
 package cache
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -79,39 +81,49 @@ func (c *cache) Get(timeout time.Duration, updateFunc func() (any, error)) (any,
 
 // filterNodeAndPoolOpts filters generic items based on the provided client.ListOpts
 // This tries to mimic the behaviour of LINSTOR when using the node and storage pool query parameters.
-func filterNodeAndPoolOpts[T any](items []T, getNodeAndPoolNames func(*T) ([]string, []string), opts ...*client.ListOpts) []T {
-	filterNames := make(map[string]struct{})
+func filterNodeAndPoolOpts[T Filterable](items []T, opts ...*client.ListOpts) []T {
+	filterNodes := make(map[string]struct{})
 	filterPools := make(map[string]struct{})
+	var filterProps []string
 
 	for _, o := range opts {
 		for _, n := range o.Node {
-			filterNames[n] = struct{}{}
+			filterNodes[n] = struct{}{}
 		}
 
 		for _, sp := range o.StoragePool {
 			filterPools[sp] = struct{}{}
 		}
+
+		filterProps = append(filterProps, o.Prop...)
 	}
 
 	var result []T
 
 outer:
 	for i := range items {
-		nodes, pools := getNodeAndPoolNames(&items[i])
-
-		if len(filterNames) > 0 {
-			for _, nodeName := range nodes {
-				if _, ok := filterNames[nodeName]; !ok {
-					continue outer
-				}
+		if len(filterNodes) > 0 {
+			if !anyMatches(filterNodes, nodes(&items[i])) {
+				continue
 			}
 		}
 
 		if len(filterPools) > 0 {
-			for _, poolName := range pools {
-				if _, ok := filterPools[poolName]; !ok {
-					continue outer
-				}
+			if !anyMatches(filterPools, pools(&items[i])) {
+				continue
+			}
+		}
+
+		itemProps := props(&items[i])
+		for _, filterProp := range filterProps {
+			key, val, found := strings.Cut(filterProp, "=")
+			itemVal, ok := itemProps[key]
+			if !ok {
+				continue outer
+			}
+
+			if found && val != itemVal {
+				continue outer
 			}
 		}
 
@@ -119,4 +131,79 @@ outer:
 	}
 
 	return result
+}
+
+type Filterable interface {
+	client.Node | client.StoragePool | client.ResourceWithVolumes | client.Snapshot | client.PhysicalStorageViewItem
+}
+
+func anyMatches(haystack map[string]struct{}, items []string) bool {
+	for _, item := range items {
+		if _, ok := haystack[item]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func nodes(item any) []string {
+	switch item.(type) {
+	case *client.Node:
+		return []string{item.(*client.Node).Name}
+	case *client.StoragePool:
+		return []string{item.(*client.StoragePool).NodeName}
+	case *client.ResourceWithVolumes:
+		return []string{item.(*client.ResourceWithVolumes).NodeName}
+	case *client.Snapshot:
+		return item.(*client.Snapshot).Nodes
+	case *client.PhysicalStorageViewItem:
+		var result []string
+		for k := range item.(*client.PhysicalStorageViewItem).Nodes {
+			result = append(result, k)
+		}
+		return result
+	default:
+		panic(fmt.Sprintf("unsupported item type: %T", item))
+	}
+}
+
+func pools(item any) []string {
+	switch item.(type) {
+	case *client.Node:
+		return nil
+	case *client.StoragePool:
+		return []string{item.(*client.StoragePool).StoragePoolName}
+	case *client.ResourceWithVolumes:
+		var result []string
+		for _, vol := range item.(*client.ResourceWithVolumes).Volumes {
+			result = append(result, vol.StoragePoolName)
+		}
+		return result
+	case *client.Snapshot:
+		return nil
+	case *client.PhysicalStorageViewItem:
+		return nil
+
+	default:
+		panic(fmt.Sprintf("unsupported item type: %T", item))
+
+	}
+}
+
+func props(item any) map[string]string {
+	switch item.(type) {
+	case *client.Node:
+		return item.(*client.Node).Props
+	case *client.StoragePool:
+		return item.(*client.StoragePool).Props
+	case *client.ResourceWithVolumes:
+		return item.(*client.ResourceWithVolumes).Props
+	case *client.Snapshot:
+		return item.(*client.Snapshot).Props
+	case *client.PhysicalStorageViewItem:
+		return nil
+	default:
+		panic(fmt.Sprintf("unsupported item type: %T", item))
+	}
 }
