@@ -119,8 +119,12 @@ type DrbdVolumeDefinition struct {
 }
 
 type ResourceDefinitionCloneRequest struct {
-	Name         string `json:"name,omitempty"`
-	ExternalName string `json:"external_name,omitempty"`
+	Name              string                            `json:"name,omitempty"`
+	ExternalName      string                            `json:"external_name,omitempty"`
+	UseZfsClone       bool                              `json:"use_zfs_clone,omitempty"`
+	LayerList         []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
+	VolumePassphrases []string                          `json:"volume_passphrases,omitempty"`
+	ResourceGroup     string                            `json:"resource_group,omitempty"`
 }
 
 type ResourceDefinitionCloneStarted struct {
