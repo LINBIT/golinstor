@@ -471,17 +471,13 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 
 	var buf io.ReadWriter
 	if body != nil {
-		buf = new(bytes.Buffer)
-		err := json.NewEncoder(buf).Encode(body)
+		// Use json.Marshal instead of encoding to the buffer directly; json.Encoder.Encode() adds a newline
+		// at the end, which is annoying for logging.
+		jsonBuf, err := json.Marshal(body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to marshal JSON body: %w", err)
 		}
-		switch l := c.log.(type) {
-		case LeveledLogger:
-			l.Debugf("%s", buf)
-		case Logger:
-			l.Printf("[DEBUG] %s", body)
-		}
+		buf = bytes.NewBuffer(jsonBuf)
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
