@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"strconv"
 	"time"
@@ -148,8 +149,8 @@ type ControllerProvider interface {
 	GetErrorReport(ctx context.Context, id string, opts ...*ListOpts) (ErrorReport, error)
 	// CreateSOSReport creates an SOS report in the log directory of the controller
 	CreateSOSReport(ctx context.Context, opts ...*ListOpts) error
-	// DownloadSOSReport request sos report to download
-	DownloadSOSReport(ctx context.Context, opts ...*ListOpts) error
+	// DownloadSOSReport creates and downloads an SOS report. The report is written to w as a tar.gz file.
+	DownloadSOSReport(ctx context.Context, w io.WriteCloser, opts ...*ListOpts) error
 	GetSatelliteConfig(ctx context.Context, node string) (SatelliteConfig, error)
 	ModifySatelliteConfig(ctx context.Context, node string, cfg SatelliteConfig) error
 	// GetPropsInfos gets meta information about the properties that can be
@@ -269,9 +270,25 @@ func (s *ControllerService) CreateSOSReport(ctx context.Context, opts ...*ListOp
 	return err
 }
 
-// DownloadSOSReport request sos report to download
-func (s *ControllerService) DownloadSOSReport(ctx context.Context, opts ...*ListOpts) error {
-	_, err := s.client.doGET(ctx, "/v1/sos-report/download", nil, opts...)
+// DownloadSOSReport creates and downloads an SOS report. The report is written to w as a tar.gz file.
+func (s *ControllerService) DownloadSOSReport(ctx context.Context, w io.WriteCloser, opts ...*ListOpts) error {
+	reqUrl := "/v1/sos-report/download"
+	u, err := addOptions(reqUrl, genOptions(opts...))
+	if err != nil {
+		return err
+	}
+
+	req, err := s.client.newRequest("GET", u, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "application/octet-stream")
+	resp, err := s.client.do(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, err = io.Copy(w, resp.Body)
 	return err
 }
 

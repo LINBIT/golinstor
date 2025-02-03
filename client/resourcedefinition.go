@@ -389,7 +389,7 @@ func (n *ResourceDefinitionService) Clone(ctx context.Context, srcResDef string,
 		return ResourceDefinitionCloneStarted{}, err
 	}
 
-	_, err = n.client.do(ctx, req, &resp)
+	_, err = n.client.doJSON(ctx, req, &resp)
 	if err != nil {
 		return ResourceDefinitionCloneStarted{}, err
 	}

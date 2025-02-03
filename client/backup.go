@@ -197,7 +197,7 @@ func (b *BackupService) Create(ctx context.Context, remoteName string, request B
 	}
 
 	var resp []ApiCallRc
-	_, err = b.client.do(ctx, req, &resp)
+	_, err = b.client.doJSON(ctx, req, &resp)
 	if err != nil {
 		return "", err
 	}
@@ -218,7 +218,7 @@ func (b *BackupService) Info(ctx context.Context, remoteName string, request Bac
 	}
 
 	var resp BackupInfo
-	_, err = b.client.do(ctx, req, &resp)
+	_, err = b.client.doJSON(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (b *BackupService) Ship(ctx context.Context, remoteName string, request Bac
 	}
 
 	var resp []ApiCallRc
-	_, err = b.client.do(ctx, req, &resp)
+	_, err = b.client.doJSON(ctx, req, &resp)
 	if err != nil {
 		return "", err
 	}

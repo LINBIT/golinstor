@@ -497,8 +497,6 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 		req.Header.Set("User-Agent", c.userAgent)
 	}
 
-	req.Header.Set("Accept", "application/json")
-
 	username := c.basicAuth.Username
 	if username != "" {
 		req.SetBasicAuth(username, c.basicAuth.Password)
@@ -585,7 +583,10 @@ func (c *Client) retry(origErr error, req *http.Request) (*http.Response, error)
 	return c.httpClient.Do(req)
 }
 
-func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
+// do sends a prepared http.Request and returns the http.Response. If an HTTP error occurs, the parsed error is
+// returned. Otherwise, the response is returned as-is. The caller is responsible for closing the response body in
+// the non-error case.
+func (c *Client) do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	if err := c.lim.Wait(ctx); err != nil {
 		return nil, err
 	}
@@ -607,9 +608,10 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 			return nil, err
 		}
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		// If we get an error, we handle the body ourselves, so we also have to close it.
+		defer resp.Body.Close()
 		msg := fmt.Sprintf("Status code not within 200 to 400, but %d (%s)\n",
 			resp.StatusCode, http.StatusText(resp.StatusCode))
 		switch l := c.log.(type) {
@@ -628,9 +630,20 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		}
 		return nil, rets
 	}
+	return resp, err
+}
 
-	if v != nil {
-		err = json.NewDecoder(resp.Body).Decode(v)
+// doJSON sends a prepared http.Request and returns the http.Response. If out is provided, the response body is
+// JSON-decoded into out.
+func (c *Client) doJSON(ctx context.Context, req *http.Request, out any) (*http.Response, error) {
+	req.Header.Set("Accept", "application/json")
+	resp, err := c.do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if out != nil {
+		err = json.NewDecoder(resp.Body).Decode(out)
 	}
 	return resp, err
 }
@@ -648,7 +661,7 @@ func (c *Client) doGET(ctx context.Context, url string, ret interface{}, opts ..
 	if err != nil {
 		return nil, err
 	}
-	return c.do(ctx, req, ret)
+	return c.doJSON(ctx, req, ret)
 }
 
 func (c *Client) doEvent(ctx context.Context, url, lastEventId string) (*eventsource.Stream, error) {
@@ -673,7 +686,7 @@ func (c *Client) doPOST(ctx context.Context, url string, body interface{}) (*htt
 		return nil, err
 	}
 
-	return c.do(ctx, req, nil)
+	return c.doJSON(ctx, req, nil)
 }
 
 func (c *Client) doPUT(ctx context.Context, url string, body interface{}) (*http.Response, error) {
@@ -682,7 +695,7 @@ func (c *Client) doPUT(ctx context.Context, url string, body interface{}) (*http
 		return nil, err
 	}
 
-	return c.do(ctx, req, nil)
+	return c.doJSON(ctx, req, nil)
 }
 
 func (c *Client) doPATCH(ctx context.Context, url string, body interface{}) (*http.Response, error) {
@@ -691,7 +704,7 @@ func (c *Client) doPATCH(ctx context.Context, url string, body interface{}) (*ht
 		return nil, err
 	}
 
-	return c.do(ctx, req, nil)
+	return c.doJSON(ctx, req, nil)
 }
 
 func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*http.Response, error) {
@@ -700,7 +713,7 @@ func (c *Client) doDELETE(ctx context.Context, url string, body interface{}) (*h
 		return nil, err
 	}
 
-	return c.do(ctx, req, nil)
+	return c.doJSON(ctx, req, nil)
 }
 
 func (c *Client) doOPTIONS(ctx context.Context, url string, ret interface{}, body interface{}) (*http.Response, error) {
@@ -709,7 +722,7 @@ func (c *Client) doOPTIONS(ctx context.Context, url string, ret interface{}, bod
 		return nil, err
 	}
 
-	return c.do(ctx, req, ret)
+	return c.doJSON(ctx, req, ret)
 }
 
 // ApiCallRc represents the struct returned by LINSTOR, when accessing its REST API.
