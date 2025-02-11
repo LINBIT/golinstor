@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -117,11 +118,84 @@ func TestNewClient_ViaEnv(t *testing.T) {
 				return
 			}
 
-			if test.expectedUrl != actual.baseURL.String() {
-				t.Errorf("expected url: %v, got url: %v", test.expectedUrl, actual.baseURL.String())
+			if test.expectedUrl != actual.BaseURL().String() {
+				t.Errorf("expected url: %v, got url: %v", test.expectedUrl, actual.BaseURL().String())
 			}
 		})
 	}
+}
+
+func fakeVersionHandler(version string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, `{"version":"%s"}`, version)
+	})
+}
+
+func TestBaseURLFailover(t *testing.T) {
+	first := httptest.NewServer(fakeVersionHandler("first"))
+	second := httptest.NewServer(fakeVersionHandler("second"))
+	third := httptest.NewTLSServer(fakeVersionHandler("third"))
+
+	defer first.Close()
+	defer second.Close()
+	defer third.Close()
+
+	firstUrl := url.URL{
+		Scheme: "http",
+		Host:   first.Listener.Addr().String(),
+	}
+	secondUrl := url.URL{
+		Scheme: "http",
+		Host:   second.Listener.Addr().String(),
+	}
+	thirdUrl := url.URL{
+		Scheme: "https",
+		Host:   third.Listener.Addr().String(),
+	}
+
+	client, err := NewClient(
+		BaseURL(&firstUrl, &secondUrl, &thirdUrl),
+		HTTPClient(third.Client()),
+	)
+	assert.NoError(t, err)
+
+	// Take the first URL as is.
+	version, err := client.Controller.GetVersion(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, "first", version.Version)
+	assert.Equal(t, &firstUrl, client.BaseURL())
+
+	// Stop the first server -> should fail-over to second or third.
+	first.Close()
+
+	version, err = client.Controller.GetVersion(context.Background())
+	assert.NoError(t, err)
+	switch version.Version {
+	case "second":
+		second.Close()
+		assert.Equal(t, &secondUrl, client.BaseURL())
+
+		version, err = client.Controller.GetVersion(context.Background())
+		assert.NoError(t, err)
+		assert.Equal(t, "third", version.Version)
+		assert.Equal(t, &thirdUrl, client.BaseURL())
+		third.Close()
+	case "third":
+		third.Close()
+		assert.Equal(t, &thirdUrl, client.BaseURL())
+
+		version, err = client.Controller.GetVersion(context.Background())
+		assert.NoError(t, err)
+		assert.Equal(t, "second", version.Version)
+		assert.Equal(t, &secondUrl, client.BaseURL())
+		second.Close()
+	default:
+		t.Fatalf("unexpected version: %s", version.Version)
+	}
+
+	_, err = client.Controller.GetVersion(context.Background())
+	assert.Error(t, err)
 }
 
 func TestBearerTokenOpt(t *testing.T) {

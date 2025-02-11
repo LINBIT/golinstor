@@ -42,14 +42,14 @@ import (
 
 // Client is a struct representing a LINSTOR REST client.
 type Client struct {
-	httpClient  *http.Client
-	baseURL     *url.URL
-	basicAuth   *BasicAuthCfg
-	bearerToken string
-	userAgent   string
-	controllers []*url.URL
-	lim         *rate.Limiter
-	log         interface{} // must be either Logger or LeveledLogger
+	httpClient    *http.Client
+	basicAuth     *BasicAuthCfg
+	bearerToken   string
+	userAgent     string
+	controllersMu sync.Mutex
+	controllers   []*url.URL
+	lim           *rate.Limiter
+	log           interface{} // must be either Logger or LeveledLogger
 
 	Nodes                  NodeProvider
 	ResourceDefinitions    ResourceDefinitionProvider
@@ -115,9 +115,11 @@ const (
 type Option func(*Client) error
 
 // BaseURL is a client's option to set the baseURL of the REST client.
-func BaseURL(URL *url.URL) Option {
+//
+// If multiple URLs are provided, each is tried in turn.
+func BaseURL(urls ...*url.URL) Option {
 	return func(c *Client) error {
-		c.baseURL = URL
+		c.controllers = urls
 		return nil
 	}
 }
@@ -268,50 +270,6 @@ func defaultPort(scheme string) string {
 	return "3370"
 }
 
-// tryConnect takes a slice of urls and tries to Dial each one of the hosts.
-// If a working URL is found, it is returned.
-// If the slice contains no working URL, a list of all connection errors is returned.
-func tryConnect(urls []*url.URL) (*url.URL, []error) {
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	errChan := make(chan error)
-	indexChan := make(chan int)
-	doneChan := make(chan bool)
-	wg.Add(len(urls))
-	for i := range urls {
-		i := i
-		go func() {
-			defer wg.Done()
-			conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", urls[i].Host)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			cancel()
-			conn.Close()
-			indexChan <- i
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		doneChan <- true
-	}()
-
-	var errs []error
-	for {
-		select {
-		case result := <-indexChan:
-			return urls[result], nil
-		case err := <-errChan:
-			errs = append(errs, err)
-		case <-doneChan:
-			return nil, errs
-		}
-	}
-}
-
 func parseBaseURL(urlString string) (*url.URL, error) {
 	// Check scheme
 	urlSplit := strings.Split(urlString, "://")
@@ -422,33 +380,28 @@ func NewClient(options ...Option) (*Client, error) {
 		}
 	}
 
-	if c.baseURL == nil {
-		if len(c.controllers) == 0 {
-			// if not already set by option, get from environment...
-			controllersStr := os.Getenv(ControllerUrlEnv)
-			if controllersStr == "" {
-				// ... or fall back to defaults
-				controllersStr = fmt.Sprintf("%v://%v:%v", defaultScheme(), defaultHost, defaultPort(defaultScheme()))
-			}
-
-			c.controllers, err = parseURLs(strings.Split(controllersStr, ","))
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse controller URLs: %w", err)
-			}
+	if len(c.controllers) == 0 {
+		// if not already set by option, get from environment...
+		controllersStr := os.Getenv(ControllerUrlEnv)
+		if controllersStr == "" {
+			// ... or fall back to defaults
+			controllersStr = fmt.Sprintf("%v://%v:%v", defaultScheme(), defaultHost, defaultPort(defaultScheme()))
 		}
 
-		// if we have exactly one controller, use that directly, otherwise the
-		// controller will be figured out in findRespondingController().
-		if len(c.controllers) == 1 {
-			c.baseURL = c.controllers[0]
+		c.controllers, err = parseURLs(strings.Split(controllersStr, ","))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse controller URLs: %w", err)
 		}
 	}
 
 	return c, nil
 }
 
+// BaseURL returns the current controllers URL.
 func (c *Client) BaseURL() *url.URL {
-	return c.baseURL
+	c.controllersMu.Lock()
+	defer c.controllersMu.Unlock()
+	return c.controllers[0]
 }
 
 func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
@@ -457,17 +410,7 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 		return nil, err
 	}
 
-	if c.baseURL == nil {
-		if err := c.findRespondingController(); err != nil {
-			return nil, fmt.Errorf("failed to connect: %w", err)
-		}
-		if c.baseURL == nil {
-			// should not happen since findRespondingController()
-			// always either sets baseURL or errors out, but just in case...
-			return nil, fmt.Errorf("failed to determine base URL")
-		}
-	}
-	u := c.baseURL.ResolveReference(rel)
+	u := c.BaseURL().ResolveReference(rel)
 
 	var buf io.ReadWriter
 	if body != nil {
@@ -513,37 +456,52 @@ func (c *Client) curlify(req *http.Request) (string, error) {
 	return cc.String(), nil
 }
 
-// findRespondingController scans the list of controllers for a working LINSTOR
-// controller. It sets the baseURL of the client to the first working controller
-// that is found.  If there is only exactly one controller in the controller
-// list, it is used directly.
+// findRespondingController scans the list of controllers for a working LINSTOR controller.
+//
+// After this returns successfully, the first controllers entry will point to the working controller.
+//
+// If no controller could be reached, an error combining all attempts is returned.
 func (c *Client) findRespondingController() error {
-	switch num := len(c.controllers); {
-	case num > 1:
-		url, errors := tryConnect(c.controllers)
-		if errors != nil {
-			logError := func(msg string) {
-				switch l := c.log.(type) {
-				case LeveledLogger:
-					l.Errorf(msg)
-				case Logger:
-					l.Printf("[ERROR] %s", msg)
-				}
-			}
-			logError("Unable to connect to any of the given controller hosts:")
-			for _, e := range errors {
-				logError(fmt.Sprintf("   - %v", e))
-			}
-			return fmt.Errorf("could not connect to any controller")
-		}
-		c.baseURL = url
-	case num == 1:
-		c.baseURL = c.controllers[0]
-	default:
-		return fmt.Errorf("no controller to connect to")
+	if len(c.controllers) <= 1 {
+		return nil
 	}
 
-	return nil
+	c.controllersMu.Lock()
+	defer c.controllersMu.Unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+	errs := make([]error, len(c.controllers))
+	var wg sync.WaitGroup
+	wg.Add(len(c.controllers))
+	for i := range c.controllers {
+		i := i
+		go func() {
+			defer wg.Done()
+			conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", c.controllers[i].Host)
+			if err != nil {
+				errs[i] = fmt.Errorf("failed to dial '%s': %w", c.controllers[i].Host, err)
+				return
+			}
+			_ = conn.Close()
+			// Success -> we can cancel the other goroutines
+			cancel()
+		}()
+	}
+
+	wg.Wait()
+	cancel() // just to make linters happy
+
+	for i := range errs {
+		if errs[i] == nil {
+			tmp := c.controllers[i]
+			c.controllers[0] = c.controllers[i]
+			c.controllers[i] = tmp
+			return nil
+		}
+	}
+
+	return fmt.Errorf("could not connect to any controller: %w", errors.Join(errs...))
 }
 
 func (c *Client) logCurlify(req *http.Request) {
@@ -564,18 +522,19 @@ func (c *Client) logCurlify(req *http.Request) {
 
 func (c *Client) retry(origErr error, req *http.Request) (*http.Response, error) {
 	// only retry on network errors and if we even have another controller to choose from
-	if _, ok := origErr.(net.Error); !ok || len(c.controllers) <= 1 {
+	var netError net.Error
+	if !errors.As(origErr, &netError) || len(c.controllers) <= 1 {
 		return nil, origErr
 	}
 
-	prevBaseURL := c.baseURL
 	e := c.findRespondingController()
 	// if findRespondingController failed, or we just got the same base URL, don't bother retrying
-	if e != nil && c.baseURL == prevBaseURL {
+	if e != nil {
 		return nil, origErr
 	}
 
-	req.URL.Host = c.baseURL.Host
+	req.URL.Host = c.BaseURL().Host
+	req.URL.Scheme = c.BaseURL().Scheme
 	return c.httpClient.Do(req)
 }
 
