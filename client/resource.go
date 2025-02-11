@@ -256,21 +256,22 @@ type AutoPlaceRequest struct {
 
 // AutoSelectFilter is a struct used to have information about the auto-select function
 type AutoSelectFilter struct {
-	PlaceCount              int32    `json:"place_count,omitempty"`
-	AdditionalPlaceCount    int32    `json:"additional_place_count,omitempty"`
-	NodeNameList            []string `json:"node_name_list,omitempty"`
-	StoragePool             string   `json:"storage_pool,omitempty"`
-	StoragePoolList         []string `json:"storage_pool_list,omitempty"`
-	StoragePoolDisklessList []string `json:"storage_pool_diskless_list,omitempty"`
-	NotPlaceWithRsc         []string `json:"not_place_with_rsc,omitempty"`
-	NotPlaceWithRscRegex    string   `json:"not_place_with_rsc_regex,omitempty"`
-	ReplicasOnSame          []string `json:"replicas_on_same,omitempty"`
-	ReplicasOnDifferent     []string `json:"replicas_on_different,omitempty"`
-	LayerStack              []string `json:"layer_stack,omitempty"`
-	ProviderList            []string `json:"provider_list,omitempty"`
-	DisklessOnRemaining     bool     `json:"diskless_on_remaining,omitempty"`
-	DisklessType            string   `json:"diskless_type,omitempty"`
-	Overprovision           *float64 `json:"overprovision,omitempty"`
+	PlaceCount              int32          `json:"place_count,omitempty"`
+	AdditionalPlaceCount    int32          `json:"additional_place_count,omitempty"`
+	NodeNameList            []string       `json:"node_name_list,omitempty"`
+	StoragePool             string         `json:"storage_pool,omitempty"`
+	StoragePoolList         []string       `json:"storage_pool_list,omitempty"`
+	StoragePoolDisklessList []string       `json:"storage_pool_diskless_list,omitempty"`
+	NotPlaceWithRsc         []string       `json:"not_place_with_rsc,omitempty"`
+	NotPlaceWithRscRegex    string         `json:"not_place_with_rsc_regex,omitempty"`
+	ReplicasOnSame          []string       `json:"replicas_on_same,omitempty"`
+	ReplicasOnDifferent     []string       `json:"replicas_on_different,omitempty"`
+	XReplicasOnDifferent    map[string]int `json:"x_replicas_on_different_map,omitempty"`
+	LayerStack              []string       `json:"layer_stack,omitempty"`
+	ProviderList            []string       `json:"provider_list,omitempty"`
+	DisklessOnRemaining     bool           `json:"diskless_on_remaining,omitempty"`
+	DisklessType            string         `json:"diskless_type,omitempty"`
+	Overprovision           *float64       `json:"overprovision,omitempty"`
 }
 
 // ResourceConnection is a struct which holds information about a connection between to nodes
