@@ -19,6 +19,7 @@ package client
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 )
 
@@ -77,6 +78,31 @@ type VolumeGroupModify struct {
 	DeleteNamespaces []string `json:"delete_namespaces,omitempty"`
 }
 
+// QuerySizeInfoResponseSpaceInfo contains information returned from the QuerySizeInfo API call
+type QuerySizeInfoResponseSpaceInfo struct {
+	MaxVlmSizeInKib                 int64                      `json:"max_vlm_size_in_kib"`
+	AvailableSizeInKib              *int64                     `json:"available_size_in_kib,omitempty"`
+	CapacityInKib                   *int64                     `json:"capacity_in_kib,omitempty"`
+	DefaultMaxOversubscriptionRatio *float64                   `json:"default_max_oversubscription_ratio,omitempty"`
+	NextSpawnResult                 []QuerySizeInfoSpawnResult `json:"next_spawn_result,omitempty"`
+}
+
+// QuerySizeInfoSpawnResult describes the result of a potential spawn operation
+type QuerySizeInfoSpawnResult struct {
+	NodeName     string `json:"node_name"`
+	StorPoolName string `json:"stor_pool_name"`
+}
+
+// QuerySizeInfoRequest is the request object for the QuerySizeInfo API call
+type QuerySizeInfoRequest struct {
+	SelectFilter *AutoSelectFilter `json:"select_filter,omitempty"`
+}
+
+type QuerySizeInfoResponse struct {
+	SpaceInfo *QuerySizeInfoResponseSpaceInfo `json:"space_info,omitempty"`
+	Reports   []ApiCallRc                     `json:"reports,omitempty"`
+}
+
 // custom code
 
 // ResourceGroupProvider acts as an abstraction for a
@@ -114,6 +140,8 @@ type ResourceGroupProvider interface {
 	Adjust(ctx context.Context, resGrpName string, adjust ResourceGroupAdjust) error
 	// AdjustAll adjusts all resource-definitions (calls autoplace) according to their associated resource group.
 	AdjustAll(ctx context.Context, adjust ResourceGroupAdjust) error
+	// QuerySizeInfo returns information about the space available in a resource group
+	QuerySizeInfo(ctx context.Context, resGrpName string, req QuerySizeInfoRequest) (QuerySizeInfoResponse, error)
 }
 
 var _ ResourceGroupProvider = &ResourceGroupService{}
@@ -218,4 +246,15 @@ func (n *ResourceGroupService) Adjust(ctx context.Context, resGrpName string, ad
 func (n *ResourceGroupService) AdjustAll(ctx context.Context, adjust ResourceGroupAdjust) error {
 	_, err := n.client.doPOST(ctx, "/v1/resource-groups/adjustall", adjust)
 	return err
+}
+
+// QuerySizeInfo returns information about the space available in a resource group
+func (n *ResourceGroupService) QuerySizeInfo(ctx context.Context, resGrpName string, req QuerySizeInfoRequest) (QuerySizeInfoResponse, error) {
+	var resp QuerySizeInfoResponse
+	httpReq, err := n.client.newRequest(http.MethodPost, "/v1/resource-groups/"+resGrpName+"/query-size-info", req)
+	if err != nil {
+		return resp, err
+	}
+	_, err = n.client.doJSON(ctx, httpReq, &resp)
+	return resp, err
 }
