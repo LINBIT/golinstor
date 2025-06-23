@@ -58,32 +58,32 @@ func (n *nodeCacheProvider) Get(ctx context.Context, nodeName string, opts ...*c
 }
 
 func (n *nodeCacheProvider) Create(ctx context.Context, node client.Node) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Create(ctx, node)
 }
 
 func (n *nodeCacheProvider) CreateEbsNode(ctx context.Context, name string, remoteName string) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.CreateEbsNode(ctx, name, remoteName)
 }
 
 func (n *nodeCacheProvider) Modify(ctx context.Context, nodeName string, props client.NodeModify) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Modify(ctx, nodeName, props)
 }
 
 func (n *nodeCacheProvider) Delete(ctx context.Context, nodeName string) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Delete(ctx, nodeName)
 }
 
 func (n *nodeCacheProvider) Lost(ctx context.Context, nodeName string) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Lost(ctx, nodeName)
 }
 
 func (n *nodeCacheProvider) Reconnect(ctx context.Context, nodeName string) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Reconnect(ctx, nodeName)
 }
 
@@ -112,32 +112,32 @@ func (n *nodeCacheProvider) GetNetInterface(ctx context.Context, nodeName, nifNa
 }
 
 func (n *nodeCacheProvider) CreateNetInterface(ctx context.Context, nodeName string, nif client.NetInterface) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.CreateNetInterface(ctx, nodeName, nif)
 }
 
 func (n *nodeCacheProvider) ModifyNetInterface(ctx context.Context, nodeName, nifName string, nif client.NetInterface) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.ModifyNetInterface(ctx, nodeName, nifName, nif)
 }
 
 func (n *nodeCacheProvider) DeleteNetinterface(ctx context.Context, nodeName, nifName string) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.DeleteNetinterface(ctx, nodeName, nifName)
 }
 
 func (n *nodeCacheProvider) Evict(ctx context.Context, nodeName string) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Evict(ctx, nodeName)
 }
 
 func (n *nodeCacheProvider) Restore(ctx context.Context, nodeName string, restore client.NodeRestore) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Restore(ctx, nodeName, restore)
 }
 
 func (n *nodeCacheProvider) Evacuate(ctx context.Context, nodeName string) error {
-	n.cache.nodeCache.Invalidate()
+	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Evacuate(ctx, nodeName)
 }
 
@@ -185,17 +185,17 @@ func (n *nodeCacheProvider) GetStoragePool(ctx context.Context, nodeName, spName
 }
 
 func (n *nodeCacheProvider) CreateStoragePool(ctx context.Context, nodeName string, sp client.StoragePool) error {
-	n.cache.storagePoolCache.Invalidate()
+	defer n.cache.storagePoolCache.Invalidate()
 	return n.cl.CreateStoragePool(ctx, nodeName, sp)
 }
 
 func (n *nodeCacheProvider) ModifyStoragePool(ctx context.Context, nodeName, spName string, genericProps client.GenericPropsModify) error {
-	n.cache.storagePoolCache.Invalidate()
+	defer n.cache.storagePoolCache.Invalidate()
 	return n.cl.ModifyStoragePool(ctx, nodeName, spName, genericProps)
 }
 
 func (n *nodeCacheProvider) DeleteStoragePool(ctx context.Context, nodeName, spName string) error {
-	n.cache.storagePoolCache.Invalidate()
+	defer n.cache.storagePoolCache.Invalidate()
 	return n.cl.DeleteStoragePool(ctx, nodeName, spName)
 }
 
@@ -231,7 +231,7 @@ func (n *nodeCacheProvider) GetPhysicalStorage(ctx context.Context, nodeName str
 }
 
 func (n *nodeCacheProvider) CreateDevicePool(ctx context.Context, nodeName string, psc client.PhysicalStorageCreate) error {
-	n.cache.physicalStorageCache.Invalidate()
+	defer n.cache.physicalStorageCache.Invalidate()
 	return n.cl.CreateDevicePool(ctx, nodeName, psc)
 }
 

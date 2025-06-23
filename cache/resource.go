@@ -121,57 +121,57 @@ func (r *resourceCacheProvider) GetVolume(ctx context.Context, resName, nodeName
 }
 
 func (r *resourceCacheProvider) Create(ctx context.Context, res client.ResourceCreate) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Create(ctx, res)
 }
 
 func (r *resourceCacheProvider) Modify(ctx context.Context, resName, nodeName string, props client.GenericPropsModify) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Modify(ctx, resName, nodeName, props)
 }
 
 func (r *resourceCacheProvider) Delete(ctx context.Context, resName, nodeName string) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Delete(ctx, resName, nodeName)
 }
 
 func (r *resourceCacheProvider) ModifyVolume(ctx context.Context, resName, nodeName string, volNr int, props client.GenericPropsModify) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.ModifyVolume(ctx, resName, nodeName, volNr, props)
 }
 
 func (r *resourceCacheProvider) Diskless(ctx context.Context, resName, nodeName, disklessPoolName string) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Diskless(ctx, resName, nodeName, disklessPoolName)
 }
 
 func (r *resourceCacheProvider) Diskful(ctx context.Context, resName, nodeName, storagePoolName string, props *client.ToggleDiskDiskfulProps) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Diskful(ctx, resName, nodeName, storagePoolName, props)
 }
 
 func (r *resourceCacheProvider) Migrate(ctx context.Context, resName, fromNodeName, toNodeName, storagePoolName string) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Migrate(ctx, resName, fromNodeName, toNodeName, storagePoolName)
 }
 
 func (r *resourceCacheProvider) Autoplace(ctx context.Context, resName string, apr client.AutoPlaceRequest) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Autoplace(ctx, resName, apr)
 }
 
 func (r *resourceCacheProvider) Activate(ctx context.Context, resName string, nodeName string) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Activate(ctx, resName, nodeName)
 }
 
 func (r *resourceCacheProvider) Deactivate(ctx context.Context, resName string, nodeName string) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.Deactivate(ctx, resName, nodeName)
 }
 
 func (r *resourceCacheProvider) MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable client.ResourceMakeAvailable) error {
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.MakeAvailable(ctx, resName, nodeName, makeAvailable)
 }
 
@@ -218,24 +218,24 @@ func (r *resourceCacheProvider) GetSnapshot(ctx context.Context, resName, snapNa
 }
 
 func (r *resourceCacheProvider) CreateSnapshot(ctx context.Context, snapshot client.Snapshot) error {
-	r.cache.snapshotCache.Invalidate()
+	defer r.cache.snapshotCache.Invalidate()
 	return r.cl.CreateSnapshot(ctx, snapshot)
 }
 
 func (r *resourceCacheProvider) DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error {
-	r.cache.snapshotCache.Invalidate()
+	defer r.cache.snapshotCache.Invalidate()
 	return r.cl.DeleteSnapshot(ctx, resName, snapName, nodes...)
 }
 
 func (r *resourceCacheProvider) RestoreSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf client.SnapshotRestore) error {
 	// This will create new resources, not touch snapshots
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.RestoreSnapshot(ctx, origResName, snapName, snapRestoreConf)
 }
 
 func (r *resourceCacheProvider) RestoreVolumeDefinitionSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf client.SnapshotRestore) error {
 	// This will create new resources, not touch snapshots
-	r.cache.resourceCache.Invalidate()
+	defer r.cache.resourceCache.Invalidate()
 	return r.cl.RestoreVolumeDefinitionSnapshot(ctx, origResName, snapName, snapRestoreConf)
 }
 
@@ -292,17 +292,17 @@ func (r *resourceCacheProvider) GetConnectionPropsInfos(ctx context.Context, res
 }
 
 func (b backupShim) Restore(ctx context.Context, remoteName string, request client.BackupRestoreRequest) error {
-	b.snapshotCache.Invalidate()
-	b.resourceCache.Invalidate()
+	defer b.snapshotCache.Invalidate()
+	defer b.resourceCache.Invalidate()
 	return b.BackupProvider.Restore(ctx, remoteName, request)
 }
 
 func (b backupShim) Create(ctx context.Context, remoteName string, request client.BackupCreate) (string, error) {
-	b.snapshotCache.Invalidate()
+	defer b.snapshotCache.Invalidate()
 	return b.BackupProvider.Create(ctx, remoteName, request)
 }
 
 func (b backupShim) Ship(ctx context.Context, remoteName string, request client.BackupShipRequest) (string, error) {
-	b.snapshotCache.Invalidate()
+	defer b.snapshotCache.Invalidate()
 	return b.BackupProvider.Ship(ctx, remoteName, request)
 }
