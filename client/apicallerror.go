@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"strings"
 )
 
@@ -29,16 +30,10 @@ func (e ApiCallError) Is(mask uint64) bool {
 	return false
 }
 
-// Is can be used to check the return code against a given mask. Since LINSTOR
-// return codes are designed to be machine readable, this can be used to check
-// for a very specific type of error.
-// Refer to package apiconsts.go in package linstor for a list of possible
-// mask values.
-func (r ApiCallRc) Is(mask uint64) bool { return (uint64(r.RetCode) & mask) == mask }
-
 // IsApiCallError checks if an error is a specific type of LINSTOR error.
 func IsApiCallError(err error, mask uint64) bool {
-	e, ok := err.(ApiCallError)
+	var e ApiCallError
+	ok := errors.As(err, &e)
 	if !ok {
 		return false
 	}

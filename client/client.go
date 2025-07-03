@@ -38,6 +38,8 @@ import (
 	"github.com/donovanhide/eventsource"
 	"golang.org/x/time/rate"
 	"moul.io/http2curl/v2"
+
+	linstor "github.com/LINBIT/golinstor"
 )
 
 // Client is a struct representing a LINSTOR REST client.
@@ -713,6 +715,15 @@ func (rc *ApiCallRc) String() string {
 	}
 
 	return s
+}
+
+// Is can be used to check the return code against a given mask. Since LINSTOR
+// return codes are designed to be machine readable, this can be used to check
+// for a very specific type of error.
+// Refer to package apiconsts.go in package linstor for a list of possible
+// mask values.
+func (rc *ApiCallRc) Is(mask uint64) bool {
+	return (uint64(rc.RetCode) & (linstor.MaskError | linstor.MaskBitsCode)) == mask
 }
 
 // DeleteProps is a slice of properties to delete.
