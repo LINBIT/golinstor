@@ -15,4 +15,5 @@ const (
 	Authenticated       ConnectionStatus = 9
 	NoStltConn          ConnectionStatus = 10
 	MissingExtTools     ConnectionStatus = 11
+	DuplicateUname      ConnectionStatus = 12
 )

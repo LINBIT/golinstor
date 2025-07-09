@@ -118,6 +118,7 @@ const FailInvldRemoteName = (239 | MaskError)
 const FailInvldTimeParam = (240 | MaskError)
 const FailInvldScheduleName = (241 | MaskError)
 const FailInvldDbExportFile = (242 | MaskError)
+const FailInvldRscState = (243 | MaskError)
 
 // ## Codes 300-399: dependency not found failures ###
 const FailNotFoundNode = (300 | MaskError)
@@ -290,6 +291,7 @@ const WarnBackupDlOnly = (1019 | MaskWarn)
 const WarnNotEvacuating = (1020 | MaskWarn)
 const WarnInvldConf = (1021 | MaskWarn)
 const WarnStorpoolRenameNotAllowed = (1022 | MaskWarn)
+const WarnVlmdfnResizeSameSize = (1023 | MaskWarn)
 const WarnNotFound = (3000 | MaskWarn)
 const WarnDeprecated = (4000 | MaskWarn)
 
@@ -342,6 +344,7 @@ const ApiAutoPlaceRsc = "AutoPlaceRsc"
 const ApiCloneRscdfn = "CloneRscDfn"
 const ApiCloneRscdfnStatus = "CloneRscDfnStatus"
 const ApiCrtCryptPass = "CrtCryptPass"
+const ApiStatusCryptPass = "StatusCryptPass"
 const ApiRestoreVlmDfn = "RestoreVlmDfn"
 const ApiRestoreSnapshot = "RestoreSnapshot"
 const ApiCrtRscGrp = "CrtRscGrp"
@@ -503,6 +506,7 @@ const ApiDbExport = "DbExport"
 const KeyUuid = "UUID"
 const KeyDrbdCurrentGi = "DrbdCurrentGi"
 const KeyDmstats = "DMStats"
+const KeyQuorumSetBy = "QuorumSetBy"
 const KeyDrbdAutoQuorum = "auto-quorum"
 const KeyDrbdAutoAddQuorumTiebreaker = "auto-add-quorum-tiebreaker"
 const KeyMinorNrAutoRange = "MinorNrAutoRange"
@@ -663,6 +667,7 @@ const NamespcDrbdProxyOptions = "DrbdOptions/Proxy"
 const NamespcDrbdProxyCompressionOptions = "DrbdOptions/ProxyCompression"
 const NamespcDrbdHandlerOptions = "DrbdOptions/Handlers"
 const NamespcConnectionPaths = "Paths"
+const NamespcInternalDrbd = "Internal/Drbd"
 const NamespcRest = "REST"
 const NamespcFilesystem = "FileSystem"
 const NamespcNvme = "NVMe"
@@ -859,6 +864,9 @@ const FlagDrbdDiskless = "DRBD_DISKLESS"
 const FlagNvmeInitiator = "NVME_INITIATOR"
 const FlagRscInactive = "INACTIVE"
 const FlagEbsInitiator = "EBS_INITIATOR"
+const FlagCloning = "CLONING"
+const FlagFailed = "FAILED"
+const FlagRestoreTarget = "RESTORE_TARGET"
 
 // ## Device layer kinds ###
 // enum generated in package -> "golinstor/devicelayerkind"
@@ -885,6 +893,7 @@ const FlagEbsInitiator = "EBS_INITIATOR"
 // connectionstatus.Authenticated = 9
 // connectionstatus.NoStltConn = 10
 // connectionstatus.MissingExtTools = 11
+// connectionstatus.DuplicateUname = 12
 
 // ## Clone states ###
 // enum generated in package -> "golinstor/clonestatus"
