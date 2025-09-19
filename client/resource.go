@@ -446,8 +446,6 @@ type ResourceProvider interface {
 	RestoreVolumeDefinitionSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error
 	// RollbackSnapshot rolls back a snapshot from a specific resource
 	RollbackSnapshot(ctx context.Context, resName, snapName string) error
-	// EnableSnapshotShipping enables snapshot shipping for a resource
-	EnableSnapshotShipping(ctx context.Context, resName string, ship SnapshotShipping) error
 	// ModifyDRBDProxy is used to modify drbd-proxy properties
 	ModifyDRBDProxy(ctx context.Context, resName string, props DrbdProxyModify) error
 	// EnableDRBDProxy is used to enable drbd-proxy with the rest-api call from the function enableDisableDRBDProxy
@@ -456,8 +454,6 @@ type ResourceProvider interface {
 	DisableDRBDProxy(ctx context.Context, resName, nodeAName, nodeBName string) error
 	// QueryMaxVolumeSize finds the maximum size of a volume for a given filter
 	QueryMaxVolumeSize(ctx context.Context, filter AutoSelectFilter) (MaxVolumeSizes, error)
-	// GetSnapshotShippings gets a view of all snapshot shippings
-	GetSnapshotShippings(ctx context.Context, opts ...*ListOpts) ([]SnapshotShippingStatus, error)
 	// GetPropsInfos gets meta information about the properties that can be
 	// set on a resource.
 	GetPropsInfos(ctx context.Context, resName string, opts ...*ListOpts) ([]PropsInfo, error)
@@ -542,7 +538,6 @@ func (v *VolumeLayer) UnmarshalJSON(b []byte) error {
 		}
 		v.Data = dst
 	case devicelayerkind.Cache:
-	case devicelayerkind.Exos:
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", v.Type)
 	}
@@ -758,12 +753,6 @@ func (n *ResourceService) RollbackSnapshot(ctx context.Context, resName, snapNam
 	return err
 }
 
-// EnableSnapshotShipping enables snapshot shipping for a resource
-func (n *ResourceService) EnableSnapshotShipping(ctx context.Context, resName string, ship SnapshotShipping) error {
-	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+resName+"/snapshot-shipping", ship)
-	return err
-}
-
 // ModifyDRBDProxy is used to modify drbd-proxy properties
 func (n *ResourceService) ModifyDRBDProxy(ctx context.Context, resName string, props DrbdProxyModify) error {
 	_, err := n.client.doPUT(ctx, "/v1/resource-definitions/"+resName+"/drbd-proxy", props)
@@ -792,13 +781,6 @@ func (n *ResourceService) QueryMaxVolumeSize(ctx context.Context, filter AutoSel
 	var sizes MaxVolumeSizes
 	_, err := n.client.doOPTIONS(ctx, "/v1/query-max-volume-size", &sizes, filter)
 	return sizes, err
-}
-
-// GetSnapshotShippings gets a view of all snapshot shippings
-func (n *ResourceService) GetSnapshotShippings(ctx context.Context, opts ...*ListOpts) ([]SnapshotShippingStatus, error) {
-	var shippings []SnapshotShippingStatus
-	_, err := n.client.doGET(ctx, "/v1/view/snapshot-shippings", &shippings, opts...)
-	return shippings, err
 }
 
 // GetPropsInfos gets meta information about the properties that can be set on

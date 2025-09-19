@@ -119,12 +119,13 @@ type DrbdVolumeDefinition struct {
 }
 
 type ResourceDefinitionCloneRequest struct {
-	Name              string                            `json:"name,omitempty"`
-	ExternalName      string                            `json:"external_name,omitempty"`
-	UseZfsClone       bool                              `json:"use_zfs_clone,omitempty"`
-	LayerList         []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
-	VolumePassphrases []string                          `json:"volume_passphrases,omitempty"`
-	ResourceGroup     string                            `json:"resource_group,omitempty"`
+	Name               string                            `json:"name,omitempty"`
+	ExternalName       string                            `json:"external_name,omitempty"`
+	UseZfsClone        bool                              `json:"use_zfs_clone,omitempty"`
+	LayerList          []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
+	VolumePassphrases  []string                          `json:"volume_passphrases,omitempty"`
+	ResourceGroup      string                            `json:"resource_group,omitempty"`
+	GenericPropsModify `json:",inline"`
 }
 
 type ResourceDefinitionCloneStarted struct {
@@ -233,7 +234,7 @@ func (rd *ResourceDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		rd.Data = dst
-	case devicelayerkind.Luks, devicelayerkind.Storage, devicelayerkind.Nvme, devicelayerkind.Writecache, devicelayerkind.Cache, devicelayerkind.Exos: // valid types, but do not set data
+	case devicelayerkind.Luks, devicelayerkind.Storage, devicelayerkind.Nvme, devicelayerkind.Writecache, devicelayerkind.Cache: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", rd.Type)
 	}
@@ -264,7 +265,7 @@ func (vd *VolumeDefinitionLayer) UnmarshalJSON(b []byte) error {
 			}
 		}
 		vd.Data = dst
-	case devicelayerkind.Luks, devicelayerkind.Storage, devicelayerkind.Nvme, devicelayerkind.Writecache, devicelayerkind.Cache, devicelayerkind.Exos: // valid types, but do not set data
+	case devicelayerkind.Luks, devicelayerkind.Storage, devicelayerkind.Nvme, devicelayerkind.Writecache, devicelayerkind.Cache: // valid types, but do not set data
 	default:
 		return fmt.Errorf("'%+v' is not a valid type to Unmarshal", vd.Type)
 	}

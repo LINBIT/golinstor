@@ -61,7 +61,6 @@ type Client struct {
 	Encryption             EncryptionProvider
 	Controller             ControllerProvider
 	Events                 EventProvider
-	Vendor                 VendorProvider
 	Remote                 RemoteProvider
 	Backup                 BackupProvider
 	KeyValueStore          KeyValueStoreProvider
@@ -361,7 +360,6 @@ func NewClient(options ...Option) (*Client, error) {
 	c.StoragePoolDefinitions = &StoragePoolDefinitionService{client: c}
 	c.Controller = &ControllerService{client: c}
 	c.Events = &EventService{client: c}
-	c.Vendor = &VendorService{client: c}
 	c.Remote = &RemoteService{client: c}
 	c.Backup = &BackupService{client: c}
 	c.KeyValueStore = &KeyValueStoreService{client: c}

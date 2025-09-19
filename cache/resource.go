@@ -251,10 +251,6 @@ func (r *resourceCacheProvider) ModifyConnection(ctx context.Context, resName, n
 	return r.cl.ModifyConnection(ctx, resName, nodeAName, nodeBName, props)
 }
 
-func (r *resourceCacheProvider) EnableSnapshotShipping(ctx context.Context, resName string, ship client.SnapshotShipping) error {
-	return r.cl.EnableSnapshotShipping(ctx, resName, ship)
-}
-
 func (r *resourceCacheProvider) ModifyDRBDProxy(ctx context.Context, resName string, props client.DrbdProxyModify) error {
 	return r.cl.ModifyDRBDProxy(ctx, resName, props)
 }
@@ -269,10 +265,6 @@ func (r *resourceCacheProvider) DisableDRBDProxy(ctx context.Context, resName, n
 
 func (r *resourceCacheProvider) QueryMaxVolumeSize(ctx context.Context, filter client.AutoSelectFilter) (client.MaxVolumeSizes, error) {
 	return r.cl.QueryMaxVolumeSize(ctx, filter)
-}
-
-func (r *resourceCacheProvider) GetSnapshotShippings(ctx context.Context, opts ...*client.ListOpts) ([]client.SnapshotShippingStatus, error) {
-	return r.cl.GetSnapshotShippings(ctx, opts...)
 }
 
 func (r *resourceCacheProvider) GetPropsInfos(ctx context.Context, resName string, opts ...*client.ListOpts) ([]client.PropsInfo, error) {
