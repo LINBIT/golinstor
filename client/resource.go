@@ -291,7 +291,11 @@ type Snapshot struct {
 	Name         string   `json:"name,omitempty"`
 	ResourceName string   `json:"resource_name,omitempty"`
 	Nodes        []string `json:"nodes,omitempty"`
-	// A string to string property map.
+	// Snapshot-related properties
+	SnapshotDefinitionProps map[string]string `json:"snapshot_definition_props,omitempty"`
+	// Properties on the RD at the time the snapshot was cut.
+	ResourceDefinitionProps map[string]string `json:"resource_definition_props,omitempty"`
+	// Deprecated, use SnapshotDefinitionProps or ResourceDefinitionProps instead.
 	Props             map[string]string          `json:"props,omitempty"`
 	Flags             []string                   `json:"flags,omitempty"`
 	VolumeDefinitions []SnapshotVolumeDefinition `json:"volume_definitions,omitempty"`
@@ -438,6 +442,8 @@ type ResourceProvider interface {
 	GetSnapshot(ctx context.Context, resName, snapName string, opts ...*ListOpts) (Snapshot, error)
 	// CreateSnapshot creates a snapshot of a resource
 	CreateSnapshot(ctx context.Context, snapshot Snapshot) error
+	// CreateSnapshots creates multiple snapshots at once, suspending IO on all volumes at the same time.
+	CreateSnapshots(ctx context.Context, snapshot ...Snapshot) error
 	// DeleteSnapshot deletes a snapshot by its name. Specify nodes to only delete snapshots on specific nodes.
 	DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error
 	// RestoreSnapshot restores a snapshot on a resource
@@ -719,6 +725,17 @@ func (n *ResourceService) GetSnapshot(ctx context.Context, resName, snapName str
 // CreateSnapshot creates a snapshot of a resource
 func (n *ResourceService) CreateSnapshot(ctx context.Context, snapshot Snapshot) error {
 	_, err := n.client.doPOST(ctx, "/v1/resource-definitions/"+snapshot.ResourceName+"/snapshots", snapshot)
+	return err
+}
+
+func (n *ResourceService) CreateSnapshots(ctx context.Context, snapshots ...Snapshot) error {
+	multiSnapshotRequest := struct {
+		Snapshots []Snapshot `json:"snapshots"`
+	}{
+		Snapshots: snapshots,
+	}
+
+	_, err := n.client.doPOST(ctx, "/v1/actions/snapshot/multi", multiSnapshotRequest)
 	return err
 }
 

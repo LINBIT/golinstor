@@ -222,6 +222,11 @@ func (r *resourceCacheProvider) CreateSnapshot(ctx context.Context, snapshot cli
 	return r.cl.CreateSnapshot(ctx, snapshot)
 }
 
+func (r *resourceCacheProvider) CreateSnapshots(ctx context.Context, snapshots ...client.Snapshot) error {
+	defer r.cache.snapshotCache.Invalidate()
+	return r.cl.CreateSnapshots(ctx, snapshots...)
+}
+
 func (r *resourceCacheProvider) DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error {
 	defer r.cache.snapshotCache.Invalidate()
 	return r.cl.DeleteSnapshot(ctx, resName, snapName, nodes...)
