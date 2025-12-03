@@ -495,8 +495,8 @@ func (c *Client) findRespondingController() error {
 	for i := range errs {
 		if errs[i] == nil {
 			tmp := c.controllers[i]
-			c.controllers[0] = c.controllers[i]
-			c.controllers[i] = tmp
+			c.controllers[i] = c.controllers[0]
+			c.controllers[0] = tmp
 			return nil
 		}
 	}
