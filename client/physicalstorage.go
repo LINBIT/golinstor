@@ -38,12 +38,16 @@ type PhysicalStorageCreate struct {
 	ProviderKind ProviderKind `json:"provider_kind"`
 	DevicePaths  []string     `json:"device_paths"`
 	// RAID level to use for pool.
-	RaidLevel         string                           `json:"raid_level,omitempty"`
-	PoolName          string                           `json:"pool_name,omitempty"`
-	VdoEnable         bool                             `json:"vdo_enable,omitempty"`
-	VdoSlabSizeKib    int64                            `json:"vdo_slab_size_kib,omitempty"`
-	VdoLogicalSizeKib int64                            `json:"vdo_logical_size_kib,omitempty"`
-	WithStoragePool   PhysicalStorageStoragePoolCreate `json:"with_storage_pool,omitempty"`
+	RaidLevel            string                           `json:"raid_level,omitempty"`
+	PoolName             string                           `json:"pool_name,omitempty"`
+	VdoEnable            bool                             `json:"vdo_enable,omitempty"`
+	VdoSlabSizeKib       int64                            `json:"vdo_slab_size_kib,omitempty"`
+	VdoLogicalSizeKib    int64                            `json:"vdo_logical_size_kib,omitempty"`
+	WithStoragePool      PhysicalStorageStoragePoolCreate `json:"with_storage_pool,omitempty"`
+	PvCreateArguments    []string                         `json:"pv_create_arguments,omitempty"`
+	VgCreateArguments    []string                         `json:"vg_create_arguments,omitempty"`
+	LvCreateArguments    []string                         `json:"lv_create_arguments,omitempty"`
+	ZpoolCreateArguments []string                         `json:"zpool_create_arguments,omitempty"`
 }
 
 type PhysicalStorageNode struct {

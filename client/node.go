@@ -56,6 +56,11 @@ type NodeRestore struct {
 	DeleteSnapshots *bool `json:"delete_snapshots,omitempty"`
 }
 
+type NodeEvacuate struct {
+	Target      []string `json:"target,omitempty"`
+	DoNotTarget []string `json:"do_not_target,omitempty"`
+}
+
 // NetInterface represents a node's network interface.
 type NetInterface struct {
 	Name                    string `json:"name"`
@@ -173,7 +178,7 @@ type NodeProvider interface {
 	Restore(ctx context.Context, nodeName string, restore NodeRestore) error
 	// Evacuate the given node, migrating resources to remaining nodes. While Evict works only on offline nodes, this
 	// is meant for online nodes.
-	Evacuate(ctx context.Context, nodeName string) error
+	Evacuate(ctx context.Context, nodeName string, evacuate *NodeEvacuate) error
 }
 
 // NodeService is the service that deals with node related tasks.
@@ -333,8 +338,8 @@ func (n NodeService) Evict(ctx context.Context, nodeName string) error {
 
 // Evacuate the given node, migrating resources to remaining nodes. While Evict works only on offline nodes, this
 // is meant for online nodes.
-func (n NodeService) Evacuate(ctx context.Context, nodeName string) error {
-	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/evacuate", nil)
+func (n NodeService) Evacuate(ctx context.Context, nodeName string, evacuate *NodeEvacuate) error {
+	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/evacuate", evacuate)
 	return err
 }
 

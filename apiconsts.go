@@ -119,6 +119,7 @@ const FailInvldTimeParam = (240 | MaskError)
 const FailInvldScheduleName = (241 | MaskError)
 const FailInvldDbExportFile = (242 | MaskError)
 const FailInvldRscState = (243 | MaskError)
+const FailInvldBlkSize = (244 | MaskError)
 
 // ## Codes 300-399: dependency not found failures ###
 const FailNotFoundNode = (300 | MaskError)
@@ -497,6 +498,8 @@ const KeyDrbdCurrentGi = "DrbdCurrentGi"
 const KeyDmstats = "DMStats"
 const KeyQuorumSetBy = "QuorumSetBy"
 const KeyDrbdAutoQuorum = "auto-quorum"
+const KeyDrbdAutoBlockSize = "auto-block-size"
+const KeyDrbdFreezeBlockSize = "freeze-block-size"
 const KeyDrbdAutoAddQuorumTiebreaker = "auto-add-quorum-tiebreaker"
 const KeyMinorNrAutoRange = "MinorNrAutoRange"
 const KeyDrbdAutoDiskful = "auto-diskful"
@@ -574,6 +577,7 @@ const KeyCacheCacheSize = "Cachesize"
 const KeyCacheBlockSize = "Blocksize"
 const KeyCachePolicy = "Policy"
 const KeyUpdateCacheInterval = "UpdateCacheInterval"
+const KeyCacheFlushTimeout = "FlushTimeout"
 
 // ## BCache property keys ###
 const KeyBcachePoolName = "PoolName"
@@ -619,6 +623,8 @@ const ValNodeUndecided = "<undecided>"
 const KeyAllowForceRestore = "AllowForceRestore"
 const KeyRecvTimeoutInMs = "L2LReceiveStartedTimeout"
 const KeyBackupL2LSkipWaitForStart = "L2LSkipWaitForStart"
+const KeyCopyAllSnaps = "CopyAllSnaps"
+const KeyCopyAllSnapsOnEvac = "CopyAllSnapsOnEvacuate"
 
 // ## Clone property keys ###
 const KeyUseZfsClone = "UseZFSClone"
@@ -646,6 +652,7 @@ const NamespcNode = "Node"
 const NamespcStorageDriver = "StorDriver"
 const NamespcDrbdProxy = "DrbdProxy"
 const NamespcAuxiliary = "Aux"
+const NamespcLinstorDrbd = "Linstor/Drbd"
 const NamespcDrbdOptions = "DrbdOptions"
 const NamespcDrbdNetOptions = "DrbdOptions/Net"
 const NamespcDrbdDiskOptions = "DrbdOptions/Disk"
@@ -735,6 +742,10 @@ const ValStorPoolZfsRollbackStratDynamic = "Dynamic"
 const ValStorPoolZfsDeleteStratDestroy = "Destroy"
 const ValStorPoolZfsDeleteStratRename = "Rename"
 const ValStorPoolZfsDeleteStratDynamic = "Dynamic"
+
+// ## Storage driver options ###
+const KeyStorDriverLuksFormatOptions = "LuksFormatOptions"
+const KeyStorDriverLuksOpenOptions = "LuksOpenOptions"
 
 // ## DRBD Proxy keys (other than 'options') ###
 const KeyDrbdProxyCompressionType = "CompressionType"

@@ -136,9 +136,9 @@ func (n *nodeCacheProvider) Restore(ctx context.Context, nodeName string, restor
 	return n.cl.Restore(ctx, nodeName, restore)
 }
 
-func (n *nodeCacheProvider) Evacuate(ctx context.Context, nodeName string) error {
+func (n *nodeCacheProvider) Evacuate(ctx context.Context, nodeName string, evacuate *client.NodeEvacuate) error {
 	defer n.cache.nodeCache.Invalidate()
-	return n.cl.Evacuate(ctx, nodeName)
+	return n.cl.Evacuate(ctx, nodeName, evacuate)
 }
 
 func (n *nodeCacheProvider) GetStoragePoolView(ctx context.Context, opts ...*client.ListOpts) ([]client.StoragePool, error) {
