@@ -122,6 +122,11 @@ func (e *ExternalFile) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
+// ExtFileCheckResult represents the result of checking if an external file can be written on a node.
+type ExtFileCheckResult struct {
+	Allowed bool `json:"allowed"`
+}
+
 // custom code
 
 // ControllerProvider acts as an abstraction for a ControllerService. It can be
@@ -170,6 +175,8 @@ type ControllerProvider interface {
 	// DeleteExternalFile deletes the given external file. This effectively
 	// also deletes the file on all satellites
 	DeleteExternalFile(ctx context.Context, name string) error
+	// CheckExternalFile checks whether an external file can be written on the given node.
+	CheckExternalFile(ctx context.Context, name string, node string) (ExtFileCheckResult, error)
 }
 
 // ControllerService is the service that deals with the LINSTOR controller.
@@ -337,4 +344,11 @@ func (s *ControllerService) ModifyExternalFile(ctx context.Context, name string,
 func (s *ControllerService) DeleteExternalFile(ctx context.Context, name string) error {
 	_, err := s.client.doDELETE(ctx, "/v1/files/"+url.QueryEscape(name), nil)
 	return err
+}
+
+// CheckExternalFile checks whether an external file can be written on the given node.
+func (s *ControllerService) CheckExternalFile(ctx context.Context, name string, node string) (ExtFileCheckResult, error) {
+	var result ExtFileCheckResult
+	_, err := s.client.doGET(ctx, "/v1/files/"+url.QueryEscape(name)+"/check/"+node, &result)
+	return result, err
 }
