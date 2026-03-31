@@ -191,6 +191,25 @@ func BearerToken(token string) Option {
 	}
 }
 
+// BearerTokenFromFile reads a bearer token from the given file path.
+// If no path is given, the default is /var/lib/linstor.d/auth.json.
+func BearerTokenFromFile(path ...string) Option {
+	return func(c *Client) error {
+		p := "/var/lib/linstor.d/auth.json"
+		if len(path) > 0 {
+			p = path[0]
+		}
+
+		token, err := tokenFromFile(p)
+		if err != nil {
+			return err
+		}
+
+		c.bearerToken = token
+		return nil
+	}
+}
+
 // UserAgent sets the User-Agent header for every request to the given string.
 func UserAgent(ua string) Option {
 	return func(c *Client) error {
