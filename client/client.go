@@ -366,12 +366,12 @@ func NewClient(options ...Option) (*Client, error) {
 	c.Connections = &ConnectionService{client: c}
 
 	if path, ok := os.LookupEnv(BearerTokenFileEnv); ok {
-		token, err := os.ReadFile(path)
+		token, err := tokenFromFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read token from file: %w", err)
 		}
 
-		c.bearerToken = string(token)
+		c.bearerToken = token
 	}
 
 	for _, opt := range options {
@@ -395,6 +395,27 @@ func NewClient(options ...Option) (*Client, error) {
 	}
 
 	return c, nil
+}
+
+// tokenFromFile reads a token from the file at path. If the file contains
+// valid JSON with a "token" key, the value of that key is returned.
+// Otherwise, the entire file content is returned as the token.
+func tokenFromFile(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(content, &parsed); err == nil {
+		if token, ok := parsed["token"]; ok {
+			if s, ok := token.(string); ok {
+				return s, nil
+			}
+		}
+	}
+
+	return strings.TrimSpace(string(content)), nil
 }
 
 // BaseURL returns the current controllers URL.
