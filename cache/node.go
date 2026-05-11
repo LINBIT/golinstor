@@ -136,7 +136,7 @@ func (n *nodeCacheProvider) Restore(ctx context.Context, nodeName string, restor
 	return n.cl.Restore(ctx, nodeName, restore)
 }
 
-func (n *nodeCacheProvider) Evacuate(ctx context.Context, nodeName string, evacuate *client.NodeEvacuate) error {
+func (n *nodeCacheProvider) Evacuate(ctx context.Context, nodeName string, evacuate client.NodeEvacuate) error {
 	defer n.cache.nodeCache.Invalidate()
 	return n.cl.Evacuate(ctx, nodeName, evacuate)
 }

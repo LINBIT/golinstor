@@ -178,7 +178,7 @@ type NodeProvider interface {
 	Restore(ctx context.Context, nodeName string, restore NodeRestore) error
 	// Evacuate the given node, migrating resources to remaining nodes. While Evict works only on offline nodes, this
 	// is meant for online nodes.
-	Evacuate(ctx context.Context, nodeName string, evacuate *NodeEvacuate) error
+	Evacuate(ctx context.Context, nodeName string, evacuate NodeEvacuate) error
 }
 
 // NodeService is the service that deals with node related tasks.
@@ -338,7 +338,7 @@ func (n NodeService) Evict(ctx context.Context, nodeName string) error {
 
 // Evacuate the given node, migrating resources to remaining nodes. While Evict works only on offline nodes, this
 // is meant for online nodes.
-func (n NodeService) Evacuate(ctx context.Context, nodeName string, evacuate *NodeEvacuate) error {
+func (n NodeService) Evacuate(ctx context.Context, nodeName string, evacuate NodeEvacuate) error {
 	_, err := n.client.doPUT(ctx, "/v1/nodes/"+nodeName+"/evacuate", evacuate)
 	return err
 }
