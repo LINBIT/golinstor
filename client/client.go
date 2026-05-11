@@ -94,10 +94,16 @@ const (
 	NotFoundError = clientError("404 Not Found")
 	// Name of the environment variable that stores the certificate used for TLS client authentication
 	UserCertEnv = "LS_USER_CERTIFICATE"
+	// Name of the environment variable that stores the path to the certificate used for TLS client authentication
+	UserCertFileEnv = "LS_USER_CERTIFICATE_FILE"
 	// Name of the environment variable that stores the key used for TLS client authentication
 	UserKeyEnv = "LS_USER_KEY"
+	// Name of the environment variable that stores the path to the key used for TLS client authentication
+	UserKeyFileEnv = "LS_USER_KEY_FILE"
 	// Name of the environment variable that stores the certificate authority for the LINSTOR HTTPS API
 	RootCAEnv = "LS_ROOT_CA"
+	// Name of the environment variable that stores the path to the certificate authority for the LINSTOR HTTPS API
+	RootCAFileEnv = "LS_ROOT_CA_FILE"
 	// Name of the environment variable that holds the URL(s) of LINSTOR controllers
 	ControllerUrlEnv = "LS_CONTROLLERS"
 	// Name of the environment variable that holds the username for authentication
@@ -225,20 +231,32 @@ func UserAgent(ua string) Option {
 // If none or not all of the environment variables are passed, the default
 // client is used as a fallback.
 func buildHttpClient() (*http.Client, error) {
+	certFilePath, certFile := os.LookupEnv(UserCertFileEnv)
 	certPEM, cert := os.LookupEnv(UserCertEnv)
+	keyFilePath, keyFile := os.LookupEnv(UserKeyFileEnv)
 	keyPEM, key := os.LookupEnv(UserKeyEnv)
+	caFilePath, caFile := os.LookupEnv(RootCAFileEnv)
 	caPEM, ca := os.LookupEnv(RootCAEnv)
 
-	if key != cert {
-		return nil, fmt.Errorf("'%s', '%s': specify both or none", UserKeyEnv, UserCertEnv)
+	if (key || keyFile) != (cert || certFile) {
+		return nil, fmt.Errorf("'%s[_FILE]', '%s[_FILE]': specify both or none", UserKeyEnv, UserCertEnv)
 	}
 
-	if !cert && !key && !ca {
-		// Non of the special variables was set -> if TLS is used, default configuration can be used
+	if !cert && !certFile && !key && !keyFile && !ca && !caFile {
+		// None of the special variables was set -> if TLS is used, default configuration can be used
 		return http.DefaultClient, nil
 	}
 
 	tlsConfig := &tls.Config{}
+
+	if caFile {
+		pem, err := os.ReadFile(caFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CA file: %s", err)
+		}
+		caPEM = string(pem)
+		ca = true
+	}
 
 	if ca {
 		caPool := x509.NewCertPool()
@@ -247,6 +265,35 @@ func buildHttpClient() (*http.Client, error) {
 			return nil, fmt.Errorf("failed to get a valid certificate from '%s'", RootCAEnv)
 		}
 		tlsConfig.RootCAs = caPool
+	}
+
+	if (key || keyFile) && (cert || certFile) {
+		tlsConfig.GetClientCertificate = func(_ *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			if keyFile {
+				pem, err := os.ReadFile(keyFilePath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read key file: %s", err)
+				}
+
+				keyPEM = string(pem)
+			}
+
+			if certFile {
+				pem, err := os.ReadFile(certFilePath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read certificate file: %s", err)
+				}
+
+				certPEM = string(pem)
+			}
+
+			cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+			if err != nil {
+				return nil, fmt.Errorf("failed to load certificate: %s", err)
+			}
+
+			return &cert, nil
+		}
 	}
 
 	if key && cert {
@@ -268,12 +315,19 @@ func buildHttpClient() (*http.Client, error) {
 // If one of the HTTPS environment variables is set, will return "https".
 // If not, will return "http"
 func defaultScheme() string {
-	_, ca := os.LookupEnv(RootCAEnv)
-	_, cert := os.LookupEnv(UserCertEnv)
-	_, key := os.LookupEnv(UserKeyEnv)
-	if ca || cert || key {
-		return "https"
+	for _, env := range []string{
+		RootCAEnv,
+		RootCAFileEnv,
+		UserCertEnv,
+		UserCertFileEnv,
+		UserKeyEnv,
+		UserKeyFileEnv,
+	} {
+		if _, ok := os.LookupEnv(env); ok {
+			return "https"
+		}
 	}
+
 	return "http"
 }
 
@@ -349,6 +403,10 @@ func parseURLs(urls []string) ([]*url.URL, error) {
 //
 // - LS_USER_CERTIFICATE, LS_USER_KEY, LS_ROOT_CA: can be used to enable TLS on
 // the HTTP client, enabling encrypted communication with the LINSTOR controller.
+//
+// - LS_USER_CERTIFICATE_FILE, LS_USER_KEY_FILE, LS_ROOT_CA_FILE: can be used to
+// enable TLS on the HTTP client. Instead of expecting the PEM certificates directly,
+// this expects a path to the certificates instead.
 //
 // - LS_BEARER_TOKEN_FILE: can be set to a file containing the bearer token used
 // for authentication.
