@@ -345,38 +345,34 @@ func defaultPort(scheme string) string {
 }
 
 func parseBaseURL(urlString string) (*url.URL, error) {
-	// Check scheme
-	urlSplit := strings.Split(urlString, "://")
-
-	if len(urlSplit) == 1 {
-		if urlSplit[0] == "" {
-			urlSplit[0] = defaultHost
-		}
-		urlSplit = []string{defaultScheme(), urlSplit[0]}
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(urlSplit) != 2 {
-		return nil, fmt.Errorf("URL with multiple scheme separators. parts: %v", urlSplit)
+	if u.Path != "" && u.Host == "" {
+		u.Host = u.Path
+		u.Path = ""
 	}
-	scheme, endpoint := urlSplit[0], urlSplit[1]
-	switch scheme {
-	case "linstor":
-		scheme = defaultScheme()
+
+	if u.Host == "" && u.Scheme != "" {
+		u.Host = fmt.Sprintf("%s:%s", u.Scheme, u.Opaque)
+		u.Scheme = ""
+		u.Opaque = ""
+	}
+
+	switch u.Scheme {
+	case "", "linstor":
+		u.Scheme = defaultScheme()
 	case "linstor+ssl":
-		scheme = "https"
+		u.Scheme = "https"
 	}
 
-	// Check port
-	endpointSplit := strings.Split(endpoint, ":")
-	if len(endpointSplit) == 1 {
-		endpointSplit = []string{endpointSplit[0], defaultPort(scheme)}
+	if u.Port() == "" {
+		u.Host = fmt.Sprintf("%s:%s", u.Hostname(), defaultPort(u.Scheme))
 	}
-	if len(endpointSplit) != 2 {
-		return nil, fmt.Errorf("URL with multiple port separators. parts: %v", endpointSplit)
-	}
-	host, port := endpointSplit[0], endpointSplit[1]
 
-	return url.Parse(fmt.Sprintf("%s://%s:%s", scheme, host, port))
+	return u, nil
 }
 
 func parseURLs(urls []string) ([]*url.URL, error) {

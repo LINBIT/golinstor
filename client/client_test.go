@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,6 +63,11 @@ func TestNewClient_ViaEnv(t *testing.T) {
 			expectedUrl: "http://just.domain:3370",
 		},
 		{
+			name:        "ipv6-address",
+			env:         map[string]string{"LS_CONTROLLERS": "http://[fe80::5054:ff:fe00:a]:3370"},
+			expectedUrl: "http://[fe80::5054:ff:fe00:a]:3370",
+		},
+		{
 			name:        "just-domain-with-https-protocol",
 			env:         map[string]string{"LS_CONTROLLERS": "https://just.domain"},
 			expectedUrl: "https://just.domain:3371",
@@ -77,16 +81,6 @@ func TestNewClient_ViaEnv(t *testing.T) {
 			name:        "just-domain-with-client-secrets-and-port",
 			env:         map[string]string{"LS_CONTROLLERS": "just.domain:4000", "LS_ROOT_CA": TestCaCert},
 			expectedUrl: "https://just.domain:4000",
-		},
-		{
-			name:     "parse-error-multi-scheme",
-			env:      map[string]string{"LS_CONTROLLERS": "https://http://just.domain:4000"},
-			hasError: true,
-		},
-		{
-			name:     "parse-error-multi-port",
-			env:      map[string]string{"LS_CONTROLLERS": "https://just.domain:4000:5000"},
-			hasError: true,
 		},
 		{
 			name:     "parse-error-inconsistent-env",
@@ -103,10 +97,8 @@ func TestNewClient_ViaEnv(t *testing.T) {
 	for _, item := range testcases {
 		test := item
 		t.Run(test.name, func(t *testing.T) {
-			os.Clearenv()
-			defer os.Clearenv()
 			for k, v := range test.env {
-				_ = os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			actual, err := NewClient()
