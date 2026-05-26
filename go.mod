@@ -1,8 +1,6 @@
 module github.com/LINBIT/golinstor
 
-go 1.23.0
-
-toolchain go1.24.4
+go 1.25.0
 
 require (
 	github.com/BurntSushi/toml v1.6.0
@@ -10,13 +8,13 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/time v0.12.0
+	golang.org/x/time v0.15.0
 	moul.io/http2curl/v2 v2.3.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
