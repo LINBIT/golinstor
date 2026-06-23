@@ -130,9 +130,9 @@ func (r *resourceCacheProvider) Modify(ctx context.Context, resName, nodeName st
 	return r.cl.Modify(ctx, resName, nodeName, props)
 }
 
-func (r *resourceCacheProvider) Delete(ctx context.Context, resName, nodeName string) error {
+func (r *resourceCacheProvider) Delete(ctx context.Context, resName, nodeName string, opts client.ResourceDeleteOpts) error {
 	defer r.cache.resourceCache.Invalidate()
-	return r.cl.Delete(ctx, resName, nodeName)
+	return r.cl.Delete(ctx, resName, nodeName, opts)
 }
 
 func (r *resourceCacheProvider) ModifyVolume(ctx context.Context, resName, nodeName string, volNr int, props client.GenericPropsModify) error {
