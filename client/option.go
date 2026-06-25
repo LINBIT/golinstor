@@ -18,6 +18,7 @@
 package client
 
 import (
+	"fmt"
 	"net/url"
 	"reflect"
 
@@ -44,12 +45,16 @@ type ListOpts struct {
 	Content bool `url:"content,omitempty"`
 }
 
-func genOptions(opts ...*ListOpts) *ListOpts {
-	if opts == nil || len(opts) == 0 {
-		return nil
+func Optional[T any](objs ...*T) (*T, error) {
+	switch len(objs) {
+	case 0:
+		return nil, nil
+	case 1:
+		return objs[0], nil
+	default:
+		// Safe to dereference 0 here, we are in the len(objs) > 1 case.
+		return nil, fmt.Errorf("expected exactly zero or one arguments %T, got %d", objs[0], len(objs))
 	}
-
-	return opts[0]
 }
 
 func addOptions(s string, opt interface{}) (string, error) {

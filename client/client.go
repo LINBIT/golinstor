@@ -700,8 +700,12 @@ func (c *Client) doJSON(ctx context.Context, req *http.Request, out any) (*http.
 // Higer Leve Abstractions
 
 func (c *Client) doGET(ctx context.Context, url string, ret interface{}, opts ...*ListOpts) (*http.Response, error) {
+	opt, err := Optional(opts...)
+	if err != nil {
+		return nil, err
+	}
 
-	u, err := addOptions(url, genOptions(opts...))
+	u, err := addOptions(url, opt)
 	if err != nil {
 		return nil, err
 	}

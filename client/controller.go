@@ -279,8 +279,13 @@ func (s *ControllerService) CreateSOSReport(ctx context.Context, opts ...*ListOp
 
 // DownloadSOSReport creates and downloads an SOS report. The report is written to w as a tar.gz file.
 func (s *ControllerService) DownloadSOSReport(ctx context.Context, w io.WriteCloser, opts ...*ListOpts) error {
+	opt, err := Optional(opts...)
+	if err != nil {
+		return err
+	}
+
 	reqUrl := "/v1/sos-report/download"
-	u, err := addOptions(reqUrl, genOptions(opts...))
+	u, err := addOptions(reqUrl, opt)
 	if err != nil {
 		return err
 	}

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const TestCaCert = `-----BEGIN CERTIFICATE-----
@@ -219,4 +220,15 @@ func TestBearerTokenOpt(t *testing.T) {
 	actualVersion, err := cl.Controller.GetVersion(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, FakeVersion, actualVersion)
+}
+
+func TestOptionalArgumentsValidation(t *testing.T) {
+	cl, err := NewClient()
+	require.NoError(t, err)
+
+	_, err = cl.Nodes.GetAll(t.Context(), &ListOpts{Node: []string{"bar", "baz"}}, &ListOpts{Resource: []string{"foo"}})
+	assert.EqualError(t, err, "expected exactly zero or one arguments *client.ListOpts, got 2")
+
+	err = cl.Resources.Delete(t.Context(), "foo", "bar", &ResourceDeleteOpts{KeepTiebreaker: true}, &ResourceDeleteOpts{KeepTiebreaker: false})
+	assert.EqualError(t, err, "expected exactly zero or one arguments *client.ResourceDeleteOpts, got 2")
 }

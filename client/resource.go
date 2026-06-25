@@ -419,7 +419,7 @@ type ResourceProvider interface {
 	// Modify gives the ability to modify a resource on a node
 	Modify(ctx context.Context, resName, nodeName string, props GenericPropsModify) error
 	// Delete deletes a resource on a specific node
-	Delete(ctx context.Context, resName, nodeName string, opts ResourceDeleteOpts) error
+	Delete(ctx context.Context, resName, nodeName string, opts ...*ResourceDeleteOpts) error
 	// GetVolumes lists als volumes of a resource
 	GetVolumes(ctx context.Context, resName, nodeName string, opts ...*ListOpts) ([]Volume, error)
 	// GetVolume returns information about a specific volume defined by it resource,node and volume-number
@@ -608,8 +608,13 @@ func (n *ResourceService) Modify(ctx context.Context, resName, nodeName string, 
 }
 
 // Delete deletes a resource on a specific node
-func (n *ResourceService) Delete(ctx context.Context, resName, nodeName string, opts ResourceDeleteOpts) error {
-	val, err := query.Values(&opts)
+func (n *ResourceService) Delete(ctx context.Context, resName, nodeName string, opts ...*ResourceDeleteOpts) error {
+	opt, err := Optional(opts...)
+	if err != nil {
+		return err
+	}
+
+	val, err := query.Values(opt)
 	if err != nil {
 		return fmt.Errorf("failed to encode resource delete options: %w", err)
 	}
