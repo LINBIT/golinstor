@@ -315,6 +315,8 @@ type SnapshotNode struct {
 	Flags           []string     `json:"flags,omitempty"`
 	// unique object id
 	Uuid string `json:"uuid,omitempty"`
+	// Properties on the snapshot's resource on this node.
+	ResourceProps map[string]string `json:"resource_props,omitempty"`
 	// SnapshotVolumes holds per-volume information about snapshots on this node.
 	SnapshotVolumes []SnapshotVolumeNode `json:"snapshot_volumes,omitempty"`
 }
@@ -355,6 +357,8 @@ type SnapshotVolumeDefinition struct {
 	VolumeNumber int32 `json:"volume_number,omitempty"`
 	// Volume size in KiB
 	SizeKib uint64 `json:"size_kib,omitempty"`
+	// Properties on the volume definition at the time the snapshot was cut.
+	VolumeDefinitionProps map[string]string `json:"volume_definition_props,omitempty"`
 }
 
 // SnapshotRestore is a struct used to hold the information about where a Snapshot has to be restored
