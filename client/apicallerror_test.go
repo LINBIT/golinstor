@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,4 +127,9 @@ func TestApiCallErrorIs(t *testing.T) {
 	assert.True(t, client.IsApiCallError(err, linstor.FailUnknownError))
 	assert.False(t, client.IsApiCallError(err, linstor.FailNotEnoughNodes))
 	assert.False(t, client.IsApiCallError(err, linstor.FailAccDeniedCommand))
+
+	assert.True(t, errors.Is(err, client.ApiCallRcErr(linstor.FailNotConnected)))
+	assert.True(t, errors.Is(err, client.ApiCallRcErr(linstor.FailUnknownError)))
+	assert.False(t, errors.Is(err, client.ApiCallRcErr(linstor.FailNotEnoughNodes)))
+	assert.False(t, errors.Is(err, client.ApiCallRcErr(linstor.FailAccDeniedCommand)))
 }
