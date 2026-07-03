@@ -1,21 +1,40 @@
 # Use the same image version as the minimum version on go.mod
 image: golang:1.25
 
+variables:
+  GOPATH: $CI_PROJECT_DIR/.mygo
+
+cache:
+  key:
+    files:
+      - go.mod
+      - go.sum
+  paths:
+    - .mygo/pkg/mod
+
+stages:
+  - test
+
 test:
   stage: test
-  cache:
-    paths:
-      - .mygo/pkg/mod
-  variables:
-    GOPATH: $CI_PROJECT_DIR/.mygo
   script:
     - go mod tidy
     - git diff --exit-code go.mod go.sum || (echo "Run go mod tidy!" >&2 ; exit 1)
-    - go test -v -coverprofile .testCoverage.txt -covermode count ./client 2>&1 | go run github.com/jstemmer/go-junit-report@latest -set-exit-code > test.xml
-    - go run github.com/boumenot/gocover-cobertura@latest < .testCoverage.txt > coverage.xml
+    - go test -v -coverprofile .testCoverage.txt -covermode count ./client 2>&1 | go tool go-junit-report -set-exit-code > test.xml
+    - go tool gocover-cobertura < .testCoverage.txt > coverage.xml
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
       junit: test.xml
+
+lint:
+  stage: test
+  image: golangci/golangci-lint:v2.12
+  script:
+    - golangci-lint run --output.text.path stdout --output.code-climate.path gl-code-quality-report.json
+  artifacts:
+    when: always
+    reports:
+      codequality: gl-code-quality-report.json
