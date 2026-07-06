@@ -163,18 +163,18 @@ func anyMatches(haystack map[string]struct{}, items []string) bool {
 }
 
 func nodes(item any) []string {
-	switch item.(type) {
+	switch item := item.(type) {
 	case *client.Node:
-		return []string{item.(*client.Node).Name}
+		return []string{item.Name}
 	case *client.StoragePool:
-		return []string{item.(*client.StoragePool).NodeName}
+		return []string{item.NodeName}
 	case *client.ResourceWithVolumes:
-		return []string{item.(*client.ResourceWithVolumes).NodeName}
+		return []string{item.NodeName}
 	case *client.Snapshot:
-		return item.(*client.Snapshot).Nodes
+		return item.Nodes
 	case *client.PhysicalStorageViewItem:
 		var result []string
-		for k := range item.(*client.PhysicalStorageViewItem).Nodes {
+		for k := range item.Nodes {
 			result = append(result, k)
 		}
 		return result
@@ -184,14 +184,14 @@ func nodes(item any) []string {
 }
 
 func pools(item any) []string {
-	switch item.(type) {
+	switch item := item.(type) {
 	case *client.Node:
 		return nil
 	case *client.StoragePool:
-		return []string{item.(*client.StoragePool).StoragePoolName}
+		return []string{item.StoragePoolName}
 	case *client.ResourceWithVolumes:
 		var result []string
-		for _, vol := range item.(*client.ResourceWithVolumes).Volumes {
+		for _, vol := range item.Volumes {
 			result = append(result, vol.StoragePoolName)
 		}
 		return result
@@ -207,15 +207,15 @@ func pools(item any) []string {
 }
 
 func props(item any) map[string]string {
-	switch item.(type) {
+	switch item := item.(type) {
 	case *client.Node:
-		return item.(*client.Node).Props
+		return item.Props
 	case *client.StoragePool:
-		return item.(*client.StoragePool).Props
+		return item.Props
 	case *client.ResourceWithVolumes:
-		return item.(*client.ResourceWithVolumes).Props
+		return item.Props
 	case *client.Snapshot:
-		return item.(*client.Snapshot).Props
+		return item.Props
 	case *client.PhysicalStorageViewItem:
 		return nil
 	default:

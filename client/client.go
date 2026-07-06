@@ -154,7 +154,7 @@ func Log(logger interface{}) Option {
 		case Logger, LeveledLogger, nil:
 			c.log = logger
 		default:
-			return errors.New("Invalid logger type, expected Logger or LeveledLogger")
+			return errors.New("invalid logger type, expected Logger or LeveledLogger")
 		}
 		return nil
 	}
@@ -660,7 +660,7 @@ func (c *Client) do(ctx context.Context, req *http.Request) (*http.Response, err
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		// If we get an error, we handle the body ourselves, so we also have to close it.
-		defer resp.Body.Close()
+		defer resp.Body.Close() //nolint:errcheck
 		msg := fmt.Sprintf("Status code not within 200 to 400, but %d (%s)\n",
 			resp.StatusCode, http.StatusText(resp.StatusCode))
 		switch l := c.log.(type) {
@@ -690,7 +690,7 @@ func (c *Client) doJSON(ctx context.Context, req *http.Request, out any) (*http.
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	if out != nil {
 		err = json.NewDecoder(resp.Body).Decode(out)
 	}

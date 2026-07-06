@@ -22,7 +22,7 @@ func (t *TimeStampMs) UnmarshalJSON(s []byte) (err error) {
 }
 
 func (t TimeStampMs) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.Time.Unix() * 1000)
+	return json.Marshal(t.Unix() * 1000)
 }
 
 func (t TimeStampMs) EncodeValues(key string, v *url.Values) error {

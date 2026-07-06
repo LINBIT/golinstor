@@ -299,7 +299,7 @@ func (s *ControllerService) DownloadSOSReport(ctx context.Context, w io.WriteClo
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	_, err = io.Copy(w, resp.Body)
 	return err
 }

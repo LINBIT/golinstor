@@ -49,9 +49,8 @@ func TestRcIs(t *testing.T) {
 }
 
 func TestApiCallErrorIs(t *testing.T) {
-	var err error
 	// Random, observed error
-	err = client.ApiCallError{
+	err := client.ApiCallError{
 		{
 			RetCode: 4611686018481137428,
 			Message: "Tie breaker marked for deletion",

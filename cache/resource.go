@@ -97,9 +97,7 @@ func (r *resourceCacheProvider) GetVolumes(ctx context.Context, resName, nodeNam
 			continue
 		}
 
-		for j := range ress[i].Volumes {
-			result = append(result, ress[i].Volumes[j])
-		}
+		result = append(result, ress[i].Volumes...)
 	}
 
 	return result, nil
