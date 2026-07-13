@@ -6,12 +6,13 @@
 // All state is kept in memory. The following client calls are supported:
 //
 //   - Controller: GetVersion (reports a static fake version)
-//   - Nodes: Create, Get, Delete, Evacuate, Restore, Lost
+//   - Nodes: Create, GetAll, Get, Delete, Evacuate, Restore, Lost
 //   - Node storage pools: GetStoragePools, GetStoragePool, CreateStoragePool, ModifyStoragePool, DeleteStoragePool
 //   - Node physical storage: CreateDevicePool
 //   - ResourceGroups: Create, GetAll
-//   - ResourceDefinitions: Create, GetAll, Delete
-//   - Resources: Create, Get, GetResourceView
+//   - ResourceDefinitions: Create, GetAll (optionally with volume definitions), Delete,
+//     CreateVolumeDefinition, GetVolumeDefinitions, ModifyVolumeDefinition
+//   - Resources: Create, Get, GetAll, GetResourceView
 //
 // Any endpoint not listed above responds with 501 Not Implemented rather than
 // 404, so an unimplemented call is not mistaken for a genuine
@@ -29,6 +30,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strconv"
+	"strings"
 	"sync"
 
 	linstor "github.com/LINBIT/golinstor"
@@ -36,11 +39,12 @@ import (
 )
 
 func New() *FakeLinstor {
-	f := &FakeLinstor{}
+	f := &FakeLinstor{volumeDefinitions: map[string][]lapi.VolumeDefinition{}}
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /v1/controller/version", wrapHandler(f.getVersion))
 	mux.Handle("POST /v1/nodes", wrapHandler(f.createNode))
+	mux.Handle("GET /v1/nodes", wrapHandler(f.getNodes))
 	mux.Handle("GET /v1/nodes/{node}", wrapHandler(f.getNode))
 	mux.Handle("DELETE /v1/nodes/{node}", wrapHandler(f.deleteNode))
 	mux.Handle("PUT /v1/nodes/{node}/evacuate", wrapHandler(f.evacuateNode))
@@ -51,6 +55,10 @@ func New() *FakeLinstor {
 	mux.Handle("POST /v1/resource-definitions", wrapHandler(f.createResourceDefinition))
 	mux.Handle("GET /v1/resource-definitions", wrapHandler(f.getResourceDefinitions))
 	mux.Handle("DELETE /v1/resource-definitions/{rd}", wrapHandler(f.deleteResourceDefinition))
+	mux.Handle("POST /v1/resource-definitions/{rd}/volume-definitions", wrapHandler(f.createVolumeDefinition))
+	mux.Handle("GET /v1/resource-definitions/{rd}/volume-definitions", wrapHandler(f.getVolumeDefinitions))
+	mux.Handle("PUT /v1/resource-definitions/{rd}/volume-definitions/{volNr}", wrapHandler(f.modifyVolumeDefinition))
+	mux.Handle("GET /v1/resource-definitions/{rd}/resources", wrapHandler(f.getResources))
 	mux.Handle("GET /v1/resource-definitions/{rd}/resources/{node}", wrapHandler(f.getResource))
 	mux.Handle("POST /v1/resource-definitions/{rd}/resources/{node}", wrapHandler(f.createResource))
 	mux.Handle("GET /v1/view/resources", wrapHandler(f.viewResources))
@@ -84,6 +92,7 @@ type FakeLinstor struct {
 	nodes               []lapi.Node
 	resources           []lapi.ResourceWithVolumes
 	resourceDefinitions []lapi.ResourceDefinition
+	volumeDefinitions   map[string][]lapi.VolumeDefinition
 	resourceGroups      []lapi.ResourceGroup
 	storagePools        []lapi.StoragePool
 	devicePoolCreations int
@@ -154,6 +163,29 @@ func (f *FakeLinstor) getNode(r *http.Request) (any, error) {
 	}
 
 	return nil, lapi.NotFoundError
+}
+
+func (f *FakeLinstor) getNodes(r *http.Request) (any, error) {
+	q := r.URL.Query()
+	names := q["nodes"]
+	propFilters := q["props"]
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	out := make([]lapi.Node, 0, len(f.nodes))
+	for i := range f.nodes {
+		if len(names) > 0 && !slices.Contains(names, f.nodes[i].Name) {
+			continue
+		}
+		if !matchesPropFilters(f.nodes[i].Props, propFilters) {
+			continue
+		}
+
+		out = append(out, f.nodes[i])
+	}
+
+	return out, nil
 }
 
 func (f *FakeLinstor) deleteNode(r *http.Request) (any, error) {
@@ -227,10 +259,46 @@ func (f *FakeLinstor) createResourceDefinition(r *http.Request) (any, error) {
 }
 
 func (f *FakeLinstor) getResourceDefinitions(r *http.Request) (any, error) {
+	q := r.URL.Query()
+	names := q["resource_definitions"]
+	propFilters := q["props"]
+	withVolumeDefinitions := q.Get("with_volume_definitions") == "true"
+
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	return f.resourceDefinitions, nil
+	out := make([]lapi.ResourceDefinitionWithVolumeDefinition, 0, len(f.resourceDefinitions))
+	for i := range f.resourceDefinitions {
+		rd := f.resourceDefinitions[i]
+
+		if len(names) > 0 && !slices.Contains(names, rd.Name) {
+			continue
+		}
+		if !matchesPropFilters(rd.Props, propFilters) {
+			continue
+		}
+
+		entry := lapi.ResourceDefinitionWithVolumeDefinition{ResourceDefinition: rd}
+		if withVolumeDefinitions {
+			entry.VolumeDefinitions = slices.Clone(f.volumeDefinitions[rd.Name])
+		}
+
+		out = append(out, entry)
+	}
+
+	return out, nil
+}
+
+// matchesPropFilters reports whether props satisfies every "key=value" filter.
+func matchesPropFilters(props map[string]string, filters []string) bool {
+	for _, filter := range filters {
+		key, value, _ := strings.Cut(filter, "=")
+		if props[key] != value {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (f *FakeLinstor) getResource(r *http.Request) (any, error) {
@@ -247,6 +315,28 @@ func (f *FakeLinstor) getResource(r *http.Request) (any, error) {
 	}
 
 	return nil, lapi.NotFoundError
+}
+
+func (f *FakeLinstor) getResources(r *http.Request) (any, error) {
+	rd := r.PathValue("rd")
+	nodes := r.URL.Query()["nodes"]
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	out := make([]lapi.ResourceWithVolumes, 0)
+	for i := range f.resources {
+		if f.resources[i].Name != rd {
+			continue
+		}
+		if len(nodes) > 0 && !slices.Contains(nodes, f.resources[i].NodeName) {
+			continue
+		}
+
+		out = append(out, f.resources[i])
+	}
+
+	return out, nil
 }
 
 func (f *FakeLinstor) createResource(r *http.Request) (any, error) {
@@ -301,8 +391,104 @@ func (f *FakeLinstor) deleteResourceDefinition(r *http.Request) (any, error) {
 	f.resourceDefinitions = slices.DeleteFunc(f.resourceDefinitions, func(exist lapi.ResourceDefinition) bool {
 		return exist.Name == rd
 	})
+	delete(f.volumeDefinitions, rd)
 
 	return nil, nil
+}
+
+func (f *FakeLinstor) createVolumeDefinition(r *http.Request) (any, error) {
+	defer r.Body.Close() //nolint:errcheck
+
+	var vdc lapi.VolumeDefinitionCreate
+	err := json.NewDecoder(r.Body).Decode(&vdc)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding volume definition create: %w", err)
+	}
+
+	rd := r.PathValue("rd")
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if !slices.ContainsFunc(f.resourceDefinitions, func(exist lapi.ResourceDefinition) bool {
+		return exist.Name == rd
+	}) {
+		return nil, lapi.NotFoundError
+	}
+
+	vd := vdc.VolumeDefinition
+
+	// LINSTOR assigns the next free volume number when none is requested.
+	if vd.VolumeNumber == nil {
+		next := int32(len(f.volumeDefinitions[rd]))
+		vd.VolumeNumber = &next
+	}
+
+	if slices.ContainsFunc(f.volumeDefinitions[rd], func(exist lapi.VolumeDefinition) bool {
+		return exist.VolumeNumber != nil && *exist.VolumeNumber == *vd.VolumeNumber
+	}) {
+		return nil, fmt.Errorf("volume definition '%s/%d' already exists", rd, *vd.VolumeNumber)
+	}
+
+	f.volumeDefinitions[rd] = append(f.volumeDefinitions[rd], vd)
+
+	return nil, nil
+}
+
+func (f *FakeLinstor) getVolumeDefinitions(r *http.Request) (any, error) {
+	rd := r.PathValue("rd")
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if !slices.ContainsFunc(f.resourceDefinitions, func(exist lapi.ResourceDefinition) bool {
+		return exist.Name == rd
+	}) {
+		return nil, lapi.NotFoundError
+	}
+
+	return slices.Clone(f.volumeDefinitions[rd]), nil
+}
+
+func (f *FakeLinstor) modifyVolumeDefinition(r *http.Request) (any, error) {
+	defer r.Body.Close() //nolint:errcheck
+
+	var mod lapi.VolumeDefinitionModify
+	err := json.NewDecoder(r.Body).Decode(&mod)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding volume definition modification: %w", err)
+	}
+
+	rd := r.PathValue("rd")
+
+	volNr, err := strconv.Atoi(r.PathValue("volNr"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid volume number '%s': %w", r.PathValue("volNr"), err)
+	}
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	vds := f.volumeDefinitions[rd]
+	for i := range vds {
+		if vds[i].VolumeNumber == nil || int(*vds[i].VolumeNumber) != volNr {
+			continue
+		}
+
+		if vds[i].Props == nil {
+			vds[i].Props = make(map[string]string)
+		}
+		for k, v := range mod.OverrideProps {
+			vds[i].Props[k] = v
+		}
+		for _, k := range mod.DeleteProps {
+			delete(vds[i].Props, k)
+		}
+
+		return nil, nil
+	}
+
+	return nil, lapi.NotFoundError
 }
 
 func (f *FakeLinstor) evacuateNode(r *http.Request) (any, error) {

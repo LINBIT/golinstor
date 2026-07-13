@@ -36,6 +36,21 @@ func satelliteNode(name string) lapi.Node {
 	}
 }
 
+// volumeDefinition returns the volume definition with the given number, failing
+// the test if it is absent.
+func volumeDefinition(t *testing.T, vds []lapi.VolumeDefinition, volNr int32) lapi.VolumeDefinition {
+	t.Helper()
+
+	for _, vd := range vds {
+		if vd.VolumeNumber != nil && *vd.VolumeNumber == volNr {
+			return vd
+		}
+	}
+
+	t.Fatalf("volume definition %d not found in %+v", volNr, vds)
+	return lapi.VolumeDefinition{}
+}
+
 func TestUnimplementedEndpoint(t *testing.T) {
 	f := fakelinstor.New()
 	defer f.Server.Close()
@@ -355,4 +370,181 @@ func TestCreateDevicePool(t *testing.T) {
 	})
 	assert.ErrorContains(t, err, "already exists")
 	assert.Equal(t, 2, f.DevicePoolCreations())
+}
+
+func TestNodesGetAll(t *testing.T) {
+	f := fakelinstor.New()
+	defer f.Server.Close()
+
+	c := newClient(t, f)
+	ctx := context.Background()
+
+	nodes, err := c.Nodes.GetAll(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, nodes)
+
+	nodeA := satelliteNode("node-a")
+	nodeA.Props = map[string]string{"Aux/zone": "east"}
+	require.NoError(t, c.Nodes.Create(ctx, nodeA))
+	require.NoError(t, c.Nodes.Create(ctx, satelliteNode("node-b")))
+
+	nodes, err = c.Nodes.GetAll(ctx)
+	require.NoError(t, err)
+	assert.Len(t, nodes, 2)
+
+	// Filter by node name.
+	nodes, err = c.Nodes.GetAll(ctx, &lapi.ListOpts{Node: []string{"node-a"}})
+	require.NoError(t, err)
+	require.Len(t, nodes, 1)
+	assert.Equal(t, "node-a", nodes[0].Name)
+
+	// Filter by property.
+	nodes, err = c.Nodes.GetAll(ctx, &lapi.ListOpts{Prop: []string{"Aux/zone=east"}})
+	require.NoError(t, err)
+	require.Len(t, nodes, 1)
+	assert.Equal(t, "node-a", nodes[0].Name)
+
+	nodes, err = c.Nodes.GetAll(ctx, &lapi.ListOpts{Prop: []string{"Aux/zone=west"}})
+	require.NoError(t, err)
+	assert.Empty(t, nodes)
+}
+
+func TestVolumeDefinitions(t *testing.T) {
+	f := fakelinstor.New()
+	defer f.Server.Close()
+
+	c := newClient(t, f)
+	ctx := context.Background()
+
+	// Volume definitions require an existing resource definition.
+	err := c.ResourceDefinitions.CreateVolumeDefinition(ctx, "missing", lapi.VolumeDefinitionCreate{})
+	assert.ErrorIs(t, err, lapi.NotFoundError)
+
+	require.NoError(t, c.ResourceDefinitions.Create(ctx, lapi.ResourceDefinitionCreate{
+		ResourceDefinition: lapi.ResourceDefinition{Name: "res1"},
+	}))
+
+	// The volume number is assigned automatically when not requested.
+	require.NoError(t, c.ResourceDefinitions.CreateVolumeDefinition(ctx, "res1", lapi.VolumeDefinitionCreate{}))
+
+	vds, err := c.ResourceDefinitions.GetVolumeDefinitions(ctx, "res1")
+	require.NoError(t, err)
+	require.Len(t, vds, 1)
+	require.NotNil(t, vds[0].VolumeNumber)
+	assert.Equal(t, int32(0), *vds[0].VolumeNumber)
+
+	// An explicit volume number is honored...
+	two := int32(2)
+	require.NoError(t, c.ResourceDefinitions.CreateVolumeDefinition(ctx, "res1", lapi.VolumeDefinitionCreate{
+		VolumeDefinition: lapi.VolumeDefinition{VolumeNumber: &two},
+	}))
+
+	// ...and reusing it is rejected.
+	err = c.ResourceDefinitions.CreateVolumeDefinition(ctx, "res1", lapi.VolumeDefinitionCreate{
+		VolumeDefinition: lapi.VolumeDefinition{VolumeNumber: &two},
+	})
+	assert.ErrorContains(t, err, "already exists")
+
+	// Modify overrides and deletes properties.
+	require.NoError(t, c.ResourceDefinitions.ModifyVolumeDefinition(ctx, "res1", 2, lapi.VolumeDefinitionModify{
+		GenericPropsModify: lapi.GenericPropsModify{OverrideProps: lapi.OverrideProps{"Foo": "bar"}},
+	}))
+	vds, err = c.ResourceDefinitions.GetVolumeDefinitions(ctx, "res1")
+	require.NoError(t, err)
+	assert.Equal(t, "bar", volumeDefinition(t, vds, 2).Props["Foo"])
+
+	require.NoError(t, c.ResourceDefinitions.ModifyVolumeDefinition(ctx, "res1", 2, lapi.VolumeDefinitionModify{
+		GenericPropsModify: lapi.GenericPropsModify{DeleteProps: lapi.DeleteProps{"Foo"}},
+	}))
+	vds, err = c.ResourceDefinitions.GetVolumeDefinitions(ctx, "res1")
+	require.NoError(t, err)
+	assert.NotContains(t, volumeDefinition(t, vds, 2).Props, "Foo")
+
+	// Modifying an unknown volume definition fails.
+	err = c.ResourceDefinitions.ModifyVolumeDefinition(ctx, "res1", 9, lapi.VolumeDefinitionModify{})
+	assert.ErrorIs(t, err, lapi.NotFoundError)
+
+	// Deleting the resource definition also removes its volume definitions.
+	require.NoError(t, c.ResourceDefinitions.Delete(ctx, "res1"))
+	_, err = c.ResourceDefinitions.GetVolumeDefinitions(ctx, "res1")
+	assert.ErrorIs(t, err, lapi.NotFoundError)
+}
+
+func TestResourceDefinitionsWithVolumeDefinitions(t *testing.T) {
+	f := fakelinstor.New()
+	defer f.Server.Close()
+
+	c := newClient(t, f)
+	ctx := context.Background()
+
+	require.NoError(t, c.ResourceDefinitions.Create(ctx, lapi.ResourceDefinitionCreate{
+		ResourceDefinition: lapi.ResourceDefinition{Name: "res1", Props: map[string]string{"Aux/tier": "gold"}},
+	}))
+	require.NoError(t, c.ResourceDefinitions.Create(ctx, lapi.ResourceDefinitionCreate{
+		ResourceDefinition: lapi.ResourceDefinition{Name: "res2", Props: map[string]string{"Aux/tier": "silver"}},
+	}))
+	require.NoError(t, c.ResourceDefinitions.CreateVolumeDefinition(ctx, "res1", lapi.VolumeDefinitionCreate{}))
+
+	// Volume definitions are omitted unless explicitly requested.
+	rds, err := c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{})
+	require.NoError(t, err)
+	require.Len(t, rds, 2)
+	for _, rd := range rds {
+		assert.Empty(t, rd.VolumeDefinitions, "volume definitions should be omitted for %s", rd.Name)
+	}
+
+	rds, err = c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{WithVolumeDefinitions: true})
+	require.NoError(t, err)
+	for _, rd := range rds {
+		if rd.Name == "res1" {
+			assert.Len(t, rd.VolumeDefinitions, 1)
+		}
+	}
+
+	// Filter by resource definition name.
+	rds, err = c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{ResourceDefinitions: []string{"res2"}})
+	require.NoError(t, err)
+	require.Len(t, rds, 1)
+	assert.Equal(t, "res2", rds[0].Name)
+
+	// Filter by property.
+	rds, err = c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{Props: []string{"Aux/tier=gold"}})
+	require.NoError(t, err)
+	require.Len(t, rds, 1)
+	assert.Equal(t, "res1", rds[0].Name)
+}
+
+func TestResourcesGetAll(t *testing.T) {
+	f := fakelinstor.New()
+	defer f.Server.Close()
+
+	c := newClient(t, f)
+	ctx := context.Background()
+
+	require.NoError(t, c.Nodes.Create(ctx, satelliteNode("node-a")))
+	require.NoError(t, c.Nodes.Create(ctx, satelliteNode("node-b")))
+	require.NoError(t, c.ResourceDefinitions.Create(ctx, lapi.ResourceDefinitionCreate{
+		ResourceDefinition: lapi.ResourceDefinition{Name: "res1"},
+	}))
+	require.NoError(t, c.Resources.Create(ctx, lapi.ResourceCreate{
+		Resource: lapi.Resource{Name: "res1", NodeName: "node-a"},
+	}))
+	require.NoError(t, c.Resources.Create(ctx, lapi.ResourceCreate{
+		Resource: lapi.Resource{Name: "res1", NodeName: "node-b"},
+	}))
+
+	all, err := c.Resources.GetAll(ctx, "res1")
+	require.NoError(t, err)
+	assert.Len(t, all, 2)
+
+	// Filter by node.
+	filtered, err := c.Resources.GetAll(ctx, "res1", &lapi.ListOpts{Node: []string{"node-a"}})
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
+	assert.Equal(t, "node-a", filtered[0].NodeName)
+
+	// An unknown resource definition simply has no resources.
+	none, err := c.Resources.GetAll(ctx, "missing")
+	require.NoError(t, err)
+	assert.Empty(t, none)
 }
