@@ -10,7 +10,7 @@
 //   - Node storage pools: GetStoragePools, GetStoragePool, CreateStoragePool, ModifyStoragePool, DeleteStoragePool
 //   - Node physical storage: CreateDevicePool
 //   - ResourceGroups: Create, GetAll
-//   - ResourceDefinitions: Create, GetAll (optionally with volume definitions), Delete,
+//   - ResourceDefinitions: Create, GetAll (optionally with volume definitions), Delete, Truncate,
 //     CreateVolumeDefinition, GetVolumeDefinitions, ModifyVolumeDefinition
 //   - Resources: Create, Get, GetAll, GetResourceView
 //
@@ -59,6 +59,7 @@ func New() *FakeLinstor {
 	mux.Handle("GET /v1/resource-definitions/{rd}/volume-definitions", wrapHandler(f.getVolumeDefinitions))
 	mux.Handle("PUT /v1/resource-definitions/{rd}/volume-definitions/{volNr}", wrapHandler(f.modifyVolumeDefinition))
 	mux.Handle("GET /v1/resource-definitions/{rd}/resources", wrapHandler(f.getResources))
+	mux.Handle("DELETE /v1/resource-definitions/{rd}/resources", wrapHandler(f.truncateResourceDefinition))
 	mux.Handle("GET /v1/resource-definitions/{rd}/resources/{node}", wrapHandler(f.getResource))
 	mux.Handle("POST /v1/resource-definitions/{rd}/resources/{node}", wrapHandler(f.createResource))
 	mux.Handle("GET /v1/view/resources", wrapHandler(f.viewResources))
@@ -392,6 +393,35 @@ func (f *FakeLinstor) deleteResourceDefinition(r *http.Request) (any, error) {
 		return exist.Name == rd
 	})
 	delete(f.volumeDefinitions, rd)
+
+	return nil, nil
+}
+
+func (f *FakeLinstor) truncateResourceDefinition(r *http.Request) (any, error) {
+	rd := r.PathValue("rd")
+	deleteEmpty, _ := strconv.ParseBool(r.URL.Query().Get("delete_empty_resource_definition"))
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if !slices.ContainsFunc(f.resourceDefinitions, func(exist lapi.ResourceDefinition) bool {
+		return exist.Name == rd
+	}) {
+		return nil, lapi.NotFoundError
+	}
+
+	f.resources = slices.DeleteFunc(f.resources, func(exist lapi.ResourceWithVolumes) bool {
+		return exist.Name == rd
+	})
+
+	// The fake keeps no snapshots, so after the truncate the
+	// resource-definition is always empty.
+	if deleteEmpty {
+		f.resourceDefinitions = slices.DeleteFunc(f.resourceDefinitions, func(exist lapi.ResourceDefinition) bool {
+			return exist.Name == rd
+		})
+		delete(f.volumeDefinitions, rd)
+	}
 
 	return nil, nil
 }

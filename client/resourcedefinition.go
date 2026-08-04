@@ -146,6 +146,12 @@ type ResourceDefinitionSyncStatus struct {
 	SyncedOnAll bool `json:"synced_on_all"`
 }
 
+type ResourceDefinitionTruncateOpts struct {
+	// DeleteEmptyResourceDefinition also deletes the resource-definition when it has
+	// neither resources nor snapshots left after the truncate.
+	DeleteEmptyResourceDefinition bool `url:"delete_empty_resource_definition"`
+}
+
 // custom code
 
 type ResourceDefinitionWithVolumeDefinition struct {
@@ -178,6 +184,9 @@ type ResourceDefinitionProvider interface {
 	Modify(ctx context.Context, resDefName string, props GenericPropsModify) error
 	// Delete completely deletes a resource-definition
 	Delete(ctx context.Context, resDefName string) error
+	// Truncate deletes all resources of the resource-definition without deleting
+	// the resource-definition itself or any of its snapshots.
+	Truncate(ctx context.Context, resDefName string, opts ...*ResourceDefinitionTruncateOpts) error
 	// GetVolumeDefinitions returns all volume-definitions of a resource-definition
 	GetVolumeDefinitions(ctx context.Context, resDefName string, opts ...*ListOpts) ([]VolumeDefinition, error)
 	// GetVolumeDefinition shows the properties of a specific volume-definition
@@ -315,6 +324,23 @@ func (n *ResourceDefinitionService) Modify(ctx context.Context, resDefName strin
 // Delete completely deletes a resource-definition
 func (n *ResourceDefinitionService) Delete(ctx context.Context, resDefName string) error {
 	_, err := n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName, nil)
+	return err
+}
+
+// Truncate deletes all resources of the resource-definition without deleting
+// the resource-definition itself or any of its snapshots.
+func (n *ResourceDefinitionService) Truncate(ctx context.Context, resDefName string, opts ...*ResourceDefinitionTruncateOpts) error {
+	opt, err := Optional(opts...)
+	if err != nil {
+		return err
+	}
+
+	vals, err := query.Values(opt)
+	if err != nil {
+		return fmt.Errorf("failed to encode resource-definition truncate options: %w", err)
+	}
+
+	_, err = n.client.doDELETE(ctx, "/v1/resource-definitions/"+resDefName+"/resources?"+vals.Encode(), nil)
 	return err
 }
 

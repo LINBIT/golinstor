@@ -173,6 +173,11 @@ func (r *resourceCacheProvider) MakeAvailable(ctx context.Context, resName, node
 	return r.cl.MakeAvailable(ctx, resName, nodeName, makeAvailable)
 }
 
+func (r *resourceCacheProvider) UnmakeAvailable(ctx context.Context, resName, nodeName string) error {
+	defer r.cache.resourceCache.Invalidate()
+	return r.cl.UnmakeAvailable(ctx, resName, nodeName)
+}
+
 func (r *resourceCacheProvider) GetSnapshotView(ctx context.Context, opts ...*client.ListOpts) ([]client.Snapshot, error) {
 	result, err := r.cache.snapshotCache.Get(r.cache.Timeout, func() (any, error) {
 		return r.cl.GetSnapshotView(ctx, cacheOpt)
@@ -225,9 +230,9 @@ func (r *resourceCacheProvider) CreateSnapshots(ctx context.Context, snapshots .
 	return r.cl.CreateSnapshots(ctx, snapshots...)
 }
 
-func (r *resourceCacheProvider) DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error {
+func (r *resourceCacheProvider) DeleteSnapshot(ctx context.Context, resName, snapName string, opts ...*client.SnapshotDeleteOpts) error {
 	defer r.cache.snapshotCache.Invalidate()
-	return r.cl.DeleteSnapshot(ctx, resName, snapName, nodes...)
+	return r.cl.DeleteSnapshot(ctx, resName, snapName, opts...)
 }
 
 func (r *resourceCacheProvider) RestoreSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf client.SnapshotRestore) error {

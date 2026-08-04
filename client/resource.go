@@ -396,10 +396,23 @@ type ResourceMakeAvailable struct {
 	LayerList []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
 	// if true resource will be created as diskful even if diskless would be possible
 	Diskful bool `json:"diskful,omitempty"`
+	// if true the resource is prepared for a live migration to this node: for DRBD
+	// resources allow-two-primaries (and protocol C if needed) is set between the
+	// migration source and this node; for resources in a shared storage pool the
+	// resource is activated on both nodes.
+	AutoManageDualPrimary bool `json:"auto_manage_dual_primary,omitempty"`
 }
 
 type ResourceDeleteOpts struct {
 	KeepTiebreaker bool `url:"keep_tiebreaker"`
+}
+
+type SnapshotDeleteOpts struct {
+	// Nodes limits the delete to snapshots on the given nodes.
+	Nodes []string `url:"nodes"`
+	// DeleteEmptyResourceDefinition also deletes the resource-definition when it has
+	// neither resources nor snapshots left after this snapshot has been deleted.
+	DeleteEmptyResourceDefinition bool `url:"delete_empty_resource_definition"`
 }
 
 type ToggleDiskDiskfulProps struct {
@@ -452,8 +465,8 @@ type ResourceProvider interface {
 	CreateSnapshot(ctx context.Context, snapshot Snapshot) error
 	// CreateSnapshots creates multiple snapshots at once, suspending IO on all volumes at the same time.
 	CreateSnapshots(ctx context.Context, snapshot ...Snapshot) error
-	// DeleteSnapshot deletes a snapshot by its name. Specify nodes to only delete snapshots on specific nodes.
-	DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error
+	// DeleteSnapshot deletes a snapshot by its name.
+	DeleteSnapshot(ctx context.Context, resName, snapName string, opts ...*SnapshotDeleteOpts) error
 	// RestoreSnapshot restores a snapshot on a resource
 	RestoreSnapshot(ctx context.Context, origResName, snapName string, snapRestoreConf SnapshotRestore) error
 	// RestoreVolumeDefinitionSnapshot restores a volume-definition-snapshot on a resource
@@ -489,9 +502,9 @@ type ResourceProvider interface {
 	// the storage pool name as value. If the StorPoolName property is not
 	// set, a storage pool will be chosen automatically using the
 	// auto-placer.
-	// To create a diskless resource you have to set the "DISKLESS" flag in
-	// the flags list.
 	MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable ResourceMakeAvailable) error
+	// UnmakeAvailable reverts a MakeAvailable.
+	UnmakeAvailable(ctx context.Context, resName, nodeName string) error
 }
 
 var _ ResourceProvider = &ResourceService{}
@@ -757,13 +770,16 @@ func (n *ResourceService) CreateSnapshots(ctx context.Context, snapshots ...Snap
 	return err
 }
 
-// DeleteSnapshot deletes a snapshot by its name. Specify nodes to only delete snapshots on specific nodes.
-func (n *ResourceService) DeleteSnapshot(ctx context.Context, resName, snapName string, nodes ...string) error {
-	vals, err := query.Values(struct {
-		Nodes []string `url:"nodes"`
-	}{Nodes: nodes})
+// DeleteSnapshot deletes a snapshot by its name.
+func (n *ResourceService) DeleteSnapshot(ctx context.Context, resName, snapName string, opts ...*SnapshotDeleteOpts) error {
+	opt, err := Optional(opts...)
 	if err != nil {
-		return fmt.Errorf("failed to encode node names: %w", err)
+		return err
+	}
+
+	vals, err := query.Values(opt)
+	if err != nil {
+		return fmt.Errorf("failed to encode snapshot delete options: %w", err)
 	}
 
 	_, err = n.client.doDELETE(ctx, "/v1/resource-definitions/"+resName+"/snapshots/"+snapName+"?"+vals.Encode(), nil)
@@ -854,11 +870,17 @@ func (n *ResourceService) GetConnectionPropsInfos(ctx context.Context, resName s
 // To use a specific storage pool add the StorPoolName property and use the
 // storage pool name as value. If the StorPoolName property is not set, a
 // storage pool will be chosen automatically using the auto-placer.
-// To create a diskless resource you have to set the "DISKLESS" flag in the
-// flags list.
 func (n *ResourceService) MakeAvailable(ctx context.Context, resName, nodeName string, makeAvailable ResourceMakeAvailable) error {
 	u := fmt.Sprintf("/v1/resource-definitions/%s/resources/%s/make-available",
 		resName, nodeName)
 	_, err := n.client.doPOST(ctx, u, makeAvailable)
+	return err
+}
+
+// UnmakeAvailable reverts a MakeAvailable.
+func (n *ResourceService) UnmakeAvailable(ctx context.Context, resName, nodeName string) error {
+	u := fmt.Sprintf("/v1/resource-definitions/%s/resources/%s/unmake-available",
+		resName, nodeName)
+	_, err := n.client.doPOST(ctx, u, nil)
 	return err
 }

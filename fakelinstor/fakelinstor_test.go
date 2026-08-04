@@ -203,6 +203,49 @@ func TestResourceDefinitions(t *testing.T) {
 	assert.Empty(t, rds)
 }
 
+func TestResourceDefinitionTruncate(t *testing.T) {
+	f := fakelinstor.New()
+	defer f.Server.Close()
+
+	c := newClient(t, f)
+	ctx := context.Background()
+
+	err := c.ResourceDefinitions.Truncate(ctx, "missing")
+	assert.ErrorIs(t, err, lapi.NotFoundError)
+
+	require.NoError(t, c.Nodes.Create(ctx, satelliteNode("node-a")))
+	require.NoError(t, c.ResourceDefinitions.Create(ctx, lapi.ResourceDefinitionCreate{
+		ResourceDefinition: lapi.ResourceDefinition{Name: "res1"},
+	}))
+	require.NoError(t, c.Resources.Create(ctx, lapi.ResourceCreate{
+		Resource: lapi.Resource{Name: "res1", NodeName: "node-a"},
+	}))
+
+	// Truncate removes the resources but keeps the resource definition.
+	require.NoError(t, c.ResourceDefinitions.Truncate(ctx, "res1"))
+
+	_, err = c.Resources.Get(ctx, "res1", "node-a")
+	assert.ErrorIs(t, err, lapi.NotFoundError)
+
+	rds, err := c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{})
+	require.NoError(t, err)
+	require.Len(t, rds, 1)
+	assert.Equal(t, "res1", rds[0].Name)
+
+	// With DeleteEmptyResourceDefinition the now-empty resource definition
+	// is deleted as well.
+	require.NoError(t, c.Resources.Create(ctx, lapi.ResourceCreate{
+		Resource: lapi.Resource{Name: "res1", NodeName: "node-a"},
+	}))
+	require.NoError(t, c.ResourceDefinitions.Truncate(ctx, "res1", &lapi.ResourceDefinitionTruncateOpts{
+		DeleteEmptyResourceDefinition: true,
+	}))
+
+	rds, err = c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{})
+	require.NoError(t, err)
+	assert.Empty(t, rds)
+}
+
 func TestResources(t *testing.T) {
 	f := fakelinstor.New()
 	defer f.Server.Close()
