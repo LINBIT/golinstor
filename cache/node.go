@@ -232,6 +232,7 @@ func (n *nodeCacheProvider) GetPhysicalStorage(ctx context.Context, nodeName str
 
 func (n *nodeCacheProvider) CreateDevicePool(ctx context.Context, nodeName string, psc client.PhysicalStorageCreate) error {
 	defer n.cache.physicalStorageCache.Invalidate()
+	defer n.cache.storagePoolCache.Invalidate()
 	return n.cl.CreateDevicePool(ctx, nodeName, psc)
 }
 

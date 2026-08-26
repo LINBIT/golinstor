@@ -40,8 +40,10 @@ func (t *TestServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 }
 
 const (
-	NodesRequest     = "GET /v1/nodes?cached=true&limit=0&offset=0"
-	ReconnectRequest = "PUT /v1/nodes/node1/reconnect"
+	NodesRequest            = "GET /v1/nodes?cached=true&limit=0&offset=0"
+	ReconnectRequest        = "PUT /v1/nodes/node1/reconnect"
+	StoragePoolViewRequest  = "GET /v1/view/storage-pools?cached=true&limit=0&offset=0"
+	CreateDevicePoolRequest = "POST /v1/physical-storage/node1"
 )
 
 var (
@@ -114,6 +116,48 @@ func TestNodeCache(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, Node1, node1)
 	assert.Equal(t, 3, testSrv.counter[NodesRequest])
+}
+
+func TestNodeCacheCreateDevicePool(t *testing.T) {
+	pool1 := client.StoragePool{StoragePoolName: "pool1", NodeName: "node1"}
+
+	testSrv := TestServer{
+		counter: make(map[string]int),
+		responses: map[string]TestResponse{
+			StoragePoolViewRequest:  {Code: http.StatusOK, Body: []client.StoragePool{pool1}},
+			CreateDevicePoolRequest: {Code: http.StatusOK},
+		},
+	}
+	srv := httptest.NewServer(&testSrv)
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL)
+	assert.NoError(t, err)
+
+	cl, err := client.NewClient(
+		client.HTTPClient(srv.Client()),
+		client.BaseURL(u),
+		cache.WithCaches(&cache.NodeCache{Timeout: 1 * time.Minute}),
+	)
+	assert.NoError(t, err)
+
+	pools, err := cl.Nodes.GetStoragePoolView(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, []client.StoragePool{pool1}, pools)
+	assert.Equal(t, 1, testSrv.counter[StoragePoolViewRequest])
+
+	// Creating a device pool invalidates the storage pool cache, as the
+	// request may also create a storage pool
+	err = cl.Nodes.CreateDevicePool(context.Background(), "node1", client.PhysicalStorageCreate{
+		ProviderKind:    client.LVM,
+		DevicePaths:     []string{"/dev/sda"},
+		WithStoragePool: client.PhysicalStorageStoragePoolCreate{Name: "pool2"},
+	})
+	assert.NoError(t, err)
+
+	_, err = cl.Nodes.GetStoragePoolView(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, testSrv.counter[StoragePoolViewRequest])
 }
 
 func TestNodeCachePropsFiltering(t *testing.T) {
