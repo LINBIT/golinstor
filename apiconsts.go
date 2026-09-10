@@ -667,6 +667,13 @@ const KeyNetcomTrustStore = "TrustStore"
 const KeyNetcomTrustStorePasswd = "TrustStorePasswd"
 const KeyNetcomType = "Type"
 
+// ## Database export constants ###
+const KeyAutoDbExportCron = "Cron"
+const KeyAutoDbExportKeep = "Keep"
+const KeyAutoDbExportPath = "Path"
+const KeyAutoDbExportCompress = "Compress"
+const ValAutoDbExportCronOff = "off"
+
 // ## Property namespaces ###
 const NamespcNetcom = "NetCom"
 const NamespcDflt = "Default"
@@ -717,6 +724,7 @@ const NamespcExtCmd = "ExtCmd"
 const NamespcAuth = "Auth"
 const NamespcClone = "Clone"
 const NamespcSnapshot = "Snapshot"
+const NamespcAutoDbExport = "AutoDbExport"
 
 // ## Storage pool property keys ###
 const KeyStorPoolDfn = "StorPoolDfn"
