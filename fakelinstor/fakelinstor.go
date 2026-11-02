@@ -11,7 +11,8 @@
 //   - Node physical storage: CreateDevicePool
 //   - ResourceGroups: Create, GetAll
 //   - ResourceDefinitions: Create, GetAll (optionally with volume definitions), Delete, Truncate,
-//     CreateVolumeDefinition, GetVolumeDefinitions, ModifyVolumeDefinition
+//     CreateVolumeDefinition, GetVolumeDefinitions, ModifyVolumeDefinition,
+//     Clone (completes synchronously), CloneStatus
 //   - Resources: Create, Get, GetAll, GetResourceView
 //
 // Any endpoint not listed above responds with 501 Not Implemented rather than
@@ -36,10 +37,14 @@ import (
 
 	linstor "github.com/LINBIT/golinstor"
 	lapi "github.com/LINBIT/golinstor/client"
+	"github.com/LINBIT/golinstor/clonestatus"
 )
 
 func New() *FakeLinstor {
-	f := &FakeLinstor{volumeDefinitions: map[string][]lapi.VolumeDefinition{}}
+	f := &FakeLinstor{
+		volumeDefinitions: map[string][]lapi.VolumeDefinition{},
+		clones:            map[string]clonestatus.CloneStatus{},
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /v1/controller/version", wrapHandler(f.getVersion))
@@ -55,6 +60,8 @@ func New() *FakeLinstor {
 	mux.Handle("POST /v1/resource-definitions", wrapHandler(f.createResourceDefinition))
 	mux.Handle("GET /v1/resource-definitions", wrapHandler(f.getResourceDefinitions))
 	mux.Handle("DELETE /v1/resource-definitions/{rd}", wrapHandler(f.deleteResourceDefinition))
+	mux.Handle("POST /v1/resource-definitions/{rd}/clone", wrapHandler(f.cloneResourceDefinition))
+	mux.Handle("GET /v1/resource-definitions/{rd}/clone/{clone}", wrapHandler(f.cloneStatus))
 	mux.Handle("POST /v1/resource-definitions/{rd}/volume-definitions", wrapHandler(f.createVolumeDefinition))
 	mux.Handle("GET /v1/resource-definitions/{rd}/volume-definitions", wrapHandler(f.getVolumeDefinitions))
 	mux.Handle("PUT /v1/resource-definitions/{rd}/volume-definitions/{volNr}", wrapHandler(f.modifyVolumeDefinition))
@@ -94,6 +101,7 @@ type FakeLinstor struct {
 	resources           []lapi.ResourceWithVolumes
 	resourceDefinitions []lapi.ResourceDefinition
 	volumeDefinitions   map[string][]lapi.VolumeDefinition
+	clones              map[string]clonestatus.CloneStatus // keyed by cloneKey(source, clone)
 	resourceGroups      []lapi.ResourceGroup
 	storagePools        []lapi.StoragePool
 	devicePoolCreations int
@@ -393,6 +401,11 @@ func (f *FakeLinstor) deleteResourceDefinition(r *http.Request) (any, error) {
 		return exist.Name == rd
 	})
 	delete(f.volumeDefinitions, rd)
+	for key := range f.clones {
+		if strings.HasSuffix(key, "/"+rd) {
+			delete(f.clones, key)
+		}
+	}
 
 	return nil, nil
 }
@@ -424,6 +437,124 @@ func (f *FakeLinstor) truncateResourceDefinition(r *http.Request) (any, error) {
 	}
 
 	return nil, nil
+}
+
+// cloneKey identifies a clone operation by its source and target resource
+// definition, mirroring the status endpoint's path.
+func cloneKey(src, clone string) string {
+	return src + "/" + clone
+}
+
+// cloneResourceDefinition copies a resource definition with its volume
+// definitions and resources. Unlike a real controller, the fake completes the
+// clone synchronously, so CloneStatus reports COMPLETE right away.
+func (f *FakeLinstor) cloneResourceDefinition(r *http.Request) (any, error) {
+	defer r.Body.Close() //nolint:errcheck
+
+	var req lapi.ResourceDefinitionCloneRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding resource definition clone request: %w", err)
+	}
+
+	src := r.PathValue("rd")
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	srcIdx := slices.IndexFunc(f.resourceDefinitions, func(exist lapi.ResourceDefinition) bool {
+		return exist.Name == src
+	})
+	if srcIdx < 0 {
+		return nil, lapi.NotFoundError
+	}
+	srcRd := f.resourceDefinitions[srcIdx]
+
+	if req.Name == "" {
+		return nil, errors.New("clone request requires a name")
+	}
+
+	if slices.ContainsFunc(f.resourceDefinitions, func(exist lapi.ResourceDefinition) bool {
+		return exist.Name == req.Name
+	}) {
+		return nil, fmt.Errorf("resource definition '%s' already exists", req.Name)
+	}
+
+	// Grow the cloned volume definitions as requested. The sizes are applied
+	// per volume number, 0 keeps the source size and shrinking is rejected.
+	vds := slices.Clone(f.volumeDefinitions[src])
+	for volNr, size := range req.VolumeSizes {
+		if size == 0 {
+			continue
+		}
+		if size < 0 {
+			return nil, fmt.Errorf("invalid size %d for volume %d", size, volNr)
+		}
+
+		i := slices.IndexFunc(vds, func(vd lapi.VolumeDefinition) bool {
+			return vd.VolumeNumber != nil && int(*vd.VolumeNumber) == volNr
+		})
+		if i < 0 {
+			return nil, fmt.Errorf("resource definition '%s' has no volume %d", src, volNr)
+		}
+		if uint64(size) < vds[i].SizeKib {
+			return nil, fmt.Errorf("cannot shrink volume %d from %d KiB to %d KiB during clone", volNr, vds[i].SizeKib, size)
+		}
+
+		vds[i].SizeKib = uint64(size)
+	}
+
+	clone := srcRd
+	clone.Name = req.Name
+	clone.ExternalName = req.ExternalName
+	clone.Uuid = ""
+	if req.ResourceGroup != "" {
+		clone.ResourceGroupName = req.ResourceGroup
+	}
+
+	clone.Props = make(map[string]string, len(srcRd.Props))
+	for k, v := range srcRd.Props {
+		clone.Props[k] = v
+	}
+	for k, v := range req.OverrideProps {
+		clone.Props[k] = v
+	}
+	for _, k := range req.DeleteProps {
+		delete(clone.Props, k)
+	}
+
+	f.resourceDefinitions = append(f.resourceDefinitions, clone)
+	f.volumeDefinitions[clone.Name] = vds
+
+	for _, res := range f.resources {
+		if res.Name != src {
+			continue
+		}
+
+		res.Name = clone.Name
+		res.Uuid = ""
+		f.resources = append(f.resources, res)
+	}
+
+	f.clones[cloneKey(src, clone.Name)] = clonestatus.Complete
+
+	return lapi.ResourceDefinitionCloneStarted{
+		Location:   "/v1/resource-definitions/" + src + "/clone/" + clone.Name,
+		SourceName: src,
+		CloneName:  clone.Name,
+	}, nil
+}
+
+func (f *FakeLinstor) cloneStatus(r *http.Request) (any, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	status, ok := f.clones[cloneKey(r.PathValue("rd"), r.PathValue("clone"))]
+	if !ok {
+		return nil, lapi.NotFoundError
+	}
+
+	return lapi.ResourceDefinitionCloneStatus{Status: status}, nil
 }
 
 func (f *FakeLinstor) createVolumeDefinition(r *http.Request) (any, error) {

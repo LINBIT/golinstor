@@ -10,6 +10,7 @@ import (
 
 	linstor "github.com/LINBIT/golinstor"
 	lapi "github.com/LINBIT/golinstor/client"
+	"github.com/LINBIT/golinstor/clonestatus"
 	"github.com/LINBIT/golinstor/fakelinstor"
 )
 
@@ -244,6 +245,114 @@ func TestResourceDefinitionTruncate(t *testing.T) {
 	rds, err = c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{})
 	require.NoError(t, err)
 	assert.Empty(t, rds)
+}
+
+func TestResourceDefinitionClone(t *testing.T) {
+	f := fakelinstor.New()
+	defer f.Server.Close()
+
+	c := newClient(t, f)
+	ctx := context.Background()
+
+	// Cloning requires an existing source resource definition.
+	_, err := c.ResourceDefinitions.Clone(ctx, "missing", lapi.ResourceDefinitionCloneRequest{Name: "res2"})
+	assert.ErrorIs(t, err, lapi.NotFoundError)
+
+	require.NoError(t, c.Nodes.Create(ctx, satelliteNode("node-a")))
+	require.NoError(t, c.ResourceDefinitions.Create(ctx, lapi.ResourceDefinitionCreate{
+		ResourceDefinition: lapi.ResourceDefinition{
+			Name:              "res1",
+			ResourceGroupName: "group1",
+			Props:             map[string]string{"Keep": "yes", "Drop": "yes"},
+		},
+	}))
+	require.NoError(t, c.ResourceDefinitions.CreateVolumeDefinition(ctx, "res1", lapi.VolumeDefinitionCreate{
+		VolumeDefinition: lapi.VolumeDefinition{SizeKib: 1024},
+	}))
+	require.NoError(t, c.ResourceDefinitions.CreateVolumeDefinition(ctx, "res1", lapi.VolumeDefinitionCreate{
+		VolumeDefinition: lapi.VolumeDefinition{SizeKib: 2048},
+	}))
+	require.NoError(t, c.Resources.Create(ctx, lapi.ResourceCreate{
+		Resource: lapi.Resource{Name: "res1", NodeName: "node-a"},
+	}))
+
+	// A name is required and shrinking a volume is rejected.
+	_, err = c.ResourceDefinitions.Clone(ctx, "res1", lapi.ResourceDefinitionCloneRequest{})
+	assert.ErrorContains(t, err, "requires a name")
+
+	_, err = c.ResourceDefinitions.Clone(ctx, "res1", lapi.ResourceDefinitionCloneRequest{
+		Name:        "res2",
+		VolumeSizes: []int64{512},
+	})
+	assert.ErrorContains(t, err, "cannot shrink")
+
+	_, err = c.ResourceDefinitions.Clone(ctx, "res1", lapi.ResourceDefinitionCloneRequest{
+		Name:        "res2",
+		VolumeSizes: []int64{0, 0, 4096},
+	})
+	assert.ErrorContains(t, err, "has no volume 2")
+
+	// A failed clone leaves nothing behind.
+	_, err = c.ResourceDefinitions.CloneStatus(ctx, "res1", "res2")
+	assert.ErrorIs(t, err, lapi.NotFoundError)
+
+	started, err := c.ResourceDefinitions.Clone(ctx, "res1", lapi.ResourceDefinitionCloneRequest{
+		Name:          "res2",
+		ResourceGroup: "group2",
+		VolumeSizes:   []int64{4096, 0},
+		GenericPropsModify: lapi.GenericPropsModify{
+			OverrideProps: lapi.OverrideProps{"Added": "yes"},
+			DeleteProps:   lapi.DeleteProps{"Drop"},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "res1", started.SourceName)
+	assert.Equal(t, "res2", started.CloneName)
+	assert.Equal(t, "/v1/resource-definitions/res1/clone/res2", started.Location)
+
+	// The fake completes clones synchronously.
+	status, err := c.ResourceDefinitions.CloneStatus(ctx, "res1", "res2")
+	require.NoError(t, err)
+	assert.Equal(t, clonestatus.Complete, status.Status)
+
+	// The clone carries the source properties with the requested changes
+	// and the given resource group.
+	rds, err := c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{ResourceDefinitions: []string{"res2"}})
+	require.NoError(t, err)
+	require.Len(t, rds, 1)
+	assert.Equal(t, "group2", rds[0].ResourceGroupName)
+	assert.Equal(t, map[string]string{"Keep": "yes", "Added": "yes"}, rds[0].Props)
+
+	// Volume definitions are copied, grown where requested.
+	vds, err := c.ResourceDefinitions.GetVolumeDefinitions(ctx, "res2")
+	require.NoError(t, err)
+	require.Len(t, vds, 2)
+	assert.Equal(t, uint64(4096), volumeDefinition(t, vds, 0).SizeKib)
+	assert.Equal(t, uint64(2048), volumeDefinition(t, vds, 1).SizeKib)
+
+	// Resources are deployed on the same nodes as the source.
+	resource, err := c.Resources.Get(ctx, "res2", "node-a")
+	require.NoError(t, err)
+	assert.Equal(t, "res2", resource.Name)
+
+	// The source is untouched.
+	vds, err = c.ResourceDefinitions.GetVolumeDefinitions(ctx, "res1")
+	require.NoError(t, err)
+	assert.Equal(t, uint64(1024), volumeDefinition(t, vds, 0).SizeKib)
+	rds, err = c.ResourceDefinitions.GetAll(ctx, lapi.RDGetAllRequest{ResourceDefinitions: []string{"res1"}})
+	require.NoError(t, err)
+	require.Len(t, rds, 1)
+	assert.Equal(t, "group1", rds[0].ResourceGroupName)
+	assert.Equal(t, map[string]string{"Keep": "yes", "Drop": "yes"}, rds[0].Props)
+
+	// Cloning onto an existing name is rejected.
+	_, err = c.ResourceDefinitions.Clone(ctx, "res1", lapi.ResourceDefinitionCloneRequest{Name: "res2"})
+	assert.ErrorContains(t, err, "already exists")
+
+	// Deleting the clone forgets its status.
+	require.NoError(t, c.ResourceDefinitions.Delete(ctx, "res2"))
+	_, err = c.ResourceDefinitions.CloneStatus(ctx, "res1", "res2")
+	assert.ErrorIs(t, err, lapi.NotFoundError)
 }
 
 func TestResources(t *testing.T) {

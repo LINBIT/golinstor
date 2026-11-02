@@ -119,12 +119,17 @@ type DrbdVolumeDefinition struct {
 }
 
 type ResourceDefinitionCloneRequest struct {
-	Name               string                            `json:"name,omitempty"`
-	ExternalName       string                            `json:"external_name,omitempty"`
-	UseZfsClone        bool                              `json:"use_zfs_clone,omitempty"`
-	LayerList          []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
-	VolumePassphrases  []string                          `json:"volume_passphrases,omitempty"`
-	ResourceGroup      string                            `json:"resource_group,omitempty"`
+	Name              string                            `json:"name,omitempty"`
+	ExternalName      string                            `json:"external_name,omitempty"`
+	UseZfsClone       bool                              `json:"use_zfs_clone,omitempty"`
+	LayerList         []devicelayerkind.DeviceLayerKind `json:"layer_list,omitempty"`
+	VolumePassphrases []string                          `json:"volume_passphrases,omitempty"`
+	// VolumeSizes are the sizes (in KiB) to grow the cloned volume-definitions to, per volume number.
+	// 0 or omitted keeps the source volume size. Sizes smaller than the source are rejected.
+	// The resize happens as part of the clone before an optional BalanceAfterClone placement.
+	// Requires LINSTOR 1.35.0 (REST API 1.29.1) or newer.
+	VolumeSizes        []int64 `json:"volume_sizes,omitempty"`
+	ResourceGroup      string  `json:"resource_group,omitempty"`
 	GenericPropsModify `json:",inline"`
 }
 
