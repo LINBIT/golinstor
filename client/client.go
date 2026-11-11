@@ -673,11 +673,11 @@ func (c *Client) do(ctx context.Context, req *http.Request) (*http.Response, err
 			return nil, NotFoundError
 		}
 
-		var rets ApiCallError
-		if err = json.NewDecoder(resp.Body).Decode(&rets); err != nil {
+		body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyRead))
+		if err != nil {
 			return nil, err
 		}
-		return nil, rets
+		return nil, decodeErrorBody(resp.StatusCode, body)
 	}
 	return resp, err
 }
