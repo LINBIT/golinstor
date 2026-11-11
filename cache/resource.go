@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/LINBIT/golinstor/client"
+	"github.com/LINBIT/golinstor/clonestatus"
 )
 
 // ResourceCache caches responses from a client.ResourceProvider.
@@ -23,6 +24,25 @@ type backupShim struct {
 	snapshotCache *cache
 }
 
+// resourceDefinitionShim invalidates the resource cache on resource definition operations that change resources.
+type resourceDefinitionShim struct {
+	client.ResourceDefinitionProvider
+	resourceCache *cache
+}
+
+// resourceGroupShim invalidates the resource cache on resource group operations that place resources.
+type resourceGroupShim struct {
+	client.ResourceGroupProvider
+	resourceCache *cache
+}
+
+// nodeResourceShim invalidates the resource and snapshot caches on node operations that remove or move them.
+type nodeResourceShim struct {
+	client.NodeProvider
+	resourceCache *cache
+	snapshotCache *cache
+}
+
 func (r *ResourceCache) apply(c *client.Client) {
 	c.Resources = &resourceCacheProvider{
 		cl:    c.Resources,
@@ -33,6 +53,19 @@ func (r *ResourceCache) apply(c *client.Client) {
 		resourceCache:  &r.resourceCache,
 		snapshotCache:  &r.snapshotCache,
 	}
+	c.ResourceDefinitions = resourceDefinitionShim{
+		ResourceDefinitionProvider: c.ResourceDefinitions,
+		resourceCache:              &r.resourceCache,
+	}
+	c.ResourceGroups = resourceGroupShim{
+		ResourceGroupProvider: c.ResourceGroups,
+		resourceCache:         &r.resourceCache,
+	}
+	c.Nodes = nodeResourceShim{
+		NodeProvider:  c.Nodes,
+		resourceCache: &r.resourceCache,
+		snapshotCache: &r.snapshotCache,
+	}
 }
 
 type resourceCacheProvider struct {
@@ -42,6 +75,9 @@ type resourceCacheProvider struct {
 
 var _ client.ResourceProvider = &resourceCacheProvider{}
 var _ client.BackupProvider = backupShim{}
+var _ client.ResourceDefinitionProvider = resourceDefinitionShim{}
+var _ client.ResourceGroupProvider = resourceGroupShim{}
+var _ client.NodeProvider = nodeResourceShim{}
 
 func (r *resourceCacheProvider) GetResourceView(ctx context.Context, opts ...*client.ListOpts) ([]client.ResourceWithVolumes, error) {
 	result, err := r.cache.resourceCache.Get(r.cache.Timeout, func() (any, error) {
@@ -305,4 +341,87 @@ func (b backupShim) Create(ctx context.Context, remoteName string, request clien
 func (b backupShim) Ship(ctx context.Context, remoteName string, request client.BackupShipRequest) (string, error) {
 	defer b.snapshotCache.Invalidate()
 	return b.BackupProvider.Ship(ctx, remoteName, request)
+}
+
+func (d resourceDefinitionShim) Delete(ctx context.Context, resDefName string) error {
+	defer d.resourceCache.Invalidate()
+	return d.ResourceDefinitionProvider.Delete(ctx, resDefName)
+}
+
+func (d resourceDefinitionShim) Truncate(ctx context.Context, resDefName string, opts ...*client.ResourceDefinitionTruncateOpts) error {
+	defer d.resourceCache.Invalidate()
+	return d.ResourceDefinitionProvider.Truncate(ctx, resDefName, opts...)
+}
+
+func (d resourceDefinitionShim) CreateVolumeDefinition(ctx context.Context, resDefName string, volDef client.VolumeDefinitionCreate) error {
+	defer d.resourceCache.Invalidate()
+	return d.ResourceDefinitionProvider.CreateVolumeDefinition(ctx, resDefName, volDef)
+}
+
+func (d resourceDefinitionShim) ModifyVolumeDefinition(ctx context.Context, resDefName string, volNr int, props client.VolumeDefinitionModify) error {
+	defer d.resourceCache.Invalidate()
+	return d.ResourceDefinitionProvider.ModifyVolumeDefinition(ctx, resDefName, volNr, props)
+}
+
+func (d resourceDefinitionShim) DeleteVolumeDefinition(ctx context.Context, resDefName string, volNr int) error {
+	defer d.resourceCache.Invalidate()
+	return d.ResourceDefinitionProvider.DeleteVolumeDefinition(ctx, resDefName, volNr)
+}
+
+func (d resourceDefinitionShim) Clone(ctx context.Context, srcResDef string, request client.ResourceDefinitionCloneRequest) (client.ResourceDefinitionCloneStarted, error) {
+	defer d.resourceCache.Invalidate()
+	return d.ResourceDefinitionProvider.Clone(ctx, srcResDef, request)
+}
+
+// CloneStatus invalidates the resource cache once the clone has finished: the cloned resources are created
+// asynchronously, so any response cached while the clone was running may be missing them.
+func (d resourceDefinitionShim) CloneStatus(ctx context.Context, srcResDef, targetResDef string) (client.ResourceDefinitionCloneStatus, error) {
+	status, err := d.ResourceDefinitionProvider.CloneStatus(ctx, srcResDef, targetResDef)
+	if err == nil && status.Status != clonestatus.Cloning {
+		d.resourceCache.Invalidate()
+	}
+
+	return status, err
+}
+
+func (g resourceGroupShim) Spawn(ctx context.Context, resGrpName string, resGrpSpwn client.ResourceGroupSpawn) error {
+	defer g.resourceCache.Invalidate()
+	return g.ResourceGroupProvider.Spawn(ctx, resGrpName, resGrpSpwn)
+}
+
+func (g resourceGroupShim) Adjust(ctx context.Context, resGrpName string, adjust client.ResourceGroupAdjust) error {
+	defer g.resourceCache.Invalidate()
+	return g.ResourceGroupProvider.Adjust(ctx, resGrpName, adjust)
+}
+
+func (g resourceGroupShim) AdjustAll(ctx context.Context, adjust client.ResourceGroupAdjust) error {
+	defer g.resourceCache.Invalidate()
+	return g.ResourceGroupProvider.AdjustAll(ctx, adjust)
+}
+
+func (n nodeResourceShim) Delete(ctx context.Context, nodeName string) error {
+	defer n.snapshotCache.Invalidate()
+	defer n.resourceCache.Invalidate()
+	return n.NodeProvider.Delete(ctx, nodeName)
+}
+
+func (n nodeResourceShim) Lost(ctx context.Context, nodeName string) error {
+	defer n.snapshotCache.Invalidate()
+	defer n.resourceCache.Invalidate()
+	return n.NodeProvider.Lost(ctx, nodeName)
+}
+
+func (n nodeResourceShim) Evict(ctx context.Context, nodeName string) error {
+	defer n.resourceCache.Invalidate()
+	return n.NodeProvider.Evict(ctx, nodeName)
+}
+
+func (n nodeResourceShim) Restore(ctx context.Context, nodeName string, restore client.NodeRestore) error {
+	defer n.resourceCache.Invalidate()
+	return n.NodeProvider.Restore(ctx, nodeName, restore)
+}
+
+func (n nodeResourceShim) Evacuate(ctx context.Context, nodeName string, evacuate client.NodeEvacuate) error {
+	defer n.resourceCache.Invalidate()
+	return n.NodeProvider.Evacuate(ctx, nodeName, evacuate)
 }

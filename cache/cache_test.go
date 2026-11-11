@@ -14,6 +14,7 @@ import (
 	linstor "github.com/LINBIT/golinstor"
 	"github.com/LINBIT/golinstor/cache"
 	"github.com/LINBIT/golinstor/client"
+	"github.com/LINBIT/golinstor/clonestatus"
 )
 
 type TestResponse struct {
@@ -205,4 +206,147 @@ func TestNodeCachePropsFiltering(t *testing.T) {
 	nodes, err = cl.Nodes.GetAll(context.Background(), &client.ListOpts{Prop: []string{"Aux/key2="}})
 	assert.NoError(t, err)
 	assert.Equal(t, []client.Node{Node2}, nodes)
+}
+
+func TestResourceCacheClone(t *testing.T) {
+	const (
+		resourceViewRequest = "GET /v1/view/resources?cached=true&limit=0&offset=0"
+		cloneRequest        = "POST /v1/resource-definitions/src/clone"
+		cloneStatusRequest  = "GET /v1/resource-definitions/src/clone/dst"
+	)
+
+	srcRes := client.ResourceWithVolumes{Resource: client.Resource{Name: "src", NodeName: "node1"}}
+	dstRes := client.ResourceWithVolumes{Resource: client.Resource{Name: "dst", NodeName: "node1"}}
+
+	testSrv := TestServer{
+		counter: make(map[string]int),
+		responses: map[string]TestResponse{
+			resourceViewRequest: {Code: http.StatusOK, Body: []client.ResourceWithVolumes{srcRes}},
+			cloneRequest:        {Code: http.StatusCreated, Body: client.ResourceDefinitionCloneStarted{}},
+			cloneStatusRequest:  {Code: http.StatusOK, Body: client.ResourceDefinitionCloneStatus{Status: clonestatus.Cloning}},
+		},
+	}
+	srv := httptest.NewServer(&testSrv)
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL)
+	assert.NoError(t, err)
+
+	cl, err := client.NewClient(
+		client.HTTPClient(srv.Client()),
+		client.BaseURL(u),
+		cache.WithCaches(&cache.ResourceCache{Timeout: 1 * time.Minute}),
+	)
+	assert.NoError(t, err)
+
+	_, err = cl.ResourceDefinitions.Clone(context.Background(), "src", client.ResourceDefinitionCloneRequest{Name: "dst"})
+	assert.NoError(t, err)
+
+	// The clone is still running: the resource view is cached without the new resource.
+	ress, err := cl.Resources.GetAll(context.Background(), "dst")
+	assert.NoError(t, err)
+	assert.Empty(t, ress)
+
+	status, err := cl.ResourceDefinitions.CloneStatus(context.Background(), "src", "dst")
+	assert.NoError(t, err)
+	assert.Equal(t, clonestatus.Cloning, status.Status)
+
+	_, err = cl.Resources.GetAll(context.Background(), "dst")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, testSrv.counter[resourceViewRequest])
+
+	testSrv.responses[resourceViewRequest] = TestResponse{Code: http.StatusOK, Body: []client.ResourceWithVolumes{srcRes, dstRes}}
+	testSrv.responses[cloneStatusRequest] = TestResponse{Code: http.StatusOK, Body: client.ResourceDefinitionCloneStatus{Status: clonestatus.Complete}}
+
+	status, err = cl.ResourceDefinitions.CloneStatus(context.Background(), "src", "dst")
+	assert.NoError(t, err)
+	assert.Equal(t, clonestatus.Complete, status.Status)
+
+	ress, err = cl.Resources.GetAll(context.Background(), "dst")
+	assert.NoError(t, err)
+	assert.Equal(t, []client.Resource{dstRes.Resource}, ress)
+	assert.Equal(t, 2, testSrv.counter[resourceViewRequest])
+}
+
+func TestResourceCacheInvalidation(t *testing.T) {
+	const (
+		resourceViewRequest = "GET /v1/view/resources?cached=true&limit=0&offset=0"
+		snapshotViewRequest = "GET /v1/view/snapshots?cached=true&limit=0&offset=0"
+	)
+
+	testcases := []struct {
+		name                 string
+		request              string
+		call                 func(cl *client.Client) error
+		expectSnapshotReload bool
+	}{
+		{
+			name:    "truncate",
+			request: "DELETE /v1/resource-definitions/res/resources?delete_empty_resource_definition=true",
+			call: func(cl *client.Client) error {
+				return cl.ResourceDefinitions.Truncate(context.Background(), "res", &client.ResourceDefinitionTruncateOpts{DeleteEmptyResourceDefinition: true})
+			},
+		},
+		{
+			name:    "node-lost",
+			request: "DELETE /v1/nodes/node1/lost",
+			call: func(cl *client.Client) error {
+				return cl.Nodes.Lost(context.Background(), "node1")
+			},
+			expectSnapshotReload: true,
+		},
+		{
+			name:    "node-delete",
+			request: "DELETE /v1/nodes/node1",
+			call: func(cl *client.Client) error {
+				return cl.Nodes.Delete(context.Background(), "node1")
+			},
+			expectSnapshotReload: true,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			testSrv := TestServer{
+				counter: make(map[string]int),
+				responses: map[string]TestResponse{
+					resourceViewRequest: {Code: http.StatusOK, Body: []client.ResourceWithVolumes{{Resource: client.Resource{Name: "res", NodeName: "node1"}}}},
+					snapshotViewRequest: {Code: http.StatusOK, Body: []client.Snapshot{{Name: "snap", ResourceName: "res", Nodes: []string{"node1"}}}},
+					tc.request:          {Code: http.StatusOK},
+				},
+			}
+			srv := httptest.NewServer(&testSrv)
+			defer srv.Close()
+
+			u, err := url.Parse(srv.URL)
+			assert.NoError(t, err)
+
+			cl, err := client.NewClient(
+				client.HTTPClient(srv.Client()),
+				client.BaseURL(u),
+				cache.WithCaches(&cache.ResourceCache{Timeout: 1 * time.Minute}),
+			)
+			assert.NoError(t, err)
+
+			_, err = cl.Resources.GetAll(context.Background(), "res")
+			assert.NoError(t, err)
+			_, err = cl.Resources.GetSnapshots(context.Background(), "res")
+			assert.NoError(t, err)
+
+			assert.NoError(t, tc.call(cl))
+			assert.Equal(t, 1, testSrv.counter[tc.request])
+
+			_, err = cl.Resources.GetAll(context.Background(), "res")
+			assert.NoError(t, err)
+			_, err = cl.Resources.GetSnapshots(context.Background(), "res")
+			assert.NoError(t, err)
+
+			assert.Equal(t, 2, testSrv.counter[resourceViewRequest])
+			expectedSnapshotRequests := 1
+			if tc.expectSnapshotReload {
+				expectedSnapshotRequests = 2
+			}
+			assert.Equal(t, expectedSnapshotRequests, testSrv.counter[snapshotViewRequest])
+		})
+	}
 }
